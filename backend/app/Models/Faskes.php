@@ -17,7 +17,7 @@ class Faskes extends Model
 
     protected $fillable = [
         'kdppk', 'nama_faskes', 'jenis_faskes', 'kelas_faskes', 'alamat_faskes',
-        'kota_kabupaten', 'longitude', 'latitude', 'telp_faskes',
+        'provinsi', 'kecamatan', 'kota_kabupaten', 'longitude', 'latitude', 'telp_faskes',
         'is_support_bpjs', 'link_maps',
     ];
 

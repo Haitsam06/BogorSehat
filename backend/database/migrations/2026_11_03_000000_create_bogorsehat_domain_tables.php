@@ -59,7 +59,7 @@ return new class extends Migration
 
         Schema::create('komentar', function (Blueprint $table): void {
             $table->id('id_komentar');
-            $table->foreignId('id_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->foreignId('id_faskes')->constrained('faskes', 'id_faskes')->cascadeOnDelete();
             $table->foreignId('id_parent')->nullable()->constrained('komentar', 'id_komentar')->nullOnDelete();
             $table->text('body')->nullable();
@@ -72,7 +72,7 @@ return new class extends Migration
 
         Schema::create('diskusi', function (Blueprint $table): void {
             $table->id('id_diskusi');
-            $table->foreignId('id_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('judul_diskusi');
             $table->string('kategori_diskusi')->default('lainnya');
             $table->text('body');
@@ -82,7 +82,7 @@ return new class extends Migration
 
         Schema::create('tanggapan_diskusi', function (Blueprint $table): void {
             $table->id('id_tanggapan_diskusi');
-            $table->foreignId('id_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->foreignId('id_diskusi')->constrained('diskusi', 'id_diskusi')->cascadeOnDelete();
             $table->foreignId('id_parent')->nullable()->constrained('tanggapan_diskusi', 'id_tanggapan_diskusi')->nullOnDelete();
             $table->text('body');
@@ -94,7 +94,7 @@ return new class extends Migration
             $table->id('id_laporan_komentar');
             $table->foreignId('id_komentar')->constrained('komentar', 'id_komentar')->cascadeOnDelete();
             $table->foreignId('id_faskes')->constrained('faskes', 'id_faskes')->cascadeOnDelete();
-            $table->foreignId('id_reported_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_reported_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('alasan');
             $table->text('catatan')->nullable();
             $table->string('status')->default('pending');
@@ -106,7 +106,7 @@ return new class extends Migration
         Schema::create('laporan_diskusi', function (Blueprint $table): void {
             $table->id('id_laporan_diskusi');
             $table->foreignId('id_diskusi')->constrained('diskusi', 'id_diskusi')->cascadeOnDelete();
-            $table->foreignId('id_reported_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_reported_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('alasan');
             $table->text('catatan')->nullable();
             $table->string('status')->default('pending');
@@ -118,7 +118,7 @@ return new class extends Migration
         Schema::create('laporan_tanggapan', function (Blueprint $table): void {
             $table->id('id_laporan_tanggapan');
             $table->foreignId('id_tanggapan')->constrained('tanggapan_diskusi', 'id_tanggapan_diskusi')->cascadeOnDelete();
-            $table->foreignId('id_reported_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_reported_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('alasan');
             $table->text('catatan')->nullable();
             $table->string('status')->default('pending');
@@ -130,7 +130,7 @@ return new class extends Migration
         Schema::create('feedback_faskes', function (Blueprint $table): void {
             $table->id('id_feedback_faskes');
             $table->foreignId('id_faskes')->constrained('faskes', 'id_faskes')->cascadeOnDelete();
-            $table->foreignId('id_user')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('id_user')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('alasan');
             $table->text('saran_perbaikan');
             $table->string('status')->default('pending');

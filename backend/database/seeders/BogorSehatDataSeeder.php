@@ -43,6 +43,8 @@ class BogorSehatDataSeeder extends Seeder
                 'jenis_faskes' => trim($row['jenis_faskes']) ?: null,
                 'kelas_faskes' => trim($row['kelas_faskes']) ?: null,
                 'alamat_faskes' => preg_replace('/\s+/', ' ', trim($row['alamat_faskes'])),
+                'provinsi' => 'JAWA BARAT',
+                'kecamatan' => $this->extractKecamatan($row['alamat_faskes']),
                 'kota_kabupaten' => trim($row['kota_kabupaten']),
                 'longitude' => $longitude,
                 'latitude' => $latitude,
@@ -73,7 +75,7 @@ class BogorSehatDataSeeder extends Seeder
 
         foreach (array_chunk($faskesRows, 250) as $chunk) {
             DB::table('faskes')->upsert($chunk, ['id_faskes'], [
-                'kdppk', 'nama_faskes', 'jenis_faskes', 'kelas_faskes', 'alamat_faskes',
+                'kdppk', 'nama_faskes', 'jenis_faskes', 'kelas_faskes', 'alamat_faskes', 'provinsi', 'kecamatan',
                 'kota_kabupaten', 'longitude', 'latitude', 'telp_faskes', 'is_support_bpjs', 'link_maps', 'updated_at',
             ]);
         }
@@ -118,5 +120,15 @@ class BogorSehatDataSeeder extends Seeder
     private function csvList(?string $value): array
     {
         return array_values(array_filter(array_map('trim', explode(',', (string) $value)), static fn (string $item): bool => $item !== ''));
+    }
+
+    private function extractKecamatan(string $address): ?string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($address));
+        if (preg_match('/\bKEC(?:AMATAN)?\.?\s+([A-Z][A-Z ]{2,}?)(?=,|\bKAB(?:UPATEN)?\.?\b|\bKOTA\b|$)/i', $normalized, $matches) !== 1) {
+            return null;
+        }
+
+        return trim($matches[1]);
     }
 }

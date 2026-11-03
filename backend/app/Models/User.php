@@ -36,6 +36,11 @@ class User extends Authenticatable
         return $this->hasMany(Komentar::class, 'id_user', 'id_user');
     }
 
+    public function komentarSaya(): HasMany
+    {
+        return $this->hasMany(Komentar::class, 'id_user', 'id_user');
+    }
+
     public function diskusi(): HasMany
     {
         return $this->hasMany(Diskusi::class, 'id_user', 'id_user');
