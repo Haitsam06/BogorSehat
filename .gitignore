@@ -13,7 +13,10 @@ out/
 frontend/out/
 
 # Environment Variables & Cache
-.env*
+.env
+.env.local
+.env.*.local
+!.env.example
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
