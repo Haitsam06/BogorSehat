@@ -1,0 +1,819 @@
+id,name
+1,Rekam Medik
+2,Laboratorium
+3,Radiologi
+4,CT Scan
+5,MRI/Magnetic Resonance Imaging
+6,Hemodialisa
+7,Farmasi
+8,Pelayanan Darah
+9,Ambulan
+10,Pemulasaran Jenasah
+11,Radiografi konvensional
+12,CT Scan Kepala leher
+13,MRI Kepala leher
+14,Dakriosistografi (kelenjar air mata)
+15,USG (Doppler) daerah leher 
+16,Sialografi (kelenjar liur)
+17,Dakriosistografi (kelenjar air mata)
+18,"Pesawat Sinar-X, Dental Panoramic"
+19,Dental X-Ray
+20,MRI otak dan sumsum tulang belakang
+21,MR Myelography
+22,USG otak
+23,Angiografi
+24,Arteriografi
+25,Venografi
+26,Limfografi
+27,Myelografi
+28,Embolisasi transarterial
+29,Infusi sitostatika transarterial
+30,Biopsi terpimpin (Guiding biopsy)
+31,Echocardiografi
+32,Mamografi
+33,USG (Doppler) payudara
+34,MRI payudara
+35,Duktulografi
+36,Radiografi konvensional
+37,CT Scan toraks
+38,USG pleura
+39,Radiografi konvensional (termasuk abdomen BNO/3 posisi)
+40,Barium meal
+41,Barium enema / colon in loop
+42,Cholangiorafi T-tube
+43,Lopografi
+44,Fistulografi
+45,CT kolonoskopi
+46,ERCP
+47,CT/MRI traktus digestivus
+48,Appendicografi
+49,Fistulografi
+50,Follow through
+51,HSG
+52,Oesophagografi
+53,OMD
+54,APG
+55,RPG
+56,Rectografi
+57,Sialografi (kelenjar liur)
+58,BNO IVP
+59,Urografi intravena
+60,Retrograd/antegrad pyelografi
+61,Uretrosistografi/Sistografi
+62,Micturating Cysto Urethrography (MCU)
+63,Uretrografi/Uretrografi bipolar
+64,USG (Doppler) traktus urinarius
+65,USG (Doppler) testis
+66,Genitografi
+67,CT/MR urography
+68,MRI genitalia interna
+69,Radiografi konvensional 
+70,CT Scan tulang
+71,"MRI jaringan lunak, sendi dan tulang"
+72,Bone scan
+73,USG / USG Doppler sendi & jaringan lunak
+74,"Skintigrafi tulang (Bone scan, 3 fase)"
+75,"Skintigrafi ginjal (GFR, ERPF)"
+76,Limfoskintigrafi
+77,Skintigrafi tiroid
+78,Skintigrafi hepatobiliar
+79,Skintigrafi paru (perfusi-ventilasi)
+80,Unit Pelaksana Layanan Tuberkulosis Resisten Obat
+81,Cathlab
+82,VCT
+83,Sarana Kemoterapi
+84,Kemoterapi Board
+85,Sarana Radioterapi
+86,Radioterapi Board
+87,Transplantasi ginjal
+88,Transplantasi hati
+89,USG Mata
+90,OCT (Optical Coherent Tomography)
+91,Perimetri
+92,Tonometri Non contact
+93,Autorefraktometer
+94,Biometri
+95,FFA dan foto fundus
+96,Cam vision
+97,Electro Convulsive Therapy (ECT)
+98,Audiometri
+99,Uroflowmetri
+100,Rehabilitasi medik
+101,Sarana obat arv
+102,ESWL dengan Fluoroscopy Guidance
+103,CAPD
+104,Endoskopi lainnya
+105,Kolonoskopi
+106,Gastroskopi
+107,Usg lainnya
+108,Refraktometer
+109,Trial Lens Frame
+110,Snellen Chart
+111,Bak instrumen metal
+112,Benang otot dan benang sutra
+113,EKG
+114,Forsep hemostatik
+115,Gunting perban
+116,Jarum kulit
+117,"Jarum suntik disposibel (Nomor 12, 14, 22/23 Q)"
+118,"Kapas, perban dan plester"
+119,Pen Light / Lampu Senter
+120,Minor set
+121,Otoskop
+122,Palu refleks
+123,Pemegang jarum bedah
+124,Penekan lidah (spatula)
+125,Pinset anatomis
+126,Pinset sirurgis
+127,Sarung tangan
+128,Scalpel
+129,Set infus
+130,"Spuit disposibel (uk, 1 cc, 3 cc, 5 cc)"
+131,Suction
+132,Sterilisator basah atau kering
+133,Stetoskop
+134,Stetoskop kebidanan (fetoskop)
+135,Tensimeter
+136,Termometer
+137,Tiang infus/penggantung botol infus
+138,Timbangan badan
+139,"Alat ekstraksi (Tang Anterior, Tang Premolar, Tang Bayonet, Tang Posterior) set anak"
+140,"Alat ekstraksi (Tang Anterior, Tang Premolar, Tang Bayonet, Tang Posterior) set dewasa"
+141,Alginat
+142,Bein
+143,Crayer
+144,Dental Chair
+145,Glass Plate
+146,Glass Slab
+147,"Hand Instrument (Seperti kaca mulut, cement spatula, excavator, Sonde, Pinset, dll)"
+148,High Speed Bor
+149,Lampu Praktek
+150,Light Cure Unit
+151,Low Speed Bor
+152,Masker
+153,Nierbaken
+154,RO Viewer
+155,Sarung tangan disposable
+156,Scaler Unit
+157,Spuit
+158,Sterilisator basah atau kering
+159,Ambulance Darat
+160,Ambulance Air
+161,Pin Hole
+162,Kartu Jaeger
+163,Spirometer/Diagnostic Spirometer
+164,Oxygen set+flowmeter
+165,Articulator
+166,Set preparasi mahkota dan jembatan
+167,Cheek Retractor
+168,Tang ortodontik dasar
+169,Stainless steel crown set
+170,Tang Klamer 2 jari
+171,Tang Klamer 3 jari
+172,Crown retractor
+173,Alat endodontic dasar
+174,Stone bur
+175,Acrylic trimmer bur
+176,Abrasive device and accessories/Alat poles
+177,Alat peraga penyuluhan kesehatan gigi
+178,Periodontal Probe
+179,Bite fork
+180,Shade guide
+181,Oral Hygiene Set
+182,Model trimmer
+183,Feltcone
+184,Brush polisher
+185,Lecron
+186,Tang untuk mengambil benda asing
+187,Spekulum hidung
+188,Set irigasi serumen
+189,Set irigasi sinus
+190,Wondspuit
+191,Parasintesis set
+192,Kaca Laring
+193,Cermin Risnoskopi Posterior
+194,Otoscope
+195,Set bedah minor THT
+196,Polipektomi set
+197,Trakeostromi set
+198,Adenotonsilektomi sluder & diseksi set
+199,"Biopsi nasopharing, tumor hidung set"
+200,Mastoidectomy set
+201,Septum corection set
+202,Tang biopsi nasofaring
+203,Tonsil anses forceps
+204,THT Unit/Ent Diagnostik unit/ENT Examination set/ENT treatment
+205,ABR/BERA (Brain Evoke Respon Audiometer)
+206,Sound proof box
+207,Timbangan dewasa; 
+208,Tensimeter Anaeroid
+209,Tensimeter Digital
+210,Timbangan anak
+211,Timbangan bayi
+212,Tensimeter Digital / Sphygmomanometer Digital dengan manset untuk bayi dan anak
+213,Sudip/penekan lidah/Tongue depressor
+214,Examination light / Examination lamp / Lampu periksa / Hanging lamp
+215,Meja Periksa / Tempat tidur periksa / Examination Table
+216,Nierbeken 
+217,Lemari obat kaca
+218,Bak instrument kaca
+219,Bak instrumen
+220,Woods lamp
+221,Punch set
+222,Cool box immunization / Cold Chain (untuk penyimpan vaksin)
+223,Lampu kepala / head lamp
+224,Magnifying lamp
+225,Utility Trolley
+226,Garpu tala
+227,Brainmaping 32 channels
+228,Set punksi lumbal
+229,Obstetric-gynecologic general manual instrument 
+230,Buku Ishihara-kanehara
+231,Set dilator punktum
+232,Lup/Kaca Pembesar
+233,Lup binokuler
+234,Ophthalmic trial lens set
+235,Lembar optotip snellen dengan clock dial
+236,Lensa frenzel
+237,Lensmeter / Lensometer
+238,Lensa gonometri dengan 3 cermin
+239,Lensa Gonioskopi dengan 3 cermin
+240,Lembar kartu tes baca
+241,Slit Lamp
+242,Portable Keratometer
+243,Contrast Sensitivity Test
+244,Pelli Robson Test
+245,Worth Four Dot Test
+246,Snellen test Projector
+247,Basic opthalmic instrument
+248,Calipers for clinical use
+249,Alat pembuka gips elektric (Cast removal instrument)
+250,Alat pembuka gips manual (Manual cast application and removal instrument)
+251,Kursi roda
+252,ECT/Electro Convulsion Therapy
+253,Treadmill
+254,X-Ray Film Viewer
+255,Mikroskop operasi
+256,Mosquito clamp (lurus dan bengkok)
+257,Peralatan Bedah Skalpel
+258,Alat biopsi lengkap
+259,Operating stool
+260,Nebulizer
+261,Resusitator Dewasa
+262,Resusitator bayi/neonatus
+263,Resusitator Anak
+264,Resusitation Set / Resusitation bay / Resusitation kit
+265,Trocar
+266,Stetoskop/Stetoskop Dewasa
+267,Doppler Perifer
+268,Vena section
+269,Echo/Echocardiograph
+270,ECG/EKG/Electrocardiograph
+271,Oximeter / pulse oximeter / Oksigen Saturasi
+272,"Hydraulic, pneumatic, or photoelectric plethysmographs"
+273,Cardiotocograph/CTG
+274,Astograph
+275,Thoracoscopy
+276,Lever biopsi set
+277,Defibrilator
+278,Pulp tester
+279,Gingival retraction cord packer
+280,Cavity preparation set
+281,Inlay Indirect set
+282,Set orthodensi
+283,Implant set untuk dental
+284,Rotary scaler/Tip scaler
+285,Anasthesi local set
+286,Exodonsia set 
+287,Dental vibrator
+288,Audiometer
+289,Hak serumen
+290,Luc serumen
+291,Wattendrager (pembawa kapas)
+292,Tymphanometer
+293,Rinomanometer
+294,Sinuskop
+295,Nasofaringoskop
+296,Diafanoskop
+297,Rhinuscope
+298,Spekulum telinga
+299,Trocar anthrum
+300,Nasopharyngoscope (flexible or rigid) and accessories
+301,Anthrum biopsi tang
+302,Termometer digital
+303,Termometer rectal
+304,Phototherapy unit
+305,Syringe Pump
+306,Stetoskop anak
+307,Stetoskop bayi
+308,Sterilisator kering/Dry-heat sterilizer
+309,Aspirator/Vacuum/Suction pump portable
+310,Suction Thorax
+311,Pen Light / Lampu Senter
+312,Baby Suction Pump
+313,Tiang infus
+314,Emergency Trolley / Resuscitation Crash Cart 
+315,Set angkat jahitan
+316,Emergency set
+317,Skin curette
+318,Comedo extraktor instrument set
+319,Peralatan Chemical peeling
+320,Under Water Seal Drainage System
+321,Electroencephalograph
+322,Transcranial Doppler (TCD)
+323,Elektromyogram (EMG)/Evoke Potential/Neurostimulator
+324,Colposcope
+325,Office histeroscopy
+326,Pap smear kit
+327,Sonde Uterus (Uterine Sound)
+328,USG 3D
+329,USG Transvaginal
+330,USG 2D
+331,Forcep Biopsi
+332,Gynecological Bed/Obstetric table and accessories
+333,Tampon tang
+334,Implant Kit
+335,Autorefraktometer
+336,Refrakto keratometer
+337,Tonometer Schiotz
+338,Tonometer aplanasi
+339,Tonometer non-kontak
+340,Opthalmoscope direk
+341,Opthalmoscope indirek
+342,Streak retinoskopi
+343,Kampimeter Goldman
+344,Kampimeter automatic
+345,Biometer A-scan
+346,Retinometer
+347,Fundus camera + FFA
+348,Pachymetri
+349,Topografi kornea
+350,Trial Lens Contact (Fitting)
+351,Elektroretinogram (ERG)
+352,Visual Evoked Potential (VEP)
+353,Synophtofore
+354,Strabismus diagnostik set
+355,Hertel Oftalmometer
+356,Spekular mikroskop
+357,Laser Fotocoagulasi Retina Set
+358,Laser Fotocoagulasi Glaukoma Set
+359,Lasik Set
+360,Reflex hammer/Palu pengukur reflex
+361,Doppler
+362,Cryosurgical unit and accessories
+363,ESU/Electrosurgical Unit
+364,Minor Surgery Set
+365,Hecting set
+366,Circumsisi set
+367,Biopsi tang
+368,Microsurgery with dermatome
+369,Set Aspirasi Sumsum Tulang Belakang
+370,Renal biopsi set
+371,Laser CO2
+372,Dioda laser surgical
+373,Tromol Kasa / Kain Steril
+374,Laser Nd YAG
+375,Spekulum Vagina/Cocor bebek
+376,IUD Kit 
+377,Peralatan Filler
+378,Peralatan Botox
+379,Bor Intan / Diamond Boor
+380,"Bor Intan (Diamond Bur Assorted) untuk Air Jet Hand Piece (Kecepatan Tinggi) (round, inverted dan fissure)"
+381,Endodonty set
+382,Bingkai ujicoba trial lens (trial frame) 
+383,Rotary brush
+384,Sterilisator Portable
+385,Bed-side Monitor/Bed-patient monitor/Patient monitor
+386,Bed patient
+387,Oxygen Concentrator / Portable Oxygen Generator.?
+388,Laringoskop
+389,Pocket oximetry
+390,Bed patient electric
+391,Infusion pump
+392,Suction pump/Pompa vakum /Vacuum-powered body fluid suction apparatus; Suction Pump Mobile?
+393,Stretcher/Brankar
+394,Pneumatic Splint Set
+395,Infant ventilator
+396,Continuous positive airway pressure (CPAP)
+397,Infant radiant warmer
+398,Inkubator infant
+399,Infant ventilator HFO
+400,Ventilator
+401,ICU Bed Electric
+402,Toynbee diagnostic tube
+403,"Tensimeter, Air Raksa "
+404,Tensimeter Anaeroid / Sphygmomanometer Aneroid
+405,Matras decubitus
+406,Intubation set
+407,Nonpowered orthopedic traction apparatus and accessories
+408,Tempat tidur anak / Pediatric Hospital Bed 
+409,Fetal phonocardiographic monitor and accessories
+410,ECG/EKG/Electrocardiograph 3 CH
+411,Mesin Anestesi ventilator
+412,Rounger
+413,Periosteal elevator
+414,Urologi instrumen set
+415,Meja Mayo / Meja instrumen / Intrumen table
+416,Plate Bending Instrument
+417,Hospital Endoscope Cabinet
+418,Printer video
+419,Torniket / Torniquet
+420,Microsurgical instrument
+421,Set Instrumen Bedah Mikro
+422,Opthalmic refractometer
+423,Preferential looking
+424,Bleharostat bayi
+425,Lateral set
+426,Operating headlamp
+427,Peralatan Segmen Anterior
+428,Peralatan Bedah Segmen Posterior
+429,Hak Orbita
+430,Plaster Cast Cutter Set
+431,Small Fragment Lcp Instrument Set
+432,Large Fragment Lcp & Standard Instrument Set
+433,General Instrument Bone Surgery
+434,Wire Instrument Set
+435,Mini Instrument Set In Graphic Case
+436,Instrument Set For Intramedullary Pins Extraction
+437,Damage Screw Set
+438,Amputation Set
+439,Spine Electric Motor
+440,Spine Endoscopy Instrument
+441,Implan orbita
+442,Kerrison Set
+443,Cervical Kerisson
+444,Laminectomy
+445,Thoracolumbar Posterior Stabilization Instruments
+446,"Boor, manual"
+447,"Boor, electric"
+448,"Medical Saw, manual"
+449,"Medical Saw, electrical"
+450,"Operating table, Manual"
+451,"Operating table, electric"
+452,Magill forcep
+453,Monitor for laparoscopy
+454,CUSA (Cavitron Ultra Sonic Aspiration)
+455,Video laringoscope set
+456,Bronchoscope  and accessories
+457,Endoskopik video monitor
+458,Video for endoscopy
+459,Endoscopic electrosurgical unit and accessories
+460,Lightsource for endoscopy
+461,UV Sterilizer
+462,Endoscope washer
+463,Blanket warmer/Hipotermia unit
+464,Captriton Ultra Sonic Aspiration (CUSA)
+465,Periosteal elevator iga
+466,Cryogenic surgical device
+467,Set Instrumentasi Bedah Saraf Spinal
+468,Set Instrumen Bedah Saraf Fungsional
+469,Set Instrumen Bedah Vaskuler
+470,Set Instrumen Skullbase
+471,Set kraniotomi dasar
+472,Set Instrumen Bedah Saraf Minimal Invasif
+473,Intraoperatif neurofisiology Monitoring
+474,Embriotomi set
+475,Sectio Caesarian set
+476,Tonopen
+477,Peralatan Diagnostik Retina
+478,Chart Projector
+479,Silicon lacrimal tube
+480,Glaukoma set
+481,Keratoplasti
+482,Fakoemulsifikasi set
+483,Bedah retraktif set
+484,Okuloplasti set
+485,Orbitotomy lateral set
+486,Dakriosistorhinostomi (DCR) set
+487,Simple Vitrioretinal  Surgery
+488,Vitrectomy unit
+489,Endolaser unit
+490,YAG Laser Set
+491,Peralatan Adneksa dan orbita sederhana
+492,Katarak dan Bedah Refraktif
+493,Set Fako-Emulsifikasi
+494,Set Transplantasi Tembus Kornea
+495,Probe Lakrimal
+496,Arthroscope
+497,Lumbar Subcutaneous Retractor
+498,Caspar Cervical Retractor
+499,"Pesawat Sinar-X, C-Arm"
+500,Lampu operasi (Ceyling Type)
+501,Rectosigmoidoscopy
+502,Colonoscopy
+503,Gastroscopy
+504,Laparoscopy
+505,USG untuk regional anastesi dan pemasangan CVP
+506,Caspar Microlumbar Discectomy
+507,Major Surgery Instrument Set utk kepala (Dewasa dan pediatric)
+508,Major Surgery Instrument Set utk leher (Dewasa dan pediatric)
+509,Major Surgery Instrument Set utk thorak dan cardiac Dewasa
+510,Major Surgery Instrument Set utk thorak dan cardiac Baby
+511,Major Surgery Instrument Set utk abdomen Dewasa 
+512,Major Surgery Instrument Set utk abdomen pediatric
+513,Major Surgery Instrument Set utk urologi Dewasa
+514,Major Surgery Instrument Set utk urologi pediatric
+515,Major Surgery Instrument Set utk bedah plastik
+516,Major Surgery Instrument Set utk vaskuler
+517,Minimal invasive surgery set
+518,Mastektomi set
+519,Cryophthalmic unit
+520,Operating lamp with CCTV
+521,Lampu Operasi Bergerak/Operating Lamp Mobile
+522,Operating table with orthopedi set
+523,Central Monitor
+524,ECG/EKG/Electrocardiograph 6 CH
+525,Infusion warmer
+526,Alat partus set
+527,Autotransfusion apparatus
+528,Inkubator infant Tansport
+529,Curretage instrument set
+530,Obstetric forceps/Forceps obstetrik
+531,Alat pemecah selaput ketuban atau 1/2 kocher
+532,Sendok kuret
+533,Sim Utarine Currete Blunt
+534,Vacum Ekstraktor/Fetal vacuum extractor
+535,Tempat tidur bayi
+536,Antidecubitus Matras
+537,Nonpowered breast pump/breast pump manual
+538,powered breast pump/breast pump elektrik
+539,CR(Computed radiography)/Cine or spot fluorographic x-ray camera 
+540,"Radiographic system, digital (DR)"
+541,Printer Processing Film / Paper
+542,Surveymeter
+543,"Pesawat Sinar-X, Stationer,Fixed Table x-ray system, general x-ray,Pesawat Rontgen"
+544,Image-intensified fluoroscopic x-ray system?
+545,Personnel protective shield
+546,"Pesawat Sinar-X, Mammografi"
+547,CT-Scan 16 Slices
+548,CT-Scan 32 Slices
+549,CT-Scan 64 Slices
+550,CT-Scan 128 Slices
+551,CT-Scan 256 Slices
+552,CT Multislice 512 slice
+553,"Pesawat Sinar-X, Mobile"
+554,"Pesawat Sinar-X, Dental"
+555,Angiographic injector and syringe
+556,Angiographic x-ray system
+557,Elektrofisiologi set
+558,PET CT
+559,Autopsy table
+560,Dissection table
+561,Autopsy instrument
+562,Body trolley
+563,Weighting machine for weighting dead bodies
+564,Weighting machine for organs
+565,Preparation table
+566,Body Bags
+567,Refrigerated Mortuary Cabinet
+568,EIA Sistem
+569,Imunologi analyzer
+570,Nefelometer
+571,Blood Gas Analyzer
+572,Electrolyte Analyzer
+573,Ultra sentrifuse
+574,Agregometer
+575,Analisa Hb
+576,Automated hemoglobin system/hematology analizer
+577,Coagulation instrument/Peralatan koagulasi
+578,Flow cytometri
+579,Autoclave table top
+580,Centrifugal chemistry analyzer for clinical use/centrifuge kimia klinik
+581,Microbiological incubator
+582,Fully automated short-term incubation cycle antimicrobial susceptibility system
+583,Instrumen sterilisasi cairan menggunakan filter
+584,Jar anaerob
+585,Blood storage refrigerator and blood storage freezer/refrigerator & freezer
+586,Mesin diagnostik M. tuberculosis otomatik
+587,Mesin pembaca produk PCR
+588,Mikroskop lapang gelap
+589,pH Meter
+590,Refrigerated centrifuge
+591,Shaking waterbath
+592,Autoclave
+593,Cryostat
+594,Fully motorize rotary microtome
+595,Fume hood
+596,"Gunting Lurus, Ujung Tajam (Metzenbaum) (18 Cm)"
+597,Laminary air flow
+598,Liquid base cytology automatic / machine
+599,Liquid base cytology manual
+600,Manual microtome
+601,Mesin standar automatic pulasan immunohistokimia
+602,Micro balance
+603,Mikrosentrifus
+604,Scalp clip
+605,Pisau
+606,Rak slide
+607,Speculum and accessories
+608,Mesin Polymerase Chain Reaction (PCR) 
+609,Biotrigger Computerize Analizer
+610,Cognitive Evaluation and Treatment
+611,Electromyograph
+612,EN-Tree
+613,Gait Analyzer
+614,Goniometer
+615,Handgrip Streght Dynamometer
+616,Handheld Dynamometer
+617,Inclinometer
+618,Isokinetic Dynamometer
+619,Mobility Analyzer
+620,Nebulizer jet
+621,Nebulizer ultrasound
+622,Peak-flow meter for spirometry
+623,Plantar Pressure Analysis
+624,Posture Analyzer
+625,Seating & Positioning Analysis
+626,Ultrasonography Muskuloskeletal
+627,Urodynamic
+628,Voice Analyzer
+629,Peralatan Organis
+630,Peralatan Konsultasi dan Terapi
+631,Acupunture therapy
+632,Ankle / wrist
+633,Bath whirl pool
+634,"Cane, crutch, and walker tips and pads"
+635,Compression therapy
+636,kruk/penopang/Crutch
+637,Electro stimulation & analgesia
+638,Ergocycle
+639,Exercise bicycle
+640,Powered exercise equipment
+641,Faradic - Galvanic therapy
+642,Finger muscle therapy
+643,Hidro therapy
+644,Hotpacks & perculator
+645,Isostation for accurate
+646,Lampu infra merah
+647,Laser therapy
+648,LF electro therapy
+649,Lymphatic physiotherapy
+650,Microwave diathermy
+651,Parafin Bath
+652,Parallel bars
+653,Platform Walker
+654,Pulse erator unit
+655,Reciprocal Walker
+656,Reverse Walker
+657,Rolling Triceps Walker
+658,Rolling/Gliding Walker
+659,Rowing machine
+660,Shortwave diathermy.?
+661,Stair-Climbing Walker
+662,Standar Walker
+663,Suspension & pulley equipment
+664,Therapeutic Position and Equipment Set
+665,Therapeutical nerve & muscle stimulation
+666,Tilt table
+667,Traction Unit
+668,Ultrasound theraphy
+669,Ultraviolet quartz
+670,Kursi roda elektrik/Powered wheelchair
+671,Peralatan Latihan ADL
+672,Alat Terapi Sensori Integrasi Set
+673,Snoozlen Set
+674,Alat Latihan Sensori
+675,Cart/bed washer disinfector
+676,Drying cabinet
+677,Gun spray
+678,Scope cleaner
+679,Sink / wastafel / bak cuci
+680,Trolley barang kotor
+681,Ultrasonic cleaner for medical instruments
+682,Verification cleaning device
+683,Washer disinfector - mounted
+684,Washer disinfector - table top
+685,Batch monitoring chalenge device
+686,Gun labeler dengan indikator proses sterilisasi
+687,Inkubator indikator biologis
+688,Magnifying spectacles
+689,Meja setting
+690,Packing cutter
+691,Packing sealer
+692,Trolley barang steril
+693,Timbangan kg
+694,Autoclave mounted double door
+695,Autoclave mounted single door
+696,Sterilisator suhu rendah
+697,Minor electro surgery
+698,USG 4D
+699,Blood bank supplies/Persediaan bank darah
+700,Microbiological assay culture medium
+701,"Ventilator Transport, Portabel"
+702,Tabung Oksigen
+703,Bak Catheter
+704,Dental unit
+705,Lemari Steril
+706,Meja Suntik
+707,Pean bengkok
+708,Bed-side cabinet
+709,Dressing Trolley
+710,Lampu ginekolog
+711,Metal catheter
+712,Busi / Dilatator
+713,"Gunting Bedah Standar, Lengkung"
+714,Automated platelet aggregation system
+715,Arteri clamp
+716,Monitoring spirometer
+717,Respiratory gas humidifier.?
+718,Anesthetic vaporizer
+719,Intra-aortic Ballon Pump (IABP)
+720,ECG/EKG/Electrocardiograph 12 CH
+721,Electrocardiograph electrode
+722,Infusion set
+723,Pinset anatomis
+724,Pinset Chirurgical
+725,Flowmeter Oksigen
+726,Electric cranial drill motor
+727,Meja Periksa Ginekologi dan kursi pemeriksa
+728,Ultrasonograph (USG)/Obstetric-gynecologic ultrasonic imager
+729,Tenakulum (uterine tenaculum)
+730,Delivery instrument set 
+731,Pengait IUD
+732,Assisted reproduction micropipette fabrication instruments
+733,Tonometer
+734,Ultrasonic pulsed echo imaging system
+735,Waskom
+736,Mikromotor
+737,"Ear, nose, and throat fiberoptic light source and carrier"
+738,Laryngostroboscope
+739,Anuskop
+740,Lampu sorot
+741,Pengukur tinggi badan anak
+742,Lens measuring instrument
+743,Gamma Camera/Kamera Gamma/Scintillation (gamma) camera
+744,ID Printer/Camera; marker radiografi; marker timbal/Radiographic film marking system
+745,Printer Radiography
+746,Gamma probe
+747,Mikroskop operasi dengan Teaching Mirror/CCTV
+748,Termometer
+749,Blood specimen collection device/Centrifuge
+750,Blood and plasma warming device/Alat memanaskan darah dan plasma
+751,Apheresis
+752,Mesin Anestesi
+753,Laringoskop anak
+754,Cardiac Resuscitation
+755,NeoPAP
+756,Automatic Blood Pressure
+757,Pericard Sintesis Set
+758,Hemodinamic monitor
+759,Cardiac monitor (including cardiotachometer and rate alarm)
+760,Pacemaker generator function analyzer
+761,Heart Lung Machine
+762,Light Curing
+763,Mandibular implant facial prosthesis
+764,Esophagoscope (flexible or rigid) and accessories
+765,Bronchoscope anak and accecories
+766,Endoscopy THT
+767,Monitor for endoscopy
+768,Termometer air raksa
+769,Termometer Dahi dan Telinga
+770,Digital Ear Thermometer
+771,Termometer Dewasa 
+772,Sterilisator/Sterilisator Basah
+773,Lampu untuk laringoskop
+774,Sterilizer table model
+775,Radiofrequency lesion generator
+776,Transcutaneous electrical nerve stimulator for pain relief?
+777,TMS(Transkanial Magnetik Stimulasi )
+778,Uterotubal carbon dioxide insuflator and accessories/insuflator uterotubal dan aksesoris
+779,Electro couter monopolar
+780,"Gynecological Bed, Electric"
+781,Opthalmoscope
+782,Ophthalmic laser
+783,Phacofragmentation system
+784,"Pesawat Sinar-X, Fluoroscopy"
+785,CT-Scan <8 Slices
+786,SPECT (Single Photon Emission Computed Tomography)
+787,Smoke Evacuator
+788,Alat Continous renal replacement therapy (CRRT)
+789,Bronchoscopy
+790,TCM
+791,Treadmill 
+792,Spirometri
+793,USG urolog
+794,USG ginjal atau vascular
+795,USG
+796,ESWL dengan USG Guidance
+798,Lampu kepala / head lamp
+799,Metline (pengukur lingkar pinggang)
+800,TENS (fisioterapi)
+801,Set rehabilitasi medis sederhana (pemanas Inflamasi/infra red)
+802,"Forsep dressing 6"""
+803,Forsep spons
+804,Asthma control test
+805,Sendok Cetak
+806,Oropharyngeal airway
+807,Preparat tempat sampel apus darah tepi
+808,HB Meter
+809,Rapid Test Hepatitis B
+810,Rapid Test Hepatitis C
+811,Alat Pemeriksaan BTA (basil tahan asam)
+812,Fotometer
+813,Glukometer dan stick glukometer
+814,IVA kit
+815,Papsmear kit
+816,Benedict – Tabung Reaksi spot
+817,BMD (Bone Mineral Densitometry)
+818,Holter Monitor
+819,Tonometri Schiotz
