@@ -250,7 +250,7 @@ Optional fields:
 - `id_spesialisasi`: array of valid specialization IDs
 - `id_fasilitas`: array of valid facility IDs
 
-`link_maps` points at the place name, address, and city so Google Maps resolves the actual facility. Bare coordinates are only used when the name and address are unavailable. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
+`link_maps` uses the place name, address, city, and coordinates. Name/address identifies the facility; coordinates disambiguate nearby places. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
 
 ## Seed and verification
 

@@ -51,8 +51,8 @@ class Faskes extends Model
     }
 
     /**
-     * Build a Google Maps directions link that resolves by name/address instead of bare coordinates.
-     * Coordinates alone can snap to a neighbouring place (e.g. a convenience store next door).
+     * Build a Google Maps directions link using facility identity plus coordinates.
+     * Name/address helps resolve the facility; coordinates disambiguate nearby places.
      *
      * @param  array<string, mixed>  $attributes
      */
@@ -63,9 +63,13 @@ class Faskes extends Model
             $attributes['alamat_faskes'] ?? null,
             $attributes['kota_kabupaten'] ?? null,
         ], static fn ($value): bool => filled($value)));
+        $coordinates = array_filter([
+            $attributes['latitude'] ?? null,
+            $attributes['longitude'] ?? null,
+        ], static fn ($value): bool => filled($value));
 
-        if ($query === '') {
-            $query = ($attributes['latitude'] ?? '').','.($attributes['longitude'] ?? '');
+        if ($coordinates !== []) {
+            $query .= ($query === '' ? '' : ' ').'('.implode(',', $coordinates).')';
         }
 
         return 'https://www.google.com/maps/dir/?api=1&destination='.rawurlencode($query);

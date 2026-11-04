@@ -84,6 +84,6 @@ class ApiFoundationTest extends TestCase
 
         $link = $this->getJson('/api/faskes/1')->assertOk()->json('data.link_maps');
         $this->assertStringContainsString('destination='.rawurlencode('RSUD R. MOH. NOH NUR'), $link);
-        $this->assertStringNotContainsString('destination=-6.', $link);
+        $this->assertStringContainsString(rawurlencode('(-6.57451,106.628)'), $link);
     }
 }
