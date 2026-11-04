@@ -77,4 +77,13 @@ class ApiFoundationTest extends TestCase
         $this->getJson('/api/faskes?provinsi=JAWA%20BARAT')->assertOk()->assertJsonPath('meta.total', 506);
         $this->getJson('/api/faskes?kecamatan=CIJERUK')->assertOk()->assertJsonPath('data.0.kecamatan', 'CIJERUK');
     }
+
+    public function test_maps_link_resolves_place_name_instead_of_bare_coordinates(): void
+    {
+        $this->seed();
+
+        $link = $this->getJson('/api/faskes/1')->assertOk()->json('data.link_maps');
+        $this->assertStringContainsString('destination='.rawurlencode('RSUD R. MOH. NOH NUR'), $link);
+        $this->assertStringNotContainsString('destination=-6.', $link);
+    }
 }

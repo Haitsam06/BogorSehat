@@ -78,8 +78,12 @@ class AdminFaskesController extends Controller
             'id_fasilitas.*' => ['integer', 'exists:fasilitas,id_fasilitas'],
         ]);
 
-        if (array_key_exists('latitude', $data) && array_key_exists('longitude', $data) && ! array_key_exists('link_maps', $data)) {
-            $data['link_maps'] = 'https://www.google.com/maps/dir/?api=1&destination='.$data['latitude'].','.$data['longitude'];
+        $linkInputs = ['nama_faskes', 'alamat_faskes', 'kota_kabupaten', 'latitude', 'longitude'];
+        if (! array_key_exists('link_maps', $data) && array_intersect_key($data, array_flip($linkInputs)) !== []) {
+            $data['link_maps'] = Faskes::mapsLink(array_merge(
+                $faskes?->only($linkInputs) ?? [],
+                $data,
+            ));
         }
 
         return $data;

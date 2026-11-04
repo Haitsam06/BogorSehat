@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Faskes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -50,7 +51,13 @@ class BogorSehatDataSeeder extends Seeder
                 'latitude' => $latitude,
                 'telp_faskes' => trim($row['telp_faskes']) ?: null,
                 'is_support_bpjs' => trim($row['is_support_bpjs']) === '1',
-                'link_maps' => "https://www.google.com/maps/dir/?api=1&destination={$latitude},{$longitude}",
+                'link_maps' => Faskes::mapsLink([
+                    'nama_faskes' => trim($row['nama_faskes']),
+                    'alamat_faskes' => trim($row['alamat_faskes']),
+                    'kota_kabupaten' => trim($row['kota_kabupaten']),
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                ]),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

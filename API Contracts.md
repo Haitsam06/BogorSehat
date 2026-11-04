@@ -121,7 +121,7 @@ Each item includes `distance_km`.
   "latitude": "-6.57451000", 
   "telp_faskes": "0251-8643290",
   "is_support_bpjs": true,
-  "link_maps": "https://www.google.com/maps/dir/?api=1&destination=-6.57451,106.628",
+  "link_maps": "https://www.google.com/maps/dir/?api=1&destination=RSUD%20R.%20MOH.%20NOH%20NUR%2C%20JL.%20RAYA%20CIBEBER%20NO.1%2C%20KAB.%20BOGOR",
   "spesialisasi": [],
   "fasilitas": []
 }
@@ -250,7 +250,7 @@ Optional fields:
 - `id_spesialisasi`: array of valid specialization IDs
 - `id_fasilitas`: array of valid facility IDs
 
-If coordinates change and `link_maps` is omitted, the backend generates a Google Maps URL.
+`link_maps` points at the place name, address, and city so Google Maps resolves the actual facility. Bare coordinates are only used when the name and address are unavailable. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
 
 ## Seed and verification
 

@@ -49,4 +49,25 @@ class Faskes extends Model
     {
         return $this->hasMany(FeedbackFaskes::class, 'id_faskes', 'id_faskes');
     }
+
+    /**
+     * Build a Google Maps directions link that resolves by name/address instead of bare coordinates.
+     * Coordinates alone can snap to a neighbouring place (e.g. a convenience store next door).
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function mapsLink(array $attributes): string
+    {
+        $query = implode(', ', array_filter([
+            $attributes['nama_faskes'] ?? null,
+            $attributes['alamat_faskes'] ?? null,
+            $attributes['kota_kabupaten'] ?? null,
+        ], static fn ($value): bool => filled($value)));
+
+        if ($query === '') {
+            $query = ($attributes['latitude'] ?? '').','.($attributes['longitude'] ?? '');
+        }
+
+        return 'https://www.google.com/maps/dir/?api=1&destination='.rawurlencode($query);
+    }
 }
