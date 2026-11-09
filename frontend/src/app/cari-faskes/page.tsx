@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronRight,
   ChevronLeft,
@@ -11,10 +12,16 @@ import {
   RotateCcw,
   Building2,
   Navigation,
+  Loader2,
 } from "lucide-react";
-import { daftar_faskes_utama, daftar_semua_poli } from "@/data/data_faskes";
+import {
+  daftar_faskes_utama,
+  daftar_semua_poli,
+  DataFaskesItem,
+} from "@/data/data_faskes";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
 import DropdownPencarian from "@/components/ui/dropdown_pencarian";
+import { api, mapApiFaskesToItem, ApiPaginationMeta } from "@/lib/api";
 
 const daftar_pilihan_kecamatan = [
   "Bogor Barat",
@@ -29,24 +36,35 @@ const daftar_pilihan_kecamatan = [
   "Babakan Madang",
   "Gunung Putri",
   "Bojonggede",
+  "Cijeruk",
+  "Ciampea",
+  "Citeureup",
+  "Parung",
 ];
 
 const daftar_pilihan_kategori = [
-  "Rumah Sakit Umum",
-  "Rumah Sakit KIA / Khusus",
+  "Rumah Sakit",
   "Puskesmas",
   "Klinik Pratama",
   "Klinik Utama",
 ];
 
-export default function CariFaskesPage() {
+function CariFaskesKonten() {
+  const searchParams = useSearchParams();
+  const poliDariUrl = searchParams.get("poli");
+
   const [kata_kunci_pencarian, set_kata_kunci_pencarian] = useState("");
   const [filter_wilayah, set_filter_wilayah] = useState("ALL");
   const [filter_kecamatan, set_filter_kecamatan] = useState("ALL");
   const [filter_kategori, set_filter_kategori] = useState("ALL");
-  const [filter_poli_aktif, set_filter_poli_aktif] = useState("ALL");
+  const [filter_poli_aktif, set_filter_poli_aktif] = useState(poliDariUrl || "ALL");
   const [filter_bpjs, set_filter_bpjs] = useState("ALL");
   const [filter_igd, set_filter_igd] = useState("ALL");
+
+  const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
+  const [metaPaginasi, setMetaPaginasi] = useState<ApiPaginationMeta | null>(null);
+  const [halamanAktif, setHalamanAktif] = useState(1);
+  const [sedangMemuat, setSedangMemuat] = useState(true);
 
   // Reset semua filter
   const reset_semua_filter = () => {
@@ -57,6 +75,7 @@ export default function CariFaskesPage() {
     set_filter_poli_aktif("ALL");
     set_filter_bpjs("ALL");
     set_filter_igd("ALL");
+    setHalamanAktif(1);
   };
 
   const ada_filter_aktif =
@@ -68,71 +87,91 @@ export default function CariFaskesPage() {
     filter_bpjs !== "ALL" ||
     filter_igd !== "ALL";
 
-  // Filter gabungan faskes
-  const daftar_faskes_tersaring = useMemo(() => {
-    return daftar_faskes_utama.filter((faskes_item) => {
-      // 1. Pencarian teks
-      const q = kata_kunci_pencarian.trim().toLowerCase();
-      const cocok_nama =
-        !q ||
-        faskes_item.nama_faskes.toLowerCase().includes(q) ||
-        faskes_item.alamat_lengkap.toLowerCase().includes(q) ||
-        faskes_item.daftar_poli.some((p) => p.toLowerCase().includes(q));
+  const muatDataFaskes = useCallback(async () => {
+    setSedangMemuat(true);
 
-      // 2. Filter wilayah biasa (2-3 opsi)
-      const cocok_wilayah =
-        filter_wilayah === "ALL" ||
-        faskes_item.wilayah_kota_kab === filter_wilayah;
+    const bpjsParam =
+      filter_bpjs === "BPJS_YA" ? 1 : filter_bpjs === "BPJS_TIDAK" ? 0 : undefined;
 
-      // 3. Filter kecamatan (dropdown dengan search)
-      const cocok_kecamatan =
-        filter_kecamatan === "ALL" ||
-        faskes_item.kecamatan.toLowerCase() === filter_kecamatan.toLowerCase();
+    const kotaParam =
+      filter_wilayah === "KOTA_BOGOR"
+        ? "KOTA BOGOR"
+        : filter_wilayah === "KABUPATEN_BOGOR"
+        ? "KAB. BOGOR"
+        : undefined;
 
-      // 4. Filter kategori/jenis faskes (dropdown dengan search)
-      let cocok_kategori = true;
-      if (filter_kategori !== "ALL") {
-        if (filter_kategori === "Rumah Sakit Umum") {
-          cocok_kategori =
-            faskes_item.kategori_faskes.includes("RUMAH SAKIT") &&
-            !faskes_item.kategori_faskes.includes("KIA");
-        } else if (filter_kategori === "Rumah Sakit KIA / Khusus") {
-          cocok_kategori = faskes_item.kategori_faskes.includes("KIA");
-        } else if (filter_kategori === "Puskesmas") {
-          cocok_kategori = faskes_item.kategori_faskes.includes("PUSKESMAS");
-        } else if (filter_kategori === "Klinik Pratama") {
-          cocok_kategori = faskes_item.kategori_faskes.includes("PRATAMA");
-        } else if (filter_kategori === "Klinik Utama") {
-          cocok_kategori = faskes_item.kategori_faskes.includes("UTAMA");
+    try {
+      const res = await api.getFaskes({
+        search: kata_kunci_pencarian.trim() || undefined,
+        kota_kabupaten: kotaParam,
+        kecamatan: filter_kecamatan !== "ALL" ? filter_kecamatan : undefined,
+        jenis_faskes: filter_kategori !== "ALL" ? filter_kategori : undefined,
+        is_support_bpjs: bpjsParam,
+        page: halamanAktif,
+        per_page: 12,
+      });
+
+      if (res && res.data && res.data.length > 0) {
+        let mapped = res.data.map((f, i) => mapApiFaskesToItem(f, i));
+
+        // Client-side filtering for poli and igd if requested
+        if (filter_poli_aktif !== "ALL") {
+          mapped = mapped.filter((f) =>
+            f.daftar_poli.some((p) =>
+              p.toLowerCase().includes(filter_poli_aktif.toLowerCase())
+            )
+          );
         }
+        if (filter_igd === "IGD_YA") {
+          mapped = mapped.filter((f) => f.status_igd_24jam);
+        }
+
+        setDaftarFaskes(mapped);
+        setMetaPaginasi(res.meta || null);
+      } else {
+        setDaftarFaskes([]);
+        setMetaPaginasi(null);
       }
+    } catch {
+      // Fallback ke data_faskes static jika backend belum aktif
+      const filtered = daftar_faskes_utama.filter((item) => {
+        const q = kata_kunci_pencarian.trim().toLowerCase();
+        const cocokNama =
+          !q ||
+          item.nama_faskes.toLowerCase().includes(q) ||
+          item.alamat_lengkap.toLowerCase().includes(q);
+        const cocokWilayah =
+          filter_wilayah === "ALL" || item.wilayah_kota_kab === filter_wilayah;
+        const cocokKec =
+          filter_kecamatan === "ALL" ||
+          item.kecamatan.toLowerCase() === filter_kecamatan.toLowerCase();
+        const cocokKat =
+          filter_kategori === "ALL" ||
+          item.kategori_faskes.toLowerCase().includes(filter_kategori.toLowerCase());
+        const cocokPoli =
+          filter_poli_aktif === "ALL" ||
+          item.daftar_poli.includes(filter_poli_aktif);
+        const cocokBpjs =
+          filter_bpjs === "ALL" ||
+          (filter_bpjs === "BPJS_YA" && item.status_bpjs) ||
+          (filter_bpjs === "BPJS_TIDAK" && !item.status_bpjs);
+        const cocokIgd = filter_igd === "ALL" || item.status_igd_24jam;
 
-      // 5. Filter poli (dropdown dengan search)
-      const cocok_poli =
-        filter_poli_aktif === "ALL" ||
-        faskes_item.daftar_poli.includes(filter_poli_aktif);
-
-      // 6. Filter status BPJS biasa (2-3 opsi)
-      const cocok_bpjs =
-        filter_bpjs === "ALL" ||
-        (filter_bpjs === "BPJS_YA" && faskes_item.status_bpjs) ||
-        (filter_bpjs === "BPJS_TIDAK" && !faskes_item.status_bpjs);
-
-      // 7. Filter UGD 24 Jam biasa (2-3 opsi)
-      const cocok_igd =
-        filter_igd === "ALL" ||
-        (filter_igd === "IGD_YA" && faskes_item.status_igd_24jam);
-
-      return (
-        cocok_nama &&
-        cocok_wilayah &&
-        cocok_kecamatan &&
-        cocok_kategori &&
-        cocok_poli &&
-        cocok_bpjs &&
-        cocok_igd
-      );
-    });
+        return (
+          cocokNama &&
+          cocokWilayah &&
+          cocokKec &&
+          cocokKat &&
+          cocokPoli &&
+          cocokBpjs &&
+          cocokIgd
+        );
+      });
+      setDaftarFaskes(filtered);
+      setMetaPaginasi(null);
+    } finally {
+      setSedangMemuat(false);
+    }
   }, [
     kata_kunci_pencarian,
     filter_wilayah,
@@ -141,7 +180,20 @@ export default function CariFaskesPage() {
     filter_poli_aktif,
     filter_bpjs,
     filter_igd,
+    halamanAktif,
   ]);
+
+  useEffect(() => {
+    muatDataFaskes();
+  }, [muatDataFaskes]);
+
+  // Debounce kata kunci
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHalamanAktif(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [kata_kunci_pencarian]);
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 w-full space-y-6">
@@ -180,11 +232,10 @@ export default function CariFaskesPage() {
         </div>
       </div>
 
-      {/* Grid Utama (Sidebar Filter Dikecilkan ke lg:col-span-3, Konten Lebih Luas di lg:col-span-9) */}
+      {/* Grid Utama: Filter + Daftar Faskes */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Kolom Sidebar Filter (Lebih Ramping Kesamping) */}
+        {/* Kolom Sidebar Filter */}
         <aside className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4">
-          {/* Header Filter */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
               <SlidersHorizontal className="w-4 h-4 text-[#007E7A]" />
@@ -205,7 +256,7 @@ export default function CariFaskesPage() {
             )}
           </div>
 
-          {/* 1. Filter Radio Button (2-3 Pilihan): Kota / Kabupaten */}
+          {/* Filter Wilayah */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-800">
               Kota / Kabupaten
@@ -241,7 +292,7 @@ export default function CariFaskesPage() {
             </div>
           </div>
 
-          {/* 2. Filter Dropdown dengan Search (Banyak Pilihan): Kecamatan */}
+          {/* Filter Kecamatan */}
           <DropdownPencarian
             label="Kecamatan"
             daftar_pilihan={daftar_pilihan_kecamatan}
@@ -251,7 +302,7 @@ export default function CariFaskesPage() {
             teks_default="Semua Kecamatan"
           />
 
-          {/* 3. Filter Dropdown dengan Search (Banyak Pilihan): Jenis / Kategori Faskes */}
+          {/* Filter Jenis Faskes */}
           <DropdownPencarian
             label="Jenis Faskes"
             daftar_pilihan={daftar_pilihan_kategori}
@@ -261,7 +312,7 @@ export default function CariFaskesPage() {
             teks_default="Semua Jenis Faskes"
           />
 
-          {/* 4. Filter Dropdown dengan Search (Banyak Pilihan): Layanan Poli */}
+          {/* Filter Layanan Poli */}
           <DropdownPencarian
             label="Layanan Poliklinik"
             daftar_pilihan={daftar_semua_poli}
@@ -271,7 +322,7 @@ export default function CariFaskesPage() {
             teks_default="Semua Poliklinik"
           />
 
-          {/* 5. Filter Radio Button (2-3 Pilihan): Kemitraan BPJS */}
+          {/* Filter BPJS */}
           <div className="space-y-1.5 pt-2 border-t border-slate-100">
             <label className="block text-xs font-bold text-slate-800">
               Kemitraan BPJS
@@ -307,7 +358,7 @@ export default function CariFaskesPage() {
             </div>
           </div>
 
-          {/* 6. Filter Radio Button (2-3 Pilihan): UGD 24 Jam */}
+          {/* Filter UGD 24 Jam */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-800">
               Layanan Darurat
@@ -343,20 +394,30 @@ export default function CariFaskesPage() {
           </div>
         </aside>
 
-        {/* Kolom Kanan: Daftar Kartu Faskes (lg:col-span-9) */}
+        {/* Kolom Kanan: Hasil Pencarian */}
         <div className="lg:col-span-9 space-y-5">
-          {/* Info Jumlah Hasil Ditemukan */}
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>
               Menampilkan{" "}
               <strong className="text-slate-900 font-extrabold">
-                {daftar_faskes_tersaring.length}
+                {daftarFaskes.length}
               </strong>{" "}
-              fasilitas kesehatan
+              fasilitas kesehatan {metaPaginasi ? `dari total ${metaPaginasi.total}` : ""}
             </span>
+            {sedangMemuat && (
+              <span className="flex items-center gap-1.5 text-[#007E7A]">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Memuat data...</span>
+              </span>
+            )}
           </div>
 
-          {daftar_faskes_tersaring.length === 0 ? (
+          {sedangMemuat ? (
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-16 text-center space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#007E7A]" />
+              <p className="text-xs text-slate-500">Memuat direktori faskes...</p>
+            </div>
+          ) : daftarFaskes.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center space-y-3">
               <Building2 className="w-10 h-10 mx-auto text-slate-300" />
               <h3 className="text-sm font-bold text-slate-800">
@@ -377,13 +438,12 @@ export default function CariFaskesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {daftar_faskes_tersaring.map((faskes_item) => (
+              {daftarFaskes.map((faskes_item) => (
                 <div
                   key={faskes_item.id_faskes}
                   className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-4 hover:border-slate-300 transition"
                 >
                   <div className="space-y-2.5">
-                    {/* Baris Kategori & Jarak */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#007E7A] block">
@@ -405,7 +465,6 @@ export default function CariFaskesPage() {
                       {faskes_item.alamat_lengkap}
                     </p>
 
-                    {/* Rating & Status */}
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1">
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -427,7 +486,6 @@ export default function CariFaskesPage() {
                       </div>
                     </div>
 
-                    {/* Badge Poli di Kartu Cari Faskes */}
                     <div className="pt-0.5">
                       <DaftarBadgePoli
                         daftar_poli={faskes_item.daftar_poli}
@@ -437,7 +495,6 @@ export default function CariFaskesPage() {
                     </div>
                   </div>
 
-                  {/* Tombol Aksi: Lihat Detail + Kotak Persegi Petunjuk Arah di Kanan (Proporsional & Pas) */}
                   <div className="flex items-center gap-1.5 pt-1">
                     <Link
                       href={`/faskes/${faskes_item.slug_faskes}`}
@@ -459,39 +516,56 @@ export default function CariFaskesPage() {
           )}
 
           {/* Bar Paginasi */}
-          <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <span className="text-slate-600">
-              Halaman <strong className="text-slate-900">1</strong> dari{" "}
-              {Math.max(1, Math.ceil(daftar_faskes_tersaring.length / 6))}
-            </span>
+          {metaPaginasi && metaPaginasi.last_page > 1 && (
+            <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <span className="text-slate-600">
+                Halaman <strong className="text-slate-900">{metaPaginasi.current_page}</strong> dari{" "}
+                <strong className="text-slate-900">{metaPaginasi.last_page}</strong>
+              </span>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                className="px-2.5 py-1 text-slate-400 flex items-center gap-1 cursor-default"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Sebelumnya</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={halamanAktif <= 1}
+                  onClick={() => setHalamanAktif((p) => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 text-slate-600 hover:text-slate-900 flex items-center gap-1 disabled:opacity-40 disabled:hover:text-slate-600"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Sebelumnya</span>
+                </button>
 
-              <button
-                type="button"
-                className="w-6 h-6 rounded bg-[#007E7A] text-white font-bold text-[11px]"
-              >
-                1
-              </button>
+                <span className="w-7 h-7 rounded bg-[#007E7A] text-white font-bold text-[11px] flex items-center justify-center">
+                  {metaPaginasi.current_page}
+                </span>
 
-              <button
-                type="button"
-                className="px-2.5 py-1 text-[#007E7A] font-semibold flex items-center gap-1 hover:underline"
-              >
-                <span>Selanjutnya</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+                <button
+                  type="button"
+                  disabled={halamanAktif >= metaPaginasi.last_page}
+                  onClick={() => setHalamanAktif((p) => Math.min(metaPaginasi.last_page, p + 1))}
+                  className="px-2.5 py-1 text-[#007E7A] font-semibold flex items-center gap-1 hover:underline disabled:opacity-40 disabled:no-underline"
+                >
+                  <span>Selanjutnya</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CariFaskesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-xs text-slate-500">
+          Memuat halaman pencarian...
+        </div>
+      }
+    >
+      <CariFaskesKonten />
+    </Suspense>
   );
 }

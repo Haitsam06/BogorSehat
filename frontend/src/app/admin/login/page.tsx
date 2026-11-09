@@ -11,17 +11,50 @@ import {
   Eye,
   EyeOff,
   XCircle,
+  AlertCircle,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function AdminLoginPage() {
-  const router_navigasi = useRouter();
+  const router = useRouter();
   const [tampilkan_sandi, set_tampilkan_sandi] = useState(false);
   const [email_petugas, set_email_petugas] = useState("");
   const [kata_sandi_petugas, set_kata_sandi_petugas] = useState("");
+  const [sedang_memuat, set_sedang_memuat] = useState(false);
+  const [pesan_error, set_pesan_error] = useState<string | null>(null);
 
-  const tangani_submit_login = (e: React.FormEvent) => {
+  const tangani_submit_login = async (e: React.FormEvent) => {
     e.preventDefault();
-    router_navigasi.push("/admin/dashboard");
+    set_pesan_error(null);
+
+    if (!email_petugas || !kata_sandi_petugas) {
+      set_pesan_error("Silakan masukkan email dan kata sandi.");
+      return;
+    }
+
+    set_sedang_memuat(true);
+    try {
+      const res = await api.login(email_petugas.trim(), kata_sandi_petugas);
+      if (res.data.role_user !== "admin") {
+        set_pesan_error("Akun Anda tidak memiliki hak akses administrator.");
+        set_sedang_memuat(false);
+        return;
+      }
+      router.push("/admin/dashboard");
+    } catch (err: any) {
+      set_pesan_error(
+        err?.message || "Gagal masuk. Periksa kembali email dan kata sandi Anda."
+      );
+      set_sedang_memuat(false);
+    }
+  };
+
+  const isiAkunDemo = () => {
+    set_email_petugas("admin@bogorsehat.test");
+    set_kata_sandi_petugas("password");
+    set_pesan_error(null);
   };
 
   return (
@@ -45,7 +78,7 @@ export default function AdminLoginPage() {
             <div className="relative z-10 space-y-7">
               <Link
                 href="/"
-                className="bg-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-sm"
+                className="bg-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-sm inline-block"
               >
                 <img
                   src="/images/logo-bogorsehat.png"
@@ -77,11 +110,11 @@ export default function AdminLoginPage() {
                     <Check className="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       <h3 className="text-xs sm:text-[13px] font-bold text-white">
-                        Monitoring Real-Time BOR &amp; Kamar
+                        Monitoring Real-Time Layanan &amp; BPJS
                       </h3>
                       <p className="text-[11px] text-emerald-100/80 leading-relaxed">
-                        Sinkronisasi kuota tempat tidur ICU, isolasi, &amp;
-                        kapasitas UGD 24 jam.
+                        Sinkronisasi data faskes, ketersediaan sarana medis,
+                        dan integrasi rute Google Maps.
                       </p>
                     </div>
                   </div>
@@ -90,11 +123,11 @@ export default function AdminLoginPage() {
                     <Check className="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       <h3 className="text-xs sm:text-[13px] font-bold text-white">
-                        Validasi Antrean Faskes Primer
+                        Validasi &amp; Moderasi Laporan
                       </h3>
                       <p className="text-[11px] text-emerald-100/80 leading-relaxed">
-                        Verifikasi kuota rujukan BPJS &amp; penjadwalan poli
-                        rawat jalan.
+                        Verifikasi masukan warga, keluhan faskes, serta ulasan
+                        komunitas secara terpusat.
                       </p>
                     </div>
                   </div>
@@ -109,11 +142,11 @@ export default function AdminLoginPage() {
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-[#007E7A]">
                   <Shield className="w-3.5 h-3.5" />
-                  <span>AKSES PORTAL KEPENDUDUKAN</span>
+                  <span>AKSES PORTAL ADMINISTRATOR</span>
                 </div>
 
                 <h1 className="text-2xl sm:text-[28px] font-extrabold text-slate-900">
-                  Autentikasi Akses Petugas
+                  Autentikasi Petugas
                 </h1>
 
                 <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed">
@@ -122,18 +155,45 @@ export default function AdminLoginPage() {
                 </p>
               </div>
 
+              {/* Notifikasi Error */}
+              {pesan_error && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{pesan_error}</span>
+                </div>
+              )}
+
+              {/* Tombol Isi Otomatis Akun Admin Demo */}
+              <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200/70 flex items-center justify-between gap-3 text-xs">
+                <div className="text-slate-700">
+                  <span className="font-bold text-[#007E7A]">Akun Seeder Default:</span>{" "}
+                  <code className="text-[11px] bg-white px-1.5 py-0.5 rounded border border-teal-200">
+                    admin@bogorsehat.test
+                  </code>
+                </div>
+                <button
+                  type="button"
+                  onClick={isiAkunDemo}
+                  className="px-2.5 py-1 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-[11px] font-bold flex items-center gap-1 shrink-0 transition"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Gunakan Akun</span>
+                </button>
+              </div>
+
               <form onSubmit={tangani_submit_login} className="space-y-5 pt-1">
                 <div className="space-y-2">
                   <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                    ALAMAT EMAIL DINAS / EMAIL RESMI
+                    ALAMAT EMAIL DINAS / EMAIL TERDAFTAR
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
                     <input
-                      type="text"
+                      type="email"
+                      required
                       value={email_petugas}
                       onChange={(e) => set_email_petugas(e.target.value)}
-                      placeholder="nama.petugas@kotabogor.go.id atau email terdaftar"
+                      placeholder="admin@bogorsehat.test"
                       className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
                     />
                   </div>
@@ -142,22 +202,17 @@ export default function AdminLoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                      KATA SANDI PORTAL PETUGAS
+                      KATA SANDI
                     </label>
-                    <button
-                      type="button"
-                      className="text-[11px] font-bold text-[#007E7A] underline"
-                    >
-                      Lupa Kata Sandi?
-                    </button>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
                     <input
                       type={tampilkan_sandi ? "text" : "password"}
+                      required
                       value={kata_sandi_petugas}
                       onChange={(e) => set_kata_sandi_petugas(e.target.value)}
-                      placeholder="Kombinasi huruf kapital, angka, & simbol"
+                      placeholder="••••••••"
                       className="w-full h-11 pl-11 pr-11 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
                     />
                     <button
@@ -176,21 +231,19 @@ export default function AdminLoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full h-12 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-sm font-bold shadow-sm transition"
+                  disabled={sedang_memuat}
+                  className="w-full h-12 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-sm font-bold shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  Masuk
+                  {sedang_memuat ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Memverifikasi...</span>
+                    </>
+                  ) : (
+                    <span>Masuk ke Portal Admin</span>
+                  )}
                 </button>
               </form>
-
-              <p className="text-center text-xs text-slate-600 pt-1">
-                Belum memiliki akun?{" "}
-                <Link
-                  href="/admin/dashboard"
-                  className="font-bold text-[#007E7A] underline"
-                >
-                  Daftar Akun Baru
-                </Link>
-              </p>
             </div>
           </div>
         </div>

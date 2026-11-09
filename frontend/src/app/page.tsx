@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   MapPin,
@@ -13,26 +13,76 @@ import {
   ArrowRight,
   PhoneCall,
   ChevronDown,
-  CheckCircle2,
   Sparkles,
   Activity,
   Compass,
+  Loader2,
 } from "lucide-react";
 import {
   daftar_faskes_utama,
-  lokasi_default_pengguna,
   daftar_semua_poli,
   daftar_kategori_layanan,
   daftar_langkah_rujukan,
   daftar_pertanyaan_umum,
+  DataFaskesItem,
 } from "@/data/data_faskes";
 import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import AnimasiScroll from "@/components/ui/animasi_scroll";
+import { api, mapApiFaskesToItem, ApiHomeDashboard } from "@/lib/api";
+import { useFaskes } from "@/context/FaskesContext";
 
 export default function BerandaPage() {
-  const daftar_rekomendasi_terdekat = daftar_faskes_utama.slice(0, 3);
+  const { lokasiPengguna, deteksiLokasiGPS, memuatGPS } = useFaskes();
+  const [daftarRekomendasi, setDaftarRekomendasi] = useState<DataFaskesItem[]>(
+    daftar_faskes_utama.slice(0, 3)
+  );
+  const [daftarPeta, setDaftarPeta] = useState<DataFaskesItem[]>(daftar_faskes_utama);
+  const [dataHome, setDataHome] = useState<ApiHomeDashboard | null>(null);
+  const [sedangMemuatNearby, setSedangMemuatNearby] = useState(false);
   const [id_faq_terbuka, set_id_faq_terbuka] = useState<number | null>(1);
+
+  // Muat data statistik /home dan rekomendasi terdekat
+  useEffect(() => {
+    let aktif = true;
+
+    async function muatData() {
+      // 1. Ambil data ringkasan home
+      try {
+        const homeRes = await api.getHome();
+        if (aktif && homeRes) {
+          setDataHome(homeRes);
+        }
+      } catch {
+        // Gunakan fallback
+      }
+
+      // 2. Ambil faskes terdekat berdasarkan koordinat pengguna
+      setSedangMemuatNearby(true);
+      try {
+        const nearbyRes = await api.getNearbyFaskes(
+          lokasiPengguna.latitude,
+          lokasiPengguna.longitude,
+          15
+        );
+        if (aktif && nearbyRes && nearbyRes.length > 0) {
+          const mapped = nearbyRes.map((f, i) => mapApiFaskesToItem(f, i));
+          setDaftarRekomendasi(mapped.slice(0, 3));
+          setDaftarPeta(mapped);
+        }
+      } catch {
+        // Fallback ke data_faskes jika backend belum berjalan
+      } finally {
+        if (aktif) setSedangMemuatNearby(false);
+      }
+    }
+
+    muatData();
+
+    return () => {
+      aktif = false;
+    };
+  }, [lokasiPengguna.latitude, lokasiPengguna.longitude]);
 
   const toggle_item_faq = (id_faq: number) => {
     set_id_faq_terbuka((prev_id) => (prev_id === id_faq ? null : id_faq));
@@ -40,21 +90,27 @@ export default function BerandaPage() {
 
   return (
     <div className="w-full pb-16 bg-white">
-
       {/* =====================================================================
           1. HERO SECTION (Persis Sesuai Beranda.png + Animasi Scroll & Radar)
          ===================================================================== */}
       <section className="max-w-[1140px] mx-auto px-4 sm:px-6 pt-10 pb-12 text-center relative">
         {/* Badge Lokasi GPS Pengguna dengan Animasi Radar Ping */}
         <AnimasiScroll arah="atas" durasi_ms={600}>
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-6 hover:border-[#007E7A] transition select-none">
+          <button
+            type="button"
+            onClick={deteksiLokasiGPS}
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-6 hover:border-[#007E7A] transition select-none cursor-pointer"
+            title="Klik untuk mendeteksi koordinat GPS perangkat Anda"
+          >
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#007E7A]"></span>
             </span>
             <MapPin className="w-3.5 h-3.5 text-[#007E7A]" />
-            <span>Anda berada di {lokasi_default_pengguna.nama_jalan}</span>
-          </div>
+            <span>
+              {memuatGPS ? "Mendeteksi posisi GPS..." : `Anda berada di ${lokasiPengguna.nama_jalan}`}
+            </span>
+          </button>
         </AnimasiScroll>
 
         {/* Judul Utama dengan Animasi Scroll */}
@@ -110,6 +166,9 @@ export default function BerandaPage() {
                 <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#007E7A] uppercase tracking-wider mb-1">
                   <Activity className="w-3.5 h-3.5" />
                   <span>Rekomendasi Terdekat</span>
+                  {sedangMemuatNearby && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#007E7A] ml-1" />
+                  )}
                 </div>
                 <h2 className="text-lg sm:text-[20px] font-extrabold text-slate-900">
                   Top 3 Rekomendasi Faskes dari Lokasi Anda
@@ -128,7 +187,7 @@ export default function BerandaPage() {
 
             {/* Grid 3 Kartu Rekomendasi dengan Stagger Animation */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {daftar_rekomendasi_terdekat.map((faskes_item, indeks) => (
+              {daftarRekomendasi.map((faskes_item, indeks) => (
                 <AnimasiScroll
                   key={faskes_item.id_faskes}
                   jeda_ms={indeks * 140}
@@ -205,9 +264,7 @@ export default function BerandaPage() {
 
                       <a
                         href="#darurat-igd"
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition ${faskes_item.telepon_darurat,
-                          "bg-[#B91C1C] hover:bg-red-800 text-white shadow-xs"
-                          }`}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-[#B91C1C] hover:bg-red-800 text-white shadow-xs"
                         title="Hubungi Faskes Darurat"
                       >
                         <Phone className="w-3.5 h-3.5" />
@@ -248,7 +305,7 @@ export default function BerandaPage() {
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-teal-50/40 border border-teal-100/80">
                     <div className="w-11 h-11 rounded-xl bg-[#007E7A] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-xs">
-                      142
+                      {dataHome?.faskes_count ?? 142}
                     </div>
                     <div>
                       <h3 className="text-xs font-extrabold text-slate-900">
@@ -290,7 +347,7 @@ export default function BerandaPage() {
             {/* Pratinjau Leaflet Map */}
             <div className="lg:col-span-6 relative h-[380px] lg:h-auto min-h-[380px] bg-slate-100">
               <PetaLeaflet
-                daftar_faskes={daftar_faskes_utama}
+                daftar_faskes={daftarPeta}
                 zoom_awal={13}
                 tampilkan_legenda={true}
                 tampilkan_kontrol_kanan_atas={true}
@@ -325,7 +382,7 @@ export default function BerandaPage() {
             </div>
           </AnimasiScroll>
 
-          {/* Grid 4 Kartu Kategori Faskes dengan Stagger & Jarak Rapi */}
+          {/* Grid 4 Kartu Kategori Faskes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {daftar_kategori_layanan.map((item_kategori, idx) => (
               <AnimasiScroll
@@ -373,7 +430,7 @@ export default function BerandaPage() {
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
                   <Stethoscope className="w-4 h-4 text-[#007E7A]" />
                   <span>
-                    Pencarian Cepat Berdasarkan Poliklinik (Badge Poli)
+                    Pencarian Cepat Berdasarkan Poliklinik
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500">
@@ -384,7 +441,7 @@ export default function BerandaPage() {
 
               <div className="flex flex-wrap gap-2">
                 {daftar_semua_poli.map((nama_poli) => (
-                  <Link key={nama_poli} href="/cari-faskes">
+                  <Link key={nama_poli} href={`/cari-faskes?poli=${encodeURIComponent(nama_poli)}`}>
                     <BadgePoli nama_poli={nama_poli} ukuran_badge="sedang" />
                   </Link>
                 ))}
@@ -409,7 +466,7 @@ export default function BerandaPage() {
             </div>
           </AnimasiScroll>
 
-          {/* Grid 3 Langkah dengan Stagger */}
+          {/* Grid 3 Langkah */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {daftar_langkah_rujukan.map((item_langkah, idx) => (
               <AnimasiScroll
@@ -525,8 +582,9 @@ export default function BerandaPage() {
                         >
                           <span>{item_faq.pertanyaan_warga}</span>
                           <ChevronDown
-                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${terbuka ? "rotate-180 text-[#007E7A]" : ""
-                              }`}
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                              terbuka ? "rotate-180 text-[#007E7A]" : ""
+                            }`}
                           />
                         </button>
                         {terbuka && (

@@ -3,10 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MapPin, Search, MessageSquare, User } from "lucide-react";
+import { Home, MapPin, Search, MessageSquare, User, ShieldCheck } from "lucide-react";
+import { useFaskes } from "@/context/FaskesContext";
 
 export default function Navbar() {
   const path_aktif = usePathname();
+  const { pengguna, sudahLogin } = useFaskes();
 
   if (path_aktif.startsWith("/admin")) {
     return null;
@@ -75,25 +77,28 @@ export default function Navbar() {
               <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
             )}
           </Link>
-
-          <Link
-            href="/cari-faskes"
-            className="px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Forum Komunitas</span>
-          </Link>
         </nav>
 
-        {/* Ikon Portal Admin */}
+        {/* Ikon Portal Admin / Profil */}
         <div className="flex items-center gap-2">
-          <Link
-            href="/admin/login"
-            className="p-2.5 rounded-full text-slate-600 hover:text-[#007A78] hover:bg-slate-100 transition"
-            title="Login Portal Admin"
-          >
-            <User className="w-5 h-5" />
-          </Link>
+          {sudahLogin && pengguna?.role_user === "admin" ? (
+            <Link
+              href="/admin/dashboard"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-50 border border-teal-200 text-[#007A78] text-xs font-bold hover:bg-teal-100 transition"
+              title="Ke Dashboard Admin"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span className="hidden sm:inline">Portal Admin</span>
+            </Link>
+          ) : (
+            <Link
+              href="/admin/login"
+              className="p-2.5 rounded-full text-slate-600 hover:text-[#007A78] hover:bg-slate-100 transition"
+              title="Login Portal Petugas"
+            >
+              <User className="w-5 h-5" />
+            </Link>
+          )}
         </div>
       </div>
     </header>

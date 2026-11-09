@@ -1,18 +1,43 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, Building2, LogOut, User, ChevronRight } from "lucide-react";
+import { api, getAuthToken, getAuthUser, removeAuthToken } from "@/lib/api";
 
 export default function AdminSidebarLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const path_aktif = usePathname();
   const adalah_dashboard = path_aktif === "/admin/dashboard";
   const adalah_kelola_faskes = path_aktif.startsWith("/admin/faskes");
+
+  const [namaAdmin, setNamaAdmin] = useState("Administrator");
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      router.push("/admin/login");
+      return;
+    }
+    const user = getAuthUser();
+    if (user?.nama_user) {
+      setNamaAdmin(user.nama_user);
+    }
+  }, [router]);
+
+  const tanganiLogout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      removeAuthToken();
+    }
+    router.push("/admin/login");
+  };
 
   return (
     <div className="min-h-screen flex bg-[#F8FAFB]">
@@ -62,13 +87,14 @@ export default function AdminSidebarLayout({
 
         {/* Tombol Logout Admin */}
         <div className="bg-[#F2F4F7] px-6 py-5 border-t border-slate-200/70">
-          <Link
-            href="/admin/login"
-            className="flex items-center gap-2.5 text-[13px] font-bold text-[#D92D20] hover:text-red-700 transition"
+          <button
+            type="button"
+            onClick={tanganiLogout}
+            className="w-full flex items-center gap-2.5 text-[13px] font-bold text-[#D92D20] hover:text-red-700 transition"
           >
             <LogOut className="w-4 h-4" />
             <span>Keluar Portal</span>
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -87,11 +113,11 @@ export default function AdminSidebarLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#007E7A] text-white flex items-center justify-center">
-              <User className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-[#007E7A] text-white flex items-center justify-center text-xs font-bold">
+              {namaAdmin.slice(0, 2).toUpperCase()}
             </div>
             <span className="text-[13px] font-bold text-slate-900">
-              Admin Dinkes Kota Bogor
+              {namaAdmin}
             </span>
           </div>
         </header>
