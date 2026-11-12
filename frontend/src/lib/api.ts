@@ -12,6 +12,42 @@ export const API_BASE_URL =
 // Model Interfaces (sesuai API Contracts.md)
 // -------------------------------------------------------------
 
+export interface ApiAdminReportItem {
+  type: "komentar" | "diskusi" | "tanggapan";
+  id: number;
+  status: "pending" | "resolved" | "rejected";
+  alasan: string;
+  catatan?: string | null;
+  reported_user?: ApiUser | null;
+  content?: {
+    body?: string;
+    [key: string]: any;
+  } | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiFeedbackFaskes {
+  id_feedback_faskes: number;
+  id_faskes: number;
+  id_user: number;
+  alasan: string;
+  saran_perbaikan: string;
+  status: "pending" | "resolved" | "rejected";
+  catatan_admin?: string | null;
+  created_at: string;
+  updated_at?: string;
+  faskes?: ApiFaskes;
+  user?: ApiUser;
+  // UI helpers
+  kelurahan_pelapor?: string;
+  kecamatan_pelapor?: string;
+  bukti_lampiran?: Array<{
+    url: string;
+    caption: string;
+  }>;
+}
+
 export interface ApiSpesialisasi {
   id_spesialisasi: string;
   nama_spesialisasi: string;
@@ -662,6 +698,59 @@ export const api = {
 
   async deleteFaskes(idFaskes: number): Promise<{ message: string }> {
     return request<{ message: string }>(`/admin/faskes/${idFaskes}`, {
+      method: "DELETE",
+    });
+  },
+
+  async getAdminFeedbacks(status?: string): Promise<ApiFeedbackFaskes[]> {
+    const endpoint = status ? `/admin/feedback-faskes?status=${status}` : "/admin/feedback-faskes";
+    const res = await request<ApiSingleResponse<ApiFeedbackFaskes[]>>(endpoint);
+    return res.data;
+  },
+
+  async updateAdminFeedback(
+    idFeedback: number,
+    data: { status: "pending" | "resolved" | "rejected"; catatan_admin?: string }
+  ): Promise<ApiFeedbackFaskes> {
+    const res = await request<ApiSingleResponse<ApiFeedbackFaskes>>(
+      `/admin/feedback-faskes/${idFeedback}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
+    );
+    return res.data;
+  },
+
+  async deleteAdminFeedback(idFeedback: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/admin/feedback-faskes/${idFeedback}`, {
+      method: "DELETE",
+    });
+  },
+
+  async getAdminReports(status?: string): Promise<ApiAdminReportItem[]> {
+    const endpoint = status ? `/admin/laporan?status=${status}` : "/admin/laporan";
+    const res = await request<ApiSingleResponse<ApiAdminReportItem[]>>(endpoint);
+    return res.data;
+  },
+
+  async updateAdminReportStatus(
+    type: string,
+    id: number,
+    status: "pending" | "resolved" | "rejected"
+  ): Promise<ApiAdminReportItem> {
+    const res = await request<ApiSingleResponse<ApiAdminReportItem>>(
+      `/admin/laporan/${type}/${id}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }
+    );
+    return res.data;
+  },
+
+  async deleteAdminReport(type: string, id: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/admin/laporan/${type}/${id}`, {
       method: "DELETE",
     });
   },

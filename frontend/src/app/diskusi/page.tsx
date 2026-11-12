@@ -223,7 +223,7 @@ export default function ForumDiskusiPage() {
             className="self-start px-4 py-2.5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Buat Diskusi Baru</span>
+            <span>Buat Diskusi Baru</span>
           </Link>
         </div>
 

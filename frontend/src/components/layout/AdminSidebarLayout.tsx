@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Building2, LogOut, User, ChevronRight } from "lucide-react";
+import { LayoutGrid, Building2, LogOut, User, ChevronRight, ThumbsUp, MessageSquare, Users } from "lucide-react";
 import { api, getAuthToken, getAuthUser, removeAuthToken } from "@/lib/api";
 
 export default function AdminSidebarLayout({
@@ -15,6 +15,8 @@ export default function AdminSidebarLayout({
   const path_aktif = usePathname();
   const adalah_dashboard = path_aktif === "/admin/dashboard";
   const adalah_kelola_faskes = path_aktif.startsWith("/admin/faskes");
+  const adalah_laporan_faskes = path_aktif.startsWith("/admin/laporan-faskes");
+  const adalah_laporan_diskusi = path_aktif.startsWith("/admin/laporan-diskusi");
 
   const [namaAdmin, setNamaAdmin] = useState("Administrator");
 
@@ -81,6 +83,30 @@ export default function AdminSidebarLayout({
                 <Building2 className="w-4 h-4" />
                 <span>Kelola Data Faskes</span>
               </Link>
+
+              <Link
+                href="/admin/laporan-faskes"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold transition ${
+                  adalah_laporan_faskes
+                    ? "bg-[#007E7A] text-white shadow-sm"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <ThumbsUp className="w-4 h-4" />
+                <span>Laporan Data Faskes</span>
+              </Link>
+
+              <Link
+                href="/admin/laporan-diskusi"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold transition ${
+                  adalah_laporan_diskusi
+                    ? "bg-[#007E7A] text-white shadow-sm"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Laporan Data Diskusi</span>
+              </Link>
             </nav>
           </div>
         </div>
@@ -109,7 +135,15 @@ export default function AdminSidebarLayout({
               Beranda
             </Link>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-600">Portal Administrasi Faskes</span>
+            <span className="text-slate-600">
+              {adalah_laporan_faskes
+                ? "Laporan Data Faskes"
+                : adalah_laporan_diskusi
+                ? "Laporan Data Diskusi"
+                : adalah_kelola_faskes
+                ? "Kelola Data Faskes"
+                : "Portal Administrasi Faskes"}
+            </span>
           </div>
 
           <div className="flex items-center gap-3">

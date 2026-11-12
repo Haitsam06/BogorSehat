@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
   Download,
   PlusCircle,
@@ -246,14 +247,13 @@ export default function AdminFaskesPage() {
               <span>Unduh CSV</span>
             </button>
 
-            <button
-              type="button"
-              onClick={bukaModalTambah}
+            <Link
+              href="/admin/faskes/tambah"
               className="h-11 px-5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-extrabold flex items-center gap-2 shadow-sm transition"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ Tambah Faskes Baru</span>
-            </button>
+              <span>Tambah Faskes Baru</span>
+            </Link>
           </div>
         </div>
 
