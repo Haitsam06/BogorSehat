@@ -26,6 +26,7 @@ import {
 } from "@/data/data_faskes";
 import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
 import PetaLeaflet from "@/components/map/peta_leaflet";
+import ModalReportFaskes from "@/components/faskes/ModalReportFaskes";
 import {
   api,
   ApiFaskes,
@@ -60,11 +61,8 @@ export default function DetailFaskesPage({
   const [teksBalasan, setTeksBalasan] = useState("");
   const [sedangKirimBalasan, setSedangKirimBalasan] = useState(false);
 
-  // Feedback modal
+  // Modal Report Faskes state
   const [modalFeedbackBuka, setModalFeedbackBuka] = useState(false);
-  const [alasanFeedback, setAlasanFeedback] = useState("Alamat berubah");
-  const [saranFeedback, setSaranFeedback] = useState("");
-  const [sedangKirimFeedback, setSedangKirimFeedback] = useState(false);
 
   // Status message
   const [pesanNotif, setPesanNotif] = useState<{
@@ -215,40 +213,6 @@ export default function DetailFaskesPage({
     }
   };
 
-  // Kirim feedback faskes
-  const tanganiKirimFeedback = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-      setPesanNotif({
-        tipe: "error",
-        pesan: "Silakan login terlebih dahulu untuk mengirim koreksi data.",
-      });
-      setModalFeedbackBuka(false);
-      return;
-    }
-
-    setSedangKirimFeedback(true);
-    try {
-      await api.sendFeedback(faskesItem.id_faskes, {
-        alasan: alasanFeedback,
-        saran_perbaikan: saranFeedback.trim() || "Perlu penyesuaian data faskes",
-      });
-      setModalFeedbackBuka(false);
-      setSaranFeedback("");
-      setPesanNotif({
-        tipe: "sukses",
-        pesan: "Laporan perbaikan faskes berhasil dikirim ke Admin Dinas Kesehatan.",
-      });
-    } catch (err: any) {
-      setPesanNotif({
-        tipe: "error",
-        pesan: err?.message || "Gagal mengirim laporan perbaikan.",
-      });
-    } finally {
-      setSedangKirimFeedback(false);
-    }
-  };
-
   const linkMapsTujuan =
     rawApiFaskes?.link_maps ||
     `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
@@ -357,7 +321,7 @@ export default function DetailFaskesPage({
             title="Laporkan ketidaksesuaian data faskes"
           >
             <Flag className="w-3.5 h-3.5" />
-            <span>Koreksi Data</span>
+            <span>Laporkan Informasi</span>
           </button>
         </div>
       </div>
@@ -706,72 +670,19 @@ export default function DetailFaskesPage({
         </div>
       </div>
 
-      {/* Modal Koreksi Data / Feedback Faskes */}
-      {modalFeedbackBuka && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-extrabold text-slate-900">
-                Lapor Koreksi Data Faskes
-              </h3>
-              <button
-                type="button"
-                onClick={() => setModalFeedbackBuka(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={tanganiKirimFeedback} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Jenis Ketidaksesuaian</label>
-                <select
-                  value={alasanFeedback}
-                  onChange={(e) => setAlasanFeedback(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                >
-                  <option value="Alamat berubah">Alamat atau Lokasi GPS Berubah</option>
-                  <option value="Status BPJS tidak sesuai">Status Kerjasama BPJS Berubah</option>
-                  <option value="Nomor telepon tidak aktif">Nomor Telepon Tidak Aktif</option>
-                  <option value="Layanan poli tidak tersedia">Layanan Poli/Dokter Tidak Tersedia</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Saran Perbaikan / Keterangan</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={saranFeedback}
-                  onChange={(e) => setSaranFeedback(e.target.value)}
-                  placeholder="Jelaskan perubahan yang perlu dilakukan tim Dinas Kesehatan..."
-                  className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setModalFeedbackBuka(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={sedangKirimFeedback}
-                  className="px-5 py-2 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white font-bold flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {sedangKirimFeedback && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Kirim Laporan</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal Laporkan Informasi Faskes */}
+      <ModalReportFaskes
+        isOpen={modalFeedbackBuka}
+        onClose={() => setModalFeedbackBuka(false)}
+        faskesId={faskesItem.id_faskes}
+        namaFaskes={faskesItem.nama_faskes}
+        onSuccess={() => {
+          setPesanNotif({
+            tipe: "sukses",
+            pesan: "Laporan informasi faskes berhasil dikirim ke Admin.",
+          });
+        }}
+      />
     </div>
   );
 }

@@ -111,6 +111,16 @@ export interface ApiKomentar {
   faskes?: ApiFaskes;
 }
 
+export interface ApiFaskesTerkait {
+  id_faskes?: number;
+  nama_faskes: string;
+  alamat: string;
+  jarak_km?: string;
+  slug?: string;
+  link_maps?: string;
+  gambar?: string;
+}
+
 export interface ApiDiskusi {
   id_diskusi: number;
   id_user: number;
@@ -119,8 +129,13 @@ export interface ApiDiskusi {
   body: string;
   image_path?: string[] | null;
   created_at: string;
+  updated_at?: string;
   user?: ApiUser;
   tanggapan?: ApiTanggapan[];
+  faskes_terkait?: ApiFaskesTerkait;
+  jumlah_suka?: number;
+  jumlah_dilihat?: number;
+  sublokasi_penulis?: string;
 }
 
 export interface ApiTanggapan {
@@ -131,8 +146,10 @@ export interface ApiTanggapan {
   body: string;
   image_path?: string[] | null;
   created_at: string;
+  updated_at?: string;
   user?: ApiUser;
   replies?: ApiTanggapan[];
+  jumlah_suka?: number;
 }
 
 // -------------------------------------------------------------
@@ -433,6 +450,10 @@ export const api = {
     return request<ApiCollectionResponse<ApiDiskusi>>(`/diskusi?page=${page}`);
   },
 
+  async getMyDiscussions(page = 1): Promise<ApiCollectionResponse<ApiDiskusi>> {
+    return request<ApiCollectionResponse<ApiDiskusi>>(`/me/diskusi?page=${page}`);
+  },
+
   async getDiscussionDetail(idDiskusi: number): Promise<ApiDiskusi> {
     const res = await request<ApiSingleResponse<ApiDiskusi>>(
       `/diskusi/${idDiskusi}`
@@ -444,12 +465,90 @@ export const api = {
     judul_diskusi: string;
     kategori_diskusi?: string;
     body: string;
+    image_path?: string[];
   }): Promise<ApiDiskusi> {
     const res = await request<ApiSingleResponse<ApiDiskusi>>("/diskusi", {
       method: "POST",
       body: JSON.stringify(data),
     });
     return res.data;
+  },
+
+  async deleteDiscussion(idDiskusi: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/diskusi/${idDiskusi}`, {
+      method: "DELETE",
+    });
+  },
+
+  async addDiscussionReply(
+    idDiskusi: number,
+    data: { body: string; image_path?: string[] }
+  ): Promise<ApiTanggapan> {
+    const res = await request<ApiSingleResponse<ApiTanggapan>>(
+      `/diskusi/${idDiskusi}/tanggapan`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+    return res.data;
+  },
+
+  async replyToReply(
+    idTanggapan: number,
+    data: { body: string; image_path?: string[] }
+  ): Promise<ApiTanggapan> {
+    const res = await request<ApiSingleResponse<ApiTanggapan>>(
+      `/tanggapan-diskusi/${idTanggapan}/replies`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+    return res.data;
+  },
+
+  async updateReply(
+    idTanggapan: number,
+    data: { body: string; image_path?: string[] }
+  ): Promise<ApiTanggapan> {
+    const res = await request<ApiSingleResponse<ApiTanggapan>>(
+      `/tanggapan-diskusi/${idTanggapan}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+    return res.data;
+  },
+
+  async deleteReply(idTanggapan: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/tanggapan-diskusi/${idTanggapan}`, {
+      method: "DELETE",
+    });
+  },
+
+  async reportDiscussion(
+    idDiskusi: number,
+    data: { alasan: string; catatan?: string }
+  ): Promise<{ data: any }> {
+    return request<{ data: any }>(`/diskusi/${idDiskusi}/report`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async reportReply(
+    idTanggapan: number,
+    data: { alasan: string; catatan?: string }
+  ): Promise<{ data: any }> {
+    return request<{ data: any }>(
+      `/tanggapan-diskusi/${idTanggapan}/report`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   // --- Auth & Profile ---

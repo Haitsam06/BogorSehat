@@ -18,6 +18,8 @@ export default function Navbar() {
   const adalah_peta = path_aktif.startsWith("/peta");
   const adalah_cari_faskes =
     path_aktif.startsWith("/cari-faskes") || path_aktif.startsWith("/faskes");
+  const adalah_forum =
+    path_aktif.startsWith("/diskusi") || path_aktif.startsWith("/forum");
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-100">
@@ -74,6 +76,21 @@ export default function Navbar() {
             <Search className="w-4 h-4" />
             <span>Cari Faskes</span>
             {adalah_cari_faskes && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
+            )}
+          </Link>
+
+          <Link
+            href="/diskusi"
+            className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${
+              adalah_forum
+                ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Forum Komunitas</span>
+            {adalah_forum && (
               <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
             )}
           </Link>
