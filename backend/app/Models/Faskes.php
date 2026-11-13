@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -28,6 +29,12 @@ class Faskes extends Model
             'latitude' => 'decimal:8',
             'is_support_bpjs' => 'boolean',
         ];
+    }
+
+    public function scopeWithRating(Builder $query): Builder
+    {
+        return $query->withAvg(['komentar as rating_avg' => fn (Builder $sub) => $sub->whereNull('id_parent')->whereNotNull('rating')], 'rating')
+            ->withCount(['komentar as rating_count' => fn (Builder $sub) => $sub->whereNull('id_parent')->whereNotNull('rating')]);
     }
 
     public function distanceKmTo(float $latitude, float $longitude): float

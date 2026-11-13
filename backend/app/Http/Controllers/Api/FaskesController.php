@@ -17,7 +17,7 @@ class FaskesController extends Controller
     public function index(Request $request)
     {
         $coordinates = $this->requestCoordinates($request);
-        $query = Faskes::query()->with(['spesialisasi', 'fasilitas']);
+        $query = Faskes::query()->withRating()->with(['spesialisasi', 'fasilitas']);
         $query->when($request->filled('search'), fn ($q) => $q->where('nama_faskes', 'like', '%'.$request->string('search').'%'));
         $query->when($request->filled('provinsi'), fn ($q) => $q->where('provinsi', $request->string('provinsi')));
         $query->when($request->filled('kecamatan'), fn ($q) => $q->where('kecamatan', 'like', '%'.$request->string('kecamatan').'%'));
@@ -35,7 +35,7 @@ class FaskesController extends Controller
 
     public function show(Request $request, Faskes $faskes): FaskesResource
     {
-        $faskes->load(['spesialisasi', 'fasilitas']);
+        $faskes->load(['spesialisasi', 'fasilitas'])->loadAvg(['komentar as rating_avg' => fn ($sub) => $sub->whereNull('id_parent')->whereNotNull('rating')], 'rating')->loadCount(['komentar as rating_count' => fn ($sub) => $sub->whereNull('id_parent')->whereNotNull('rating')]);
         $this->attachDistance(collect([$faskes]), $this->requestCoordinates($request));
 
         return new FaskesResource($faskes);
@@ -45,6 +45,7 @@ class FaskesController extends Controller
     {
         $faskes = Faskes::query()
             ->select(['id_faskes', 'nama_faskes', 'jenis_faskes', 'alamat_faskes', 'latitude', 'longitude', 'link_maps'])
+            ->withRating()
             ->orderBy('nama_faskes')
             ->get();
         $this->attachDistance($faskes, $this->requestCoordinates($request));
@@ -65,6 +66,7 @@ class FaskesController extends Controller
         $latitudeDelta = $radius / 111;
         $longitudeDelta = $radius / max(cos(deg2rad($latitude)) * 111, 0.01);
         $faskes = Faskes::query()
+            ->withRating()
             ->with(['spesialisasi', 'fasilitas'])
             ->whereBetween('latitude', [$latitude - $latitudeDelta, $latitude + $latitudeDelta])
             ->whereBetween('longitude', [$longitude - $longitudeDelta, $longitude + $longitudeDelta])

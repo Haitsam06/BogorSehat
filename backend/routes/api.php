@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ModerationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Middleware\AdminOnly;
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\ApiTokenAuthOptional;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
@@ -29,7 +30,7 @@ Route::get('faskes/{faskes}', [FaskesController::class, 'show']);
 Route::get('spesialisasi', [MasterDataController::class, 'spesialisasi']);
 Route::get('fasilitas', [MasterDataController::class, 'fasilitas']);
 Route::get('diskusi', [ForumController::class, 'index']);
-Route::get('diskusi/{diskusi}', [ForumController::class, 'show']);
+Route::get('diskusi/{diskusi}', [ForumController::class, 'show'])->middleware(ApiTokenAuthOptional::class);
 Route::middleware(ApiTokenAuth::class)->group(function (): void {
     Route::get('user', [ProfileController::class, 'current']);
     Route::get('profile', [ProfileController::class, 'show']);
@@ -42,15 +43,19 @@ Route::middleware(ApiTokenAuth::class)->group(function (): void {
     Route::post('diskusi', [ForumController::class, 'store']);
     Route::delete('diskusi/{diskusi}', [ForumController::class, 'destroy']);
     Route::post('diskusi/{diskusi}/tanggapan', [ForumController::class, 'storeReply']);
+    Route::post('diskusi/{diskusi}/suka', [ForumController::class, 'like']);
+    Route::delete('diskusi/{diskusi}/suka', [ForumController::class, 'unlike']);
+    Route::post('diskusi/{diskusi}/dilihat', [ForumController::class, 'view']);
     Route::post('diskusi/{diskusi}/report', [ModerationController::class, 'reportDiskusi']);
     Route::post('tanggapan-diskusi/{tanggapan}/replies', [ForumController::class, 'replyToReply']);
+    Route::post('tanggapan-diskusi/{tanggapan}/suka', [ForumController::class, 'likeReply']);
+    Route::delete('tanggapan-diskusi/{tanggapan}/suka', [ForumController::class, 'unlikeReply']);
     Route::post('tanggapan-diskusi/{tanggapan}/report', [ModerationController::class, 'reportTanggapan']);
     Route::put('tanggapan-diskusi/{tanggapan}', [ForumController::class, 'updateReply']);
     Route::delete('tanggapan-diskusi/{tanggapan}', [ForumController::class, 'destroyReply']);
     Route::post('faskes/{faskes}/feedback', [ModerationController::class, 'feedback']);
     Route::get('me/komentar', [KomentarController::class, 'mine']);
     Route::get('me/diskusi', [ForumController::class, 'mine']);
-
     Route::prefix('admin')->middleware(AdminOnly::class)->group(function (): void {
         Route::get('dashboard', [DashboardController::class, 'admin']);
         Route::get('faskes', [FaskesController::class, 'index']);

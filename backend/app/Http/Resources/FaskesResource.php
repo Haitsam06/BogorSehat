@@ -24,6 +24,8 @@ class FaskesResource extends JsonResource
             'telp_faskes' => $this->telp_faskes,
             'is_support_bpjs' => $this->is_support_bpjs,
             'link_maps' => $this->link_maps,
+            'rating_avg' => round((float) ($this->rating_avg ?? 0), 2),
+            'rating_count' => (int) ($this->rating_count ?? 0),
             'distance_km' => $this->when(isset($this->distance_km), $this->distance_km),
             'spesialisasi' => SpesialisasiResource::collection($this->whenLoaded('spesialisasi')),
             'fasilitas' => FasilitasResource::collection($this->whenLoaded('fasilitas')),

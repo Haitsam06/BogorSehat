@@ -12,7 +12,7 @@ class Diskusi extends Model
 
     protected $primaryKey = 'id_diskusi';
 
-    protected $fillable = ['id_user', 'judul_diskusi', 'kategori_diskusi', 'body', 'image_path'];
+    protected $fillable = ['id_user', 'id_faskes', 'judul_diskusi', 'kategori_diskusi', 'body', 'image_path'];
 
     protected function casts(): array
     {
@@ -27,5 +27,25 @@ class Diskusi extends Model
     public function tanggapan(): HasMany
     {
         return $this->hasMany(TanggapanDiskusi::class, 'id_diskusi', 'id_diskusi');
+    }
+
+    public function faskes(): BelongsTo
+    {
+        return $this->belongsTo(Faskes::class, 'id_faskes', 'id_faskes');
+    }
+
+    public function suka(): HasMany
+    {
+        return $this->hasMany(DiskusiSuka::class, 'id_diskusi', 'id_diskusi');
+    }
+
+    public function dilihat(): HasMany
+    {
+        return $this->hasMany(DiskusiDilihat::class, 'id_diskusi', 'id_diskusi');
+    }
+
+    public function sukaOleh(int $idUser): bool
+    {
+        return $this->suka()->where('id_user', $idUser)->exists();
     }
 }

@@ -21,6 +21,9 @@ class CommunityInteractionSeeder extends Seeder
         $laporanDiskusi = $this->laporanDiskusiRows();
         $laporanTanggapan = $this->laporanTanggapanRows();
         $feedback = $this->feedbackRows();
+        $sukaDiskusi = $this->diskusiSukaRows();
+        $sukaTanggapan = $this->tanggapanSukaRows();
+        $dilihat = $this->diskusiDilihatRows();
 
         DB::table('users')->upsert($users, ['id_user'], [
             'nama_user', 'email_user', 'password_user', 'role_user', 'updated_at',
@@ -29,7 +32,7 @@ class CommunityInteractionSeeder extends Seeder
             'id_user', 'id_faskes', 'id_parent', 'body', 'rating', 'image_path', 'updated_at',
         ]);
         DB::table('diskusi')->upsert($diskusi, ['id_diskusi'], [
-            'id_user', 'judul_diskusi', 'kategori_diskusi', 'body', 'image_path', 'updated_at',
+            'id_user', 'id_faskes', 'judul_diskusi', 'kategori_diskusi', 'body', 'image_path', 'updated_at',
         ]);
         DB::table('tanggapan_diskusi')->upsert($tanggapan, ['id_tanggapan_diskusi'], [
             'id_user', 'id_diskusi', 'id_parent', 'body', 'image_path', 'updated_at',
@@ -46,11 +49,15 @@ class CommunityInteractionSeeder extends Seeder
         DB::table('feedback_faskes')->upsert($feedback, ['id_feedback_faskes'], [
             'id_faskes', 'id_user', 'alasan', 'saran_perbaikan', 'status', 'catatan_admin', 'updated_at',
         ]);
+        DB::table('diskusi_suka')->upsert($sukaDiskusi, ['id_diskusi_suka'], ['updated_at']);
+        DB::table('tanggapan_diskusi_suka')->upsert($sukaTanggapan, ['id_tanggapan_diskusi_suka'], ['updated_at']);
+        DB::table('diskusi_dilihat')->upsert($dilihat, ['id_diskusi_dilihat'], ['updated_at']);
 
         $this->command?->info(sprintf(
-            'Seeded %d users, %d komentar, %d diskusi, %d tanggapan, %d laporan komentar, %d laporan diskusi, %d laporan tanggapan, %d feedback faskes.',
+            'Seeded %d users, %d komentar, %d diskusi, %d tanggapan, %d laporan komentar, %d laporan diskusi, %d laporan tanggapan, %d feedback faskes, %d suka diskusi, %d suka tanggapan, %d dilihat.',
             count($users), count($komentar), count($diskusi), count($tanggapan),
             count($laporanKomentar), count($laporanDiskusi), count($laporanTanggapan), count($feedback),
+            count($sukaDiskusi), count($sukaTanggapan), count($dilihat),
         ));
     }
 
@@ -296,6 +303,7 @@ class CommunityInteractionSeeder extends Seeder
             $rows[] = [
                 'id_diskusi' => $id,
                 'id_user' => 2 + ($index % 10),
+                'id_faskes' => $this->faskesIds()[($index * 3) % count($this->faskesIds())],
                 'judul_diskusi' => $discussion[0],
                 'kategori_diskusi' => $discussion[1],
                 'body' => $discussion[2],
@@ -537,6 +545,66 @@ class CommunityInteractionSeeder extends Seeder
                 'created_at' => $this->timestamp(160 + $index),
                 'updated_at' => $this->timestamp(160 + $index),
             ];
+        }
+
+        return $rows;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function diskusiSukaRows(): array
+    {
+        $rows = [];
+        foreach (range(1, 20) as $index) {
+            $likers = 2 + ($index % 7);
+            foreach (range(1, $likers) as $offset) {
+                $rows[] = [
+                    'id_diskusi_suka' => count($rows) + 1,
+                    'id_diskusi' => $index,
+                    'id_user' => 2 + (($index + $offset) % 10),
+                    'created_at' => $this->timestamp(200 + $index),
+                    'updated_at' => $this->timestamp(200 + $index),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function tanggapanSukaRows(): array
+    {
+        $rows = [];
+        foreach (range(1, 45) as $index) {
+            $likers = $index % 5;
+            foreach (range(1, $likers) as $offset) {
+                $rows[] = [
+                    'id_tanggapan_diskusi_suka' => count($rows) + 1,
+                    'id_tanggapan' => $index,
+                    'id_user' => 2 + (($index + $offset) % 10),
+                    'created_at' => $this->timestamp(240 + $index),
+                    'updated_at' => $this->timestamp(240 + $index),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function diskusiDilihatRows(): array
+    {
+        $rows = [];
+        foreach (range(1, 20) as $index) {
+            $viewers = 4 + ($index % 6);
+            foreach (range(1, $viewers) as $offset) {
+                $rows[] = [
+                    'id_diskusi_dilihat' => count($rows) + 1,
+                    'id_diskusi' => $index,
+                    'id_user' => 2 + (($index + $offset) % 10),
+                    'created_at' => $this->timestamp(280 + $index),
+                    'updated_at' => $this->timestamp(280 + $index),
+                ];
+            }
         }
 
         return $rows;

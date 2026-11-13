@@ -124,10 +124,13 @@ Every faskes response carries `distance_km` in kilometers, rounded to two decima
   "telp_faskes": "0251-8643290",
   "is_support_bpjs": true,
   "link_maps": "https://www.google.com/maps/dir/?api=1&destination=RSUD%20R.%20MOH.%20NOH%20NUR%2C%20JL.%20RAYA%20CIBEBER%20NO.1%2C%20KAB.%20BOGOR",
+  "rating_avg": 4.35,
+  "rating_count": 12,
   "spesialisasi": [],
   "fasilitas": []
 }
-```
+
+`rating_avg` is the mean of `rating` across top-level comments that carry a rating; `rating_count` counts those comments. Replies never contribute. Both fields are `0` when a facility has no rated comment. They are returned by `GET /faskes`, `GET /faskes/{id_faskes}`, `GET /faskes/map`, and `GET /faskes/nearby`.
 
 ## Comments and reviews
 
@@ -161,8 +164,13 @@ Comment body:
 | POST | `/diskusi` | Token | Create discussion |
 | DELETE | `/diskusi/{id_diskusi}` | Token | Delete own discussion; admin may moderate |
 | POST | `/diskusi/{id_diskusi}/tanggapan` | Token | Add discussion reply |
+| POST | `/diskusi/{id_diskusi}/suka` | Token | Like a discussion; idempotent per user |
+| DELETE | `/diskusi/{id_diskusi}/suka` | Token | Remove own like from a discussion |
+| POST | `/diskusi/{id_diskusi}/dilihat` | Token | Record a unique view; the author's own views are ignored |
 | POST | `/diskusi/{id_diskusi}/report` | Token | Report discussion |
 | POST | `/tanggapan-diskusi/{id_tanggapan}/replies` | Token | Reply to discussion reply |
+| POST | `/tanggapan-diskusi/{id_tanggapan}/suka` | Token | Like a discussion reply; idempotent per user |
+| DELETE | `/tanggapan-diskusi/{id_tanggapan}/suka` | Token | Remove own like from a discussion reply |
 | POST | `/tanggapan-diskusi/{id_tanggapan}/report` | Token | Report discussion reply |
 | PUT | `/tanggapan-diskusi/{id_tanggapan}` | Token | Edit own reply; admin may moderate |
 | DELETE | `/tanggapan-diskusi/{id_tanggapan}` | Token | Delete own reply; admin may moderate |
@@ -175,11 +183,53 @@ Comment body:
   "judul_diskusi": "Tanya faskes",
   "kategori_diskusi": "lainnya",
   "body": "Ada rekomendasi?",
-  "image_path": ["optional/path.jpg"]
+  "image_path": ["optional/path.jpg"],
+  "id_faskes": 5
+}
+
+`kategori_diskusi` defaults to `lainnya`. `id_faskes` is optional and links the discussion to a facility.
+
+### Discussion engagement object
+
+Every discussion response carries these counters, including `GET /diskusi`, `GET /diskusi/{id_diskusi}`, and `GET /me/diskusi`:
+
+```json
+{
+  "jumlah_suka": 8,
+  "jumlah_dilihat": 6,
+  "jumlah_tanggapan": 2,
+  "sublokasi_penulis": "KAB. BOGOR",
+  "faskes_terkait": {
+    "id_faskes": 5,
+    "nama_faskes": "RS ASSALAM",
+    "alamat": "JL. RAYA JAKARTA - BOGOR KM 46,7",
+    "kecamatan": null,
+    "kota_kabupaten": "KAB. BOGOR",
+    "link_maps": "https://www.google.com/maps/dir/?api=1&destination=RS%20ASSALAM"
+  }
 }
 ```
 
-`kategori_diskusi` defaults to `lainnya`.
+`faskes_terkait` and `sublokasi_penulis` are `null` when the discussion has no linked facility. Every discussion reply carries `jumlah_suka`.
+
+Like and view responses:
+
+```json
+{
+  "id_diskusi": 1,
+  "disukai": true,
+  "jumlah_suka": 4
+}
+```
+
+```json
+{
+  "id_diskusi": 1,
+  "jumlah_dilihat": 5
+}
+```
+
+Reply like responses use `id_tanggapan_diskusi` instead of `id_diskusi`. Likes are keyed by `(discussion, user)` and views by `(discussion, user)`, so repeating the call never inflates the counter.
 
 ## Faskes feedback and reports
 
@@ -256,7 +306,7 @@ Optional fields:
 
 ## Seed and verification
 
-`CommunityInteractionSeeder` fills the community tables after the faskes dataset: 10 regular users (`password` for every seeded account), 60 top-level comments, 40 comment replies, 20 discussions, 45 discussion replies (25 nested), 15 comment reports, 10 discussion reports, 8 reply reports, and 12 faskes feedback rows. Every report references the reported row's own author and, for comment reports, the reported comment's faskes. Statuses use `pending`, `resolved`, and `rejected`. Seeding is idempotent and can be repeated.
+`CommunityInteractionSeeder` fills the community tables after the faskes dataset: 10 regular users (`password` for every seeded account), 60 top-level comments, 40 comment replies, 20 discussions, 45 discussion replies (25 nested), 15 comment reports, 10 discussion reports, 8 reply reports, 12 faskes feedback rows, 103 discussion likes, 108 reply likes, and 128 unique views. Every report references the reported row's own author and, for comment reports, the reported comment's faskes. Statuses use `pending`, `resolved`, and `rejected`. Each seeded discussion links to a facility so `faskes_terkait` and `sublokasi_penulis` are populated. Seeding is idempotent and can be repeated.
 
 From `backend/`:
 

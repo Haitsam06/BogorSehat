@@ -38,4 +38,9 @@ class TanggapanDiskusi extends Model
     {
         return $this->hasMany(self::class, 'id_parent', 'id_tanggapan_diskusi');
     }
+
+    public function suka(): HasMany
+    {
+        return $this->hasMany(TanggapanDiskusiSuka::class, 'id_tanggapan', 'id_tanggapan_diskusi');
+    }
 }
