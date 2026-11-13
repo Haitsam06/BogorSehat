@@ -16,7 +16,7 @@ class TanggapanDiskusiResource extends JsonResource
             'body' => $this->body,
             'image_path' => $this->image_path,
             'user' => new UserResource($this->whenLoaded('user')),
-            'replies' => self::collection($this->whenLoaded('replies')),
+            'replies' => $this->relationLoaded('replies') ? self::collection($this->replies) : [],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

@@ -18,7 +18,7 @@ class KomentarResource extends JsonResource
             'image_path' => $this->image_path,
             'user' => new UserResource($this->whenLoaded('user')),
             'faskes' => new FaskesResource($this->whenLoaded('faskes')),
-            'replies' => self::collection($this->whenLoaded('replies')),
+            'replies' => $this->relationLoaded('replies') ? self::collection($this->replies) : [],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
