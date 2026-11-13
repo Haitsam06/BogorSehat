@@ -22,5 +22,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(BogorSehatDataSeeder::class);
+        $this->call(CommunityInteractionSeeder::class);
     }
 }

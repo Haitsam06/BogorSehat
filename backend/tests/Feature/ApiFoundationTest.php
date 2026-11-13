@@ -86,4 +86,22 @@ class ApiFoundationTest extends TestCase
         $this->assertStringContainsString('destination='.rawurlencode('RSUD R. MOH. NOH NUR'), $link);
         $this->assertStringContainsString(rawurlencode('(-6.57451,106.628)'), $link);
     }
+
+    public function test_faskes_endpoints_return_distance_from_request_coordinates(): void
+    {
+        $this->seed();
+        $origin = '?latitude=-6.57451&longitude=106.628';
+
+        $detail = $this->getJson('/api/faskes/1'.$origin)->assertOk()->json('data');
+        $this->assertSame(0.0, (float) $detail['distance_km']);
+
+        $index = $this->getJson('/api/faskes'.$origin.'&search=RSUD%20R.%20MOH.%20NOH%20NUR')->assertOk()->json('data');
+        $this->assertSame(0.0, (float) $index[0]['distance_km']);
+
+        $map = collect($this->getJson('/api/faskes/map'.$origin)->assertOk()->json('data'))->firstWhere('id_faskes', 1);
+        $this->assertSame(0.0, (float) $map['distance_km']);
+
+        $far = $this->getJson('/api/faskes?search=RSUD%20R.%20MOH.%20NOH%20NUR')->assertOk()->json('data.0.distance_km');
+        $this->assertGreaterThan(0.0, (float) $far);
+    }
 }

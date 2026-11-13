@@ -10,8 +10,13 @@ use Illuminate\Http\Request;
 
 class FaskesController extends Controller
 {
+    private const DEFAULT_ORIGIN_LATITUDE = -6.5950;
+
+    private const DEFAULT_ORIGIN_LONGITUDE = 106.7990;
+
     public function index(Request $request)
     {
+        $coordinates = $this->requestCoordinates($request);
         $query = Faskes::query()->with(['spesialisasi', 'fasilitas']);
         $query->when($request->filled('search'), fn ($q) => $q->where('nama_faskes', 'like', '%'.$request->string('search').'%'));
         $query->when($request->filled('provinsi'), fn ($q) => $q->where('provinsi', $request->string('provinsi')));
@@ -22,19 +27,29 @@ class FaskesController extends Controller
         $query->when($request->filled('id_spesialisasi'), fn ($q) => $q->whereHas('spesialisasi', fn ($r) => $r->whereKey($request->string('id_spesialisasi'))));
         $query->when($request->filled('id_fasilitas'), fn ($q) => $q->whereHas('fasilitas', fn ($r) => $r->whereKey($request->integer('id_fasilitas'))));
 
-        return FaskesResource::collection($query->orderBy('nama_faskes')->paginate(min($request->integer('per_page', 15), 100)));
+        $faskes = $query->orderBy('nama_faskes')->paginate(min($request->integer('per_page', 15), 100));
+        $this->attachDistance($faskes->getCollection(), $coordinates);
+
+        return FaskesResource::collection($faskes);
     }
 
-    public function show(Faskes $faskes): FaskesResource
+    public function show(Request $request, Faskes $faskes): FaskesResource
     {
-        return new FaskesResource($faskes->load(['spesialisasi', 'fasilitas']));
+        $faskes->load(['spesialisasi', 'fasilitas']);
+        $this->attachDistance(collect([$faskes]), $this->requestCoordinates($request));
+
+        return new FaskesResource($faskes);
     }
 
-    public function map(): JsonResponse
+    public function map(Request $request): JsonResponse
     {
-        $data = Faskes::query()->select(['id_faskes', 'nama_faskes', 'jenis_faskes', 'alamat_faskes', 'latitude', 'longitude', 'link_maps'])->orderBy('nama_faskes')->get();
+        $faskes = Faskes::query()
+            ->select(['id_faskes', 'nama_faskes', 'jenis_faskes', 'alamat_faskes', 'latitude', 'longitude', 'link_maps'])
+            ->orderBy('nama_faskes')
+            ->get();
+        $this->attachDistance($faskes, $this->requestCoordinates($request));
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $faskes]);
     }
 
     public function nearby(Request $request): JsonResponse
@@ -47,27 +62,40 @@ class FaskesController extends Controller
         $radius = (float) ($data['radius'] ?? 10);
         $latitude = (float) $data['latitude'];
         $longitude = (float) $data['longitude'];
-        $latDelta = $radius / 111;
-        $lonDelta = $radius / max(cos(deg2rad($latitude)) * 111, 0.01);
+        $latitudeDelta = $radius / 111;
+        $longitudeDelta = $radius / max(cos(deg2rad($latitude)) * 111, 0.01);
         $faskes = Faskes::query()
             ->with(['spesialisasi', 'fasilitas'])
-            ->whereBetween('latitude', [$latitude - $latDelta, $latitude + $latDelta])
-            ->whereBetween('longitude', [$longitude - $lonDelta, $longitude + $lonDelta])
+            ->whereBetween('latitude', [$latitude - $latitudeDelta, $latitude + $latitudeDelta])
+            ->whereBetween('longitude', [$longitude - $longitudeDelta, $longitude + $longitudeDelta])
             ->get()
-            ->map(function (Faskes $faskes) use ($latitude, $longitude): Faskes {
-                $distance = 6371 * 2 * asin(sqrt(
-                    sin(deg2rad((float) $faskes->latitude - $latitude) / 2) ** 2
-                    + cos(deg2rad($latitude)) * cos(deg2rad((float) $faskes->latitude))
-                    * sin(deg2rad((float) $faskes->longitude - $longitude) / 2) ** 2
-                ));
-                $faskes->distance_km = round($distance, 2);
-
-                return $faskes;
-            })
-            ->filter(fn (Faskes $faskes): bool => $faskes->distance_km <= $radius)
+            ->each(fn (Faskes $item) => $item->distance_km = $item->distanceKmTo($latitude, $longitude))
+            ->filter(fn (Faskes $item): bool => $item->distance_km <= $radius)
             ->sortBy('distance_km')
             ->values();
 
         return response()->json(['data' => FaskesResource::collection($faskes)]);
+    }
+
+    /** @return array{0: float, 1: float} */
+    private function requestCoordinates(Request $request): array
+    {
+        $data = $request->validate([
+            'latitude' => ['sometimes', 'numeric', 'between:-90,90'],
+            'longitude' => ['sometimes', 'numeric', 'between:-180,180'],
+        ]);
+
+        return [
+            (float) ($data['latitude'] ?? self::DEFAULT_ORIGIN_LATITUDE),
+            (float) ($data['longitude'] ?? self::DEFAULT_ORIGIN_LONGITUDE),
+        ];
+    }
+
+    /** @param  iterable<int, Faskes>  $faskes */
+    private function attachDistance(iterable $faskes, array $coordinates): void
+    {
+        foreach ($faskes as $item) {
+            $item->distance_km = $item->distanceKmTo($coordinates[0], $coordinates[1]);
+        }
     }
 }

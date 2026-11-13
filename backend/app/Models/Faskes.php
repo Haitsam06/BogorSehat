@@ -30,6 +30,16 @@ class Faskes extends Model
         ];
     }
 
+    public function distanceKmTo(float $latitude, float $longitude): float
+    {
+        $latitudeDelta = deg2rad((float) $this->latitude - $latitude);
+        $longitudeDelta = deg2rad((float) $this->longitude - $longitude);
+        $haversine = sin($latitudeDelta / 2) ** 2
+            + cos(deg2rad($latitude)) * cos(deg2rad((float) $this->latitude)) * sin($longitudeDelta / 2) ** 2;
+
+        return round(6371 * 2 * asin(sqrt(min($haversine, 1.0))), 2);
+    }
+
     public function spesialisasi(): BelongsToMany
     {
         return $this->belongsToMany(Spesialisasi::class, 'spesialisasi_faskes', 'id_faskes', 'id_spesialisasi', 'id_faskes', 'id_spesialisasi');

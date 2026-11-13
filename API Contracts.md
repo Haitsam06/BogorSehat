@@ -83,6 +83,8 @@ Login response includes `data` and a plain `token`. Store the token securely; it
 - `is_support_bpjs`: boolean (`0` or `1`).
 - `id_spesialisasi`: specialization ID.
 - `id_fasilitas`: facility ID.
+- `latitude`: optional user latitude, `-90` to `90`.
+- `longitude`: optional user longitude, `-180` to `180`.
 - `per_page`: maximum `100`; default `15`.
 - `page`: pagination page.
 
@@ -103,7 +105,7 @@ Optional:
 
 - `radius`: kilometers; default `10`, maximum `100`.
 
-Each item includes `distance_km`.
+Every faskes response carries `distance_km` in kilometers, rounded to two decimals. `GET /faskes`, `GET /faskes/{id_faskes}`, `GET /faskes/map`, and `GET /faskes/nearby` accept `latitude` and `longitude`; when both are absent the reference point defaults to the Bogor city center (`-6.5950`, `106.7990`). `GET /faskes/nearby` remains sorted ascending by `distance_km`.
 
 ### Faskes object
 
@@ -253,6 +255,8 @@ Optional fields:
 `link_maps` uses the place name, address, city, and coordinates. Name/address identifies the facility; coordinates disambiguate nearby places. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
 
 ## Seed and verification
+
+`CommunityInteractionSeeder` fills the community tables after the faskes dataset: 10 regular users (`password` for every seeded account), 60 top-level comments, 40 comment replies, 20 discussions, 45 discussion replies (25 nested), 15 comment reports, 10 discussion reports, 8 reply reports, and 12 faskes feedback rows. Every report references the reported row's own author and, for comment reports, the reported comment's faskes. Statuses use `pending`, `resolved`, and `rejected`. Seeding is idempotent and can be repeated.
 
 From `backend/`:
 
