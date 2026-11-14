@@ -15,7 +15,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, messageFromError } from "@/lib/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -43,9 +43,12 @@ export default function AdminLoginPage() {
         return;
       }
       router.push("/admin/dashboard");
-    } catch (err: any) {
+    } catch (err) {
       set_pesan_error(
-        err?.message || "Gagal masuk. Periksa kembali email dan kata sandi Anda."
+        messageFromError(
+          err,
+          "Gagal masuk. Periksa kembali email dan kata sandi Anda."
+        )
       );
       set_sedang_memuat(false);
     }

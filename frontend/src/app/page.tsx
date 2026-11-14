@@ -19,7 +19,6 @@ import {
   Loader2,
 } from "lucide-react";
 import {
-  daftar_faskes_utama,
   daftar_semua_poli,
   daftar_kategori_layanan,
   daftar_langkah_rujukan,
@@ -29,15 +28,19 @@ import {
 import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import AnimasiScroll from "@/components/ui/animasi_scroll";
-import { api, mapApiFaskesToItem, ApiHomeDashboard } from "@/lib/api";
+import {
+  api,
+  mapApiFaskesToItem,
+  ApiHomeDashboard,
+  messageFromError,
+} from "@/lib/api";
 import { useFaskes } from "@/context/FaskesContext";
 
 export default function BerandaPage() {
   const { lokasiPengguna, deteksiLokasiGPS, memuatGPS } = useFaskes();
-  const [daftarRekomendasi, setDaftarRekomendasi] = useState<DataFaskesItem[]>(
-    daftar_faskes_utama.slice(0, 3)
-  );
-  const [daftarPeta, setDaftarPeta] = useState<DataFaskesItem[]>(daftar_faskes_utama);
+  const [daftarRekomendasi, setDaftarRekomendasi] = useState<DataFaskesItem[]>([]);
+  const [daftarPeta, setDaftarPeta] = useState<DataFaskesItem[]>([]);
+  const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
   const [dataHome, setDataHome] = useState<ApiHomeDashboard | null>(null);
   const [sedangMemuatNearby, setSedangMemuatNearby] = useState(false);
   const [id_faq_terbuka, set_id_faq_terbuka] = useState<number | null>(1);
@@ -53,8 +56,12 @@ export default function BerandaPage() {
         if (aktif && homeRes) {
           setDataHome(homeRes);
         }
-      } catch {
-        // Gunakan fallback
+      } catch (err) {
+        if (aktif) {
+          setPesanKesalahan(
+            messageFromError(err, "Gagal memuat ringkasan data BogorSehat.")
+          );
+        }
       }
 
       // 2. Ambil faskes terdekat berdasarkan koordinat pengguna
@@ -70,8 +77,12 @@ export default function BerandaPage() {
           setDaftarRekomendasi(mapped.slice(0, 3));
           setDaftarPeta(mapped);
         }
-      } catch {
-        // Fallback ke data_faskes jika backend belum berjalan
+      } catch (err) {
+        if (aktif) {
+          setPesanKesalahan(
+            messageFromError(err, "Gagal memuat rekomendasi faskes terdekat.")
+          );
+        }
       } finally {
         if (aktif) setSedangMemuatNearby(false);
       }
@@ -185,7 +196,18 @@ export default function BerandaPage() {
               </div>
             </div>
 
+            {pesanKesalahan && (
+              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-800 flex items-center gap-2">
+                <span>{pesanKesalahan}</span>
+              </div>
+            )}
+
             {/* Grid 3 Kartu Rekomendasi dengan Stagger Animation */}
+            {daftarRekomendasi.length === 0 && !sedangMemuatNearby && (
+              <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+                Belum ada faskes dalam radius 15 km dari lokasi Anda.
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {daftarRekomendasi.map((faskes_item, indeks) => (
                 <AnimasiScroll
@@ -305,7 +327,7 @@ export default function BerandaPage() {
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-teal-50/40 border border-teal-100/80">
                     <div className="w-11 h-11 rounded-xl bg-[#007E7A] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-xs">
-                      {dataHome?.faskes_count ?? 142}
+                      {dataHome?.faskes_count ?? 0}
                     </div>
                     <div>
                       <h3 className="text-xs font-extrabold text-slate-900">

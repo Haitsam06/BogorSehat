@@ -13,15 +13,40 @@ import {
   Building2,
   Navigation,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
-import {
-  daftar_faskes_utama,
-  daftar_semua_poli,
-  DataFaskesItem,
-} from "@/data/data_faskes";
+import type { DataFaskesItem } from "@/data/data_faskes";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
 import DropdownPencarian from "@/components/ui/dropdown_pencarian";
-import { api, mapApiFaskesToItem, ApiPaginationMeta } from "@/lib/api";
+import {
+  api,
+  ApiSpesialisasi,
+  mapApiFaskesToItem,
+  ApiPaginationMeta,
+  messageFromError,
+} from "@/lib/api";
+
+function labelPoli(nama: string): string {
+  const rapi = nama
+    .toLowerCase()
+    .split(" ")
+    .map((kata) => kata.charAt(0).toUpperCase() + kata.slice(1))
+    .join(" ");
+  return `Poli ${rapi}`;
+}
+
+const ALIAS_POLI: Record<string, string> = {
+  "Poli Jantung": "JANTUNG DAN PEMBULUH DARAH",
+  "Poli Kandungan": "OBSTETRI DAN GINEKOLOGI",
+  "Poli THT": "TELINGA HIDUNG TENGGOROK- BEDAH KEPALA LEHER (THT-KL)",
+};
+
+function cocokPoli(namaSpesialisasi: string, filter: string): boolean {
+  return (
+    labelPoli(namaSpesialisasi) === filter ||
+    namaSpesialisasi === ALIAS_POLI[filter]
+  );
+}
 
 const daftar_pilihan_kecamatan = [
   "Bogor Barat",
@@ -62,10 +87,11 @@ function CariFaskesKonten() {
   const [filter_igd, set_filter_igd] = useState("ALL");
 
   const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
+  const [daftarPoli, setDaftarPoli] = useState<ApiSpesialisasi[]>([]);
   const [metaPaginasi, setMetaPaginasi] = useState<ApiPaginationMeta | null>(null);
   const [halamanAktif, setHalamanAktif] = useState(1);
   const [sedangMemuat, setSedangMemuat] = useState(true);
-
+  const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
   // Reset semua filter
   const reset_semua_filter = () => {
     set_kata_kunci_pencarian("");
@@ -89,6 +115,7 @@ function CariFaskesKonten() {
 
   const muatDataFaskes = useCallback(async () => {
     setSedangMemuat(true);
+    setPesanKesalahan(null);
 
     const bpjsParam =
       filter_bpjs === "BPJS_YA" ? 1 : filter_bpjs === "BPJS_TIDAK" ? 0 : undefined;
@@ -99,76 +126,37 @@ function CariFaskesKonten() {
         : filter_wilayah === "KABUPATEN_BOGOR"
         ? "KAB. BOGOR"
         : undefined;
+    const poliTerpilih = daftarPoli.find((item) =>
+      cocokPoli(item.nama_spesialisasi, filter_poli_aktif)
+    );
+
+    const jenisParam =
+      filter_kategori !== "ALL"
+        ? filter_kategori
+        : filter_igd === "IGD_YA"
+        ? "Rumah Sakit"
+        : undefined;
 
     try {
       const res = await api.getFaskes({
         search: kata_kunci_pencarian.trim() || undefined,
         kota_kabupaten: kotaParam,
         kecamatan: filter_kecamatan !== "ALL" ? filter_kecamatan : undefined,
-        jenis_faskes: filter_kategori !== "ALL" ? filter_kategori : undefined,
+        jenis_faskes: jenisParam,
+        id_spesialisasi: poliTerpilih?.id_spesialisasi,
         is_support_bpjs: bpjsParam,
         page: halamanAktif,
         per_page: 12,
       });
 
-      if (res && res.data && res.data.length > 0) {
-        let mapped = res.data.map((f, i) => mapApiFaskesToItem(f, i));
-
-        // Client-side filtering for poli and igd if requested
-        if (filter_poli_aktif !== "ALL") {
-          mapped = mapped.filter((f) =>
-            f.daftar_poli.some((p) =>
-              p.toLowerCase().includes(filter_poli_aktif.toLowerCase())
-            )
-          );
-        }
-        if (filter_igd === "IGD_YA") {
-          mapped = mapped.filter((f) => f.status_igd_24jam);
-        }
-
-        setDaftarFaskes(mapped);
-        setMetaPaginasi(res.meta || null);
-      } else {
-        setDaftarFaskes([]);
-        setMetaPaginasi(null);
-      }
-    } catch {
-      // Fallback ke data_faskes static jika backend belum aktif
-      const filtered = daftar_faskes_utama.filter((item) => {
-        const q = kata_kunci_pencarian.trim().toLowerCase();
-        const cocokNama =
-          !q ||
-          item.nama_faskes.toLowerCase().includes(q) ||
-          item.alamat_lengkap.toLowerCase().includes(q);
-        const cocokWilayah =
-          filter_wilayah === "ALL" || item.wilayah_kota_kab === filter_wilayah;
-        const cocokKec =
-          filter_kecamatan === "ALL" ||
-          item.kecamatan.toLowerCase() === filter_kecamatan.toLowerCase();
-        const cocokKat =
-          filter_kategori === "ALL" ||
-          item.kategori_faskes.toLowerCase().includes(filter_kategori.toLowerCase());
-        const cocokPoli =
-          filter_poli_aktif === "ALL" ||
-          item.daftar_poli.includes(filter_poli_aktif);
-        const cocokBpjs =
-          filter_bpjs === "ALL" ||
-          (filter_bpjs === "BPJS_YA" && item.status_bpjs) ||
-          (filter_bpjs === "BPJS_TIDAK" && !item.status_bpjs);
-        const cocokIgd = filter_igd === "ALL" || item.status_igd_24jam;
-
-        return (
-          cocokNama &&
-          cocokWilayah &&
-          cocokKec &&
-          cocokKat &&
-          cocokPoli &&
-          cocokBpjs &&
-          cocokIgd
-        );
-      });
-      setDaftarFaskes(filtered);
+      setDaftarFaskes((res.data || []).map((f, i) => mapApiFaskesToItem(f, i)));
+      setMetaPaginasi(res.meta || null);
+    } catch (err) {
+      setDaftarFaskes([]);
       setMetaPaginasi(null);
+      setPesanKesalahan(
+        messageFromError(err, "Gagal memuat direktori faskes dari server.")
+      );
     } finally {
       setSedangMemuat(false);
     }
@@ -181,6 +169,7 @@ function CariFaskesKonten() {
     filter_bpjs,
     filter_igd,
     halamanAktif,
+    daftarPoli,
   ]);
 
   useEffect(() => {
@@ -195,6 +184,42 @@ function CariFaskesKonten() {
     return () => clearTimeout(timer);
   }, [kata_kunci_pencarian]);
 
+  useEffect(() => {
+    let aktif = true;
+
+    api
+      .getAllSpesialisasi()
+      .then((items) => {
+        if (aktif) setDaftarPoli(items);
+      })
+      .catch(() => {
+        if (aktif) setDaftarPoli([]);
+      });
+
+    return () => {
+      aktif = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setHalamanAktif(1);
+  }, [
+    filter_wilayah,
+    filter_kecamatan,
+    filter_kategori,
+    filter_poli_aktif,
+    filter_bpjs,
+    filter_igd,
+  ]);
+
+  useEffect(() => {
+    if (filter_poli_aktif === "ALL" || daftarPoli.length === 0) return;
+    const valid = daftarPoli.some((item) =>
+      cocokPoli(item.nama_spesialisasi, filter_poli_aktif)
+    );
+    if (!valid) set_filter_poli_aktif("ALL");
+  }, [daftarPoli, filter_poli_aktif]);
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 w-full space-y-6">
       {/* Breadcrumb */}
@@ -202,6 +227,7 @@ function CariFaskesKonten() {
         <Link href="/" className="hover:text-[#007E7A]">
           Beranda
         </Link>
+
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
         <span className="text-slate-600 font-semibold">Cari Faskes</span>
       </div>
@@ -315,7 +341,9 @@ function CariFaskesKonten() {
           {/* Filter Layanan Poli */}
           <DropdownPencarian
             label="Layanan Poliklinik"
-            daftar_pilihan={daftar_semua_poli}
+            daftar_pilihan={daftarPoli.map((item) =>
+              labelPoli(item.nama_spesialisasi)
+            )}
             nilai_terpilih={filter_poli_aktif}
             saat_memilih={(nilai) => set_filter_poli_aktif(nilai)}
             placeholder_pencarian="Cari poliklinik..."
@@ -411,6 +439,13 @@ function CariFaskesKonten() {
               </span>
             )}
           </div>
+
+          {pesanKesalahan && !sedangMemuat && (
+            <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{pesanKesalahan}</span>
+            </div>
+          )}
 
           {sedangMemuat ? (
             <div className="bg-white rounded-2xl border border-slate-200/90 p-16 text-center space-y-3">

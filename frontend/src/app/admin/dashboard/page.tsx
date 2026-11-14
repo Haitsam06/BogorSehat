@@ -13,48 +13,14 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
-import { api, ApiAdminDashboard, ApiFaskes } from "@/lib/api";
+import { api, ApiAdminDashboard, ApiFaskes, messageFromError } from "@/lib/api";
 
-const daftar_log_audit_bawaan = [
-  {
-    id_log: 1,
-    waktu_relatif: "12 Menit Lalu",
-    jam_log: "09:42 WIB",
-    nama_faskes: "Puskesmas Bogor Tengah",
-    kode_faskes: "Kode: FSK-BOG-041",
-    lokasi_faskes: "Babakan Pasar, Bogor Tengah",
-    kategori_faskes: "Puskesmas Rawat Inap",
-    teks_badge: "• Terverifikasi",
-    gaya_badge: "bg-[#D9F5F3] text-[#065F46]",
-  },
-  {
-    id_log: 2,
-    waktu_relatif: "1 Jam Lalu",
-    jam_log: "08:30 WIB",
-    nama_faskes: "Klinik Pratama Sehat Utama",
-    kode_faskes: "Kode: FSK-KLN-109",
-    lokasi_faskes: "Cilendek Barat, Bogor Barat",
-    kategori_faskes: "Klinik Swasta",
-    teks_badge: "• Data Aktif",
-    gaya_badge: "bg-[#86EFAC] text-[#065F46]",
-  },
-  {
-    id_log: 3,
-    waktu_relatif: "Kemarin",
-    jam_log: "16:15 WIB",
-    nama_faskes: "RS Vania Bogor",
-    kode_faskes: "Kode: FSK-RSV-018",
-    lokasi_faskes: "Sukasari, Bogor Timur",
-    kategori_faskes: "RS Tipe C",
-    teks_badge: "• BPJS Aktif",
-    gaya_badge: "bg-[#E2E8F0] text-slate-700",
-  },
-];
 
 export default function AdminDashboardPage() {
   const [statistik, setStatistik] = useState<ApiAdminDashboard | null>(null);
   const [faskesTerbaru, setFaskesTerbaru] = useState<ApiFaskes[]>([]);
   const [sedangMemuat, setSedangMemuat] = useState(true);
+  const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
 
   useEffect(() => {
     let aktif = true;
@@ -62,17 +28,22 @@ export default function AdminDashboardPage() {
     async function muatDataDashboard() {
       try {
         const [dashRes, faskesRes] = await Promise.all([
-          api.getAdminDashboard().catch(() => null),
-          api.getAdminFaskes({ per_page: 5 }).catch(() => null),
+          api.getAdminDashboard(),
+          api.getAdminFaskes({ per_page: 5 }),
         ]);
 
         if (aktif) {
-          if (dashRes) setStatistik(dashRes);
-          if (faskesRes?.data) setFaskesTerbaru(faskesRes.data);
+          setStatistik(dashRes);
+          setFaskesTerbaru(faskesRes.data || []);
           setSedangMemuat(false);
         }
-      } catch {
-        if (aktif) setSedangMemuat(false);
+      } catch (err) {
+        if (aktif) {
+          setPesanKesalahan(
+            messageFromError(err, "Gagal memuat data dashboard admin.")
+          );
+          setSedangMemuat(false);
+        }
       }
     }
 
@@ -87,6 +58,12 @@ export default function AdminDashboardPage() {
     <AdminSidebarLayout>
       <div className="space-y-6 max-w-[1120px]">
         {/* Banner Sambutan Admin */}
+
+        {pesanKesalahan && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-800">
+            {pesanKesalahan}
+          </div>
+        )}
         <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-r from-white via-white to-[#E6FAF8] p-7 sm:p-9 flex items-center justify-between gap-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
           <div className="space-y-3 max-w-xl">
             <h1 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 leading-snug">
@@ -121,7 +98,7 @@ export default function AdminDashboardPage() {
                 {sedangMemuat ? (
                   <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
                 ) : (
-                  statistik?.faskes_count ?? 142
+                  statistik?.faskes_count ?? 0
                 )}
               </div>
               <div className="text-xs font-semibold text-slate-500">
@@ -139,7 +116,7 @@ export default function AdminDashboardPage() {
                 {sedangMemuat ? (
                   <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
                 ) : (
-                  statistik?.user_count ?? 1
+                  statistik?.user_count ?? 0
                 )}
               </div>
               <div className="text-xs font-semibold text-slate-500">
@@ -288,58 +265,17 @@ export default function AdminDashboardPage() {
                         </td>
                       </tr>
                     ))
-                  : daftar_log_audit_bawaan.map((item_log) => (
-                      <tr
-                        key={item_log.id_log}
-                        className="hover:bg-slate-50/70 transition"
-                      >
-                        <td className="py-5 pl-8 pr-4 whitespace-nowrap">
-                          <div className="font-semibold text-slate-800">
-                            {item_log.waktu_relatif}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            {item_log.jam_log}
-                          </div>
-                        </td>
-
-                        <td className="py-5 px-4 max-w-[200px]">
-                          <div className="font-extrabold text-slate-900 leading-snug">
-                            {item_log.nama_faskes}
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">
-                            {item_log.kode_faskes}
-                          </div>
-                        </td>
-
-                        <td className="py-5 px-4 max-w-[210px]">
-                          <div className="font-semibold text-[#007E7A] flex items-start gap-1 leading-snug">
-                            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                            <span>{item_log.lokasi_faskes}</span>
-                          </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            {item_log.kategori_faskes}
-                          </div>
-                        </td>
-
-                        <td className="py-5 px-4">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold ${item_log.gaya_badge}`}
-                          >
-                            {item_log.teks_badge}
-                          </span>
-                        </td>
-
-                        <td className="py-5 pl-4 pr-8 text-center">
-                          <Link
-                            href="/admin/faskes"
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-200/80 hover:bg-slate-300 text-slate-700 transition"
-                            title="Kelola Data Faskes"
-                          >
-                            <FileEdit className="w-3.5 h-3.5" />
-                          </Link>
+                  : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="py-10 text-center text-xs text-slate-500"
+                        >
+                          Belum ada entri faskes pada sistem.
                         </td>
                       </tr>
-                    ))}
+                    )
+                }
               </tbody>
             </table>
           </div>

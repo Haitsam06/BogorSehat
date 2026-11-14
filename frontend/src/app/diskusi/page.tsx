@@ -21,19 +21,25 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { api, ApiDiskusi, getAuthUser, getAuthToken } from "@/lib/api";
-import { daftar_diskusi_default } from "@/data/data_diskusi";
+import {
+  api,
+  ApiDiskusi,
+  ApiPaginationMeta,
+  getAuthUser,
+  getAuthToken,
+  messageFromError,
+} from "@/lib/api";
 import ModalReportKonten from "@/components/forum/ModalReportKonten";
-import ModalBuatDiskusi from "@/components/forum/ModalBuatDiskusi";
 
 export default function ForumDiskusiPage() {
   const [tabAktif, setTabAktif] = useState<"semua" | "saya">("semua");
   const [kataKunci, setKataKunci] = useState("");
-  const [daftarDiskusi, setDaftarDiskusi] = useState<ApiDiskusi[]>(daftar_diskusi_default);
-  const [sedangMemuat, setSedangMemuat] = useState(false);
+  const [daftarDiskusi, setDaftarDiskusi] = useState<ApiDiskusi[]>([]);
+  const [metaPaginasi, setMetaPaginasi] = useState<ApiPaginationMeta | null>(null);
+  const [halaman, setHalaman] = useState(1);
+  const [sedangMemuat, setSedangMemuat] = useState(true);
 
   // Modal states
-  const [modalBuatBuka, setModalBuatBuka] = useState(false);
   const [modalReportBuka, setModalReportBuka] = useState(false);
   const [targetReportId, setTargetReportId] = useState<number>(1);
   const [targetReportTitle, setTargetReportTitle] = useState<string>("");
@@ -50,35 +56,35 @@ export default function ForumDiskusiPage() {
   const currentUser = getAuthUser();
   const token = getAuthToken();
 
-  // Load discussions from API if available, fallback to seed
   useEffect(() => {
     let aktif = true;
     async function muatData() {
+      if (tabAktif === "saya" && !token) {
+        setDaftarDiskusi([]);
+        setSedangMemuat(false);
+        return;
+      }
+
       try {
         setSedangMemuat(true);
-        if (tabAktif === "saya" && token) {
-          const res = await api.getMyDiscussions().catch(() => null);
-          if (aktif && res?.data && res.data.length > 0) {
-            setDaftarDiskusi(res.data);
-            return;
-          }
-        } else {
-          const res = await api.getDiscussions().catch(() => null);
-          if (aktif && res?.data && res.data.length > 0) {
-            // Gabungkan atau pakai data backend jika ada
-            const backendMap = new Map(res.data.map((d) => [d.id_diskusi, d]));
-            const merged = [...res.data];
-            daftar_diskusi_default.forEach((def) => {
-              if (!backendMap.has(def.id_diskusi)) {
-                merged.push(def);
-              }
-            });
-            setDaftarDiskusi(merged);
-            return;
-          }
+        const res =
+          tabAktif === "saya"
+            ? await api.getMyDiscussions(halaman)
+            : await api.getDiscussions(halaman);
+        if (aktif) {
+          setDaftarDiskusi((prev) =>
+            halaman === 1 ? res.data || [] : [...prev, ...(res.data || [])]
+          );
+          setMetaPaginasi(res.meta ?? null);
         }
-      } catch {
-        // Fallback tetap ke default
+      } catch (err) {
+        if (aktif) {
+          setDaftarDiskusi([]);
+          setPesanNotif({
+            tipe: "error",
+            pesan: messageFromError(err, "Gagal memuat daftar diskusi."),
+          });
+        }
       } finally {
         if (aktif) setSedangMemuat(false);
       }
@@ -87,20 +93,10 @@ export default function ForumDiskusiPage() {
     return () => {
       aktif = false;
     };
-  }, [tabAktif, token]);
+  }, [tabAktif, token, halaman]);
 
   // Filter berdasarkan pencarian & tab
   const diskusiTerfilter = daftarDiskusi.filter((item) => {
-    const isOwner =
-      currentUser &&
-      (item.id_user === currentUser.id_user ||
-        item.user?.id_user === currentUser.id_user);
-
-    if (tabAktif === "saya" && !isOwner) {
-      // Mock: jika user belum login atau di mock id=1 adalah user sendiri
-      if (item.id_user !== 1) return false;
-    }
-
     if (!kataKunci.trim()) return true;
     const q = kataKunci.toLowerCase();
     const matchJudul = item.judul_diskusi.toLowerCase().includes(q);
@@ -113,25 +109,14 @@ export default function ForumDiskusiPage() {
     return matchJudul || matchBody || matchAuthor || matchFaskes;
   });
 
-  const jumlahSemua = daftarDiskusi.length > 2 ? daftarDiskusi.length : 142;
-  const jumlahSaya = daftarDiskusi.filter(
-    (d) =>
-      d.id_user === 1 ||
-      (currentUser && d.id_user === currentUser.id_user)
-  ).length || 4;
+  const jumlahSemua = metaPaginasi?.total ?? daftarDiskusi.length;
+  const jumlahSaya = metaPaginasi?.total ?? daftarDiskusi.length;
 
-  const handleBuatDiskusiSukses = (baru: ApiDiskusi) => {
-    setDaftarDiskusi([baru, ...daftarDiskusi]);
-    setPesanNotif({
-      tipe: "sukses",
-      pesan: "Diskusi baru berhasil dipublikasikan!",
-    });
-  };
 
   const handleHapusDiskusi = async (id: number) => {
     if (!confirm("Apakah Anda yakin ingin menghapus diskusi ini?")) return;
     try {
-      await api.deleteDiscussion(id).catch(() => null);
+      await api.deleteDiscussion(id);
       setDaftarDiskusi((prev) => prev.filter((d) => d.id_diskusi !== id));
       setPesanNotif({
         tipe: "sukses",
@@ -253,7 +238,10 @@ export default function ForumDiskusiPage() {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => setTabAktif("semua")}
+          onClick={() => {
+            setTabAktif("semua");
+            setHalaman(1);
+          }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs ${
             tabAktif === "semua"
               ? "bg-[#007E7A] text-white"
@@ -275,7 +263,10 @@ export default function ForumDiskusiPage() {
 
         <button
           type="button"
-          onClick={() => setTabAktif("saya")}
+          onClick={() => {
+            setTabAktif("saya");
+            setHalaman(1);
+          }}
           className={`px-4 py-2 rounded-xl text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs ${
             tabAktif === "saya"
               ? "bg-[#007E7A] text-white"
@@ -312,14 +303,15 @@ export default function ForumDiskusiPage() {
               Belum Ada Diskusi Ditemukan
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Tidak ada diskusi yang sesuai dengan kriteria filter atau pencarian Anda.
+              {tabAktif === "saya" && !token
+                ? "Masuk sebagai warga untuk melihat diskusi yang Anda buat."
+                : "Tidak ada diskusi yang sesuai dengan kriteria filter atau pencarian Anda."}
             </p>
           </div>
         ) : (
           diskusiTerfilter.map((item) => {
             const isOwner =
-              item.id_user === 1 ||
-              (currentUser && item.id_user === currentUser.id_user);
+              currentUser !== null && item.id_user === currentUser.id_user;
             const authorName = item.user?.nama_user || "Warga Bogor";
             const initials = authorName
               .split(" ")
@@ -327,16 +319,11 @@ export default function ForumDiskusiPage() {
               .slice(0, 2)
               .join("")
               .toUpperCase();
-            const totalTanggapan = item.tanggapan?.length || 18;
-            const likesCount = item.jumlah_suka ?? 24;
-            const viewsCount = item.jumlah_dilihat ?? 342;
-            const faskesName =
-              item.faskes_terkait?.nama_faskes ||
-              (item.id_diskusi === 1
-                ? "RSUD Kota Bogor"
-                : item.id_diskusi === 2
-                ? "RS Siloam Bogor"
-                : undefined);
+            const totalTanggapan =
+              item.jumlah_tanggapan ?? item.tanggapan?.length ?? 0;
+            const likesCount = item.jumlah_suka ?? 0;
+            const viewsCount = item.jumlah_dilihat ?? 0;
+            const faskesName = item.faskes_terkait?.nama_faskes;
 
             return (
               <div
@@ -479,6 +466,19 @@ export default function ForumDiskusiPage() {
             );
           })
         )}
+
+        {metaPaginasi && metaPaginasi.current_page < metaPaginasi.last_page && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setHalaman((prev) => prev + 1)}
+              disabled={sedangMemuat}
+              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition disabled:opacity-50"
+            >
+              {sedangMemuat ? "Memuat..." : "Muat Diskusi Lainnya"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal Report Konten */}
@@ -496,12 +496,6 @@ export default function ForumDiskusiPage() {
         }}
       />
 
-      {/* Modal Buat Diskusi Baru */}
-      <ModalBuatDiskusi
-        isOpen={modalBuatBuka}
-        onClose={() => setModalBuatBuka(false)}
-        onSuccess={handleBuatDiskusiSukses}
-      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
-import { api, ApiFaskes, ApiPaginationMeta } from "@/lib/api";
+import { api, ApiFaskes, ApiPaginationMeta, messageFromError } from "@/lib/api";
 
 interface FormFaskesState {
   nama_faskes: string;
@@ -72,10 +72,10 @@ export default function AdminFaskesPage() {
       });
       setDaftarFaskes(res.data || []);
       setMetaPaginasi(res.meta || null);
-    } catch (err: any) {
+    } catch (err) {
       setPesanStatus({
         tipe: "error",
-        pesan: err?.message || "Gagal memuat data faskes dari server.",
+        pesan: messageFromError(err, "Gagal memuat data faskes dari server."),
       });
     } finally {
       setSedangMemuat(false);
@@ -147,10 +147,10 @@ export default function AdminFaskesPage() {
       }
       setModalBuka(false);
       muatData();
-    } catch (err: any) {
+    } catch (err) {
       setPesanStatus({
         tipe: "error",
-        pesan: err?.message || "Gagal menyimpan data faskes.",
+        pesan: messageFromError(err, "Gagal menyimpan data faskes."),
       });
     } finally {
       setSedangSimpan(false);
@@ -165,10 +165,10 @@ export default function AdminFaskesPage() {
       setPesanStatus({ tipe: "sukses", pesan: "Faskes berhasil dihapus." });
       setIdHapus(null);
       muatData();
-    } catch (err: any) {
+    } catch (err) {
       setPesanStatus({
         tipe: "error",
-        pesan: err?.message || "Gagal menghapus faskes.",
+        pesan: messageFromError(err, "Gagal menghapus faskes."),
       });
     } finally {
       setSedangHapus(false);

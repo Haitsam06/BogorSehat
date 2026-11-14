@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Check, ChevronsUpDown, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { api, getAuthToken } from "@/lib/api";
+import { api, getAuthToken, messageFromError } from "@/lib/api";
 
 interface ModalReportKontenProps {
   isOpen: boolean;
@@ -90,9 +90,12 @@ export default function ModalReportKonten({
       setTimeout(() => {
         onClose();
       }, 2200);
-    } catch (err: any) {
+    } catch (err) {
       setErrorMessage(
-        err?.message || "Gagal mengirim laporan konten. Silakan coba kembali."
+        messageFromError(
+          err,
+          "Gagal mengirim laporan konten. Silakan coba kembali."
+        )
       );
     } finally {
       setSedangKirim(false);

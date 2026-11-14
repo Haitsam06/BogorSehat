@@ -19,152 +19,97 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
-import { api, ApiAdminReportItem } from "@/lib/api";
+import { api, messageFromError } from "@/lib/api";
 
 interface AduanKomentarItem {
   id: number;
-  tipe: "Komentar" | "Tanggapan";
+  api_type: "komentar" | "diskusi" | "tanggapan";
+  tipe: "Komentar" | "Tanggapan" | "Diskusi";
   kategori_laporan: string;
   penjelasan_singkat: string;
   isi_lengkap: string;
   status: "Ditolak" | "Selesai" | "Menunggu";
   nama_pelapor: string;
-  lokasi_pelapor: string;
+  kontak_pelapor: string;
   waktu: string;
+  catatan: string | null;
 }
 
-const DAFTAR_ADUAN_KOMENTAR_MOCK: AduanKomentarItem[] = [
-  {
-    id: 1,
-    tipe: "Komentar",
-    kategori_laporan: "Spam",
-    penjelasan_singkat:
-      "Lift gedung rawat inap rusak sudah dari minggu lalu, tapi sampai",
-    isi_lengkap:
-      "Lift gedung rawat inap rusak sudah dari minggu lalu, tapi sampai sekarang belum ada perbaikan. Kondisi ini cukup mengganggu aktivitas pasien, keluarga pasien, dan pengunjung yang setiap harinya membutuhkan akses menuju lantai atas. Terutama bagi pasien lansia, pasien dengan keterbatasan mobilitas, serta pasien yang harus menggunakan kursi roda. Bahkan beberapa pengunjung terpaksa menggunakan tangga untuk mencapai ruang rawat inap. Mohon pihak rumah sakit segera melakukan perbaikan karena fasilitas lift sangat dibutuhkan untuk menunjang kenyamanan dan kemudahan akses bagi seluruh pasien maupun pengunjung.",
-    status: "Ditolak",
-    nama_pelapor: "Agung",
-    lokasi_pelapor: "Kel. Menteng, Kec. Bogor Barat",
-    waktu: "Hari Ini, 09:42 WIB",
-  },
-  {
-    id: 2,
-    tipe: "Tanggapan",
-    kategori_laporan: "Pelecehan atau perundungan",
-    penjelasan_singkat: "Kalau tidak tahu kondisi sebenarnya",
-    isi_lengkap:
-      "Kalau tidak tahu kondisi sebenarnya, lebih baik diam saja daripada asal berkomentar! Kami di sini sedang membahas permasalahan yang benar-benar terjadi di lapangan, bukan sekadar mencari kesalahan pihak rumah sakit. Seharusnya sebelum memberikan tanggapan, pahami terlebih dahulu situasi yang sedang dialami pasien dan keluarga pasien. Jangan sampai komentar yang diberikan justru meremehkan keluhan orang lain. Setiap orang berhak menyampaikan pengalaman dan pendapatnya selama masih dalam batas yang wajar. Jadi, tolong lebih bijak dalam memberikan komentar dan hargai pengalaman orang lain yang sedang berusaha menyampaikan keluhan.",
-    status: "Selesai",
-    nama_pelapor: "Reza",
-    lokasi_pelapor: "Kel. Menteng, Kec. Bogor Barat",
-    waktu: "Hari Ini, 09:42 WIB",
-  },
-  {
-    id: 3,
-    tipe: "Tanggapan",
-    kategori_laporan: "Ujaran Kebencian",
-    penjelasan_singkat: "Klaim UGD 24 jam di WebGIS ternyata bohong",
-    isi_lengkap:
-      "Klaim UGD 24 jam di WebGIS ternyata bohong besar! Pelayanan sangat lambat dan tidak profesional.",
-    status: "Ditolak",
-    nama_pelapor: "Fajar Nugraha",
-    lokasi_pelapor: "Kel. Sempur, Kec. Bogor Tengah",
-    waktu: "Kemarin, 14:20 WIB",
-  },
-  {
-    id: 4,
-    tipe: "Komentar",
-    kategori_laporan: "Informasi Palsu",
-    penjelasan_singkat: "Lift gedung rawat inap sudah berfungsi normal",
-    isi_lengkap:
-      "Lift gedung rawat inap sudah berfungsi normal sejak kemarin siang dan sudah dapat digunakan kembali oleh pasien dan keluarga pengunjung.",
-    status: "Selesai",
-    nama_pelapor: "Dina Mariana",
-    lokasi_pelapor: "Kel. Baranangsiang, Kec. Bogor Timur",
-    waktu: "2 Hari lalu",
-  },
-  {
-    id: 5,
-    tipe: "Komentar",
-    kategori_laporan: "Pelanggaran Privasi",
-    penjelasan_singkat: "Petugas administrasi bernama [nama petugas]",
-    isi_lengkap:
-      "Petugas administrasi bernama [nama petugas] di loket 3 tidak melayani dengan ramah dan menyebutkan riwayat penyakit pasien dengan suara keras di depan antrean umum.",
-    status: "Selesai",
-    nama_pelapor: "Hendra Wijaya",
-    lokasi_pelapor: "Kel. Kedung Halang, Kec. Bogor Utara",
-    waktu: "3 Hari lalu",
-  },
-];
+const LABEL_TIPE = {
+  komentar: "Komentar",
+  diskusi: "Diskusi",
+  tanggapan: "Tanggapan",
+} as const;
+
+const LABEL_STATUS = {
+  pending: "Menunggu",
+  resolved: "Selesai",
+  rejected: "Ditolak",
+} as const;
+
+function formatWaktu(value: string): string {
+  const tanggal = new Date(value);
+  if (Number.isNaN(tanggal.getTime())) return "-";
+  return tanggal.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 export default function LaporanDataDiskusiPage() {
-  const [daftarAduan, setDaftarAduan] = useState<AduanKomentarItem[]>(
-    DAFTAR_ADUAN_KOMENTAR_MOCK
-  );
+  const [daftarAduan, setDaftarAduan] = useState<AduanKomentarItem[]>([]);
   const [tabKategori, setTabKategori] = useState<
-    "Semua Kategori" | "Komentar" | "Tanggapan"
+    "Semua Kategori" | "Komentar" | "Tanggapan" | "Diskusi"
   >("Komentar");
   const [kataKunci, setKataKunci] = useState("");
-  const [filterKecamatan, setFilterKecamatan] = useState(
-    "Semua Kecamatan (Kota Bogor)"
-  );
   const [filterStatus, setFilterStatus] = useState("Semua Status");
   const [itemTerpilih, setItemTerpilih] = useState<AduanKomentarItem | null>(null);
-  const [sedangMemuat, setSedangMemuat] = useState(false);
+  const [sedangMemuat, setSedangMemuat] = useState(true);
 
-  // Status message
   const [pesanNotif, setPesanNotif] = useState<{
     tipe: "sukses" | "error";
     pesan: string;
   } | null>(null);
 
-  // Load from backend if available
   useEffect(() => {
     let aktif = true;
     async function muatLaporanBackend() {
       try {
         setSedangMemuat(true);
-        const backendReports = await api.getAdminReports().catch(() => null);
-        if (aktif && backendReports && backendReports.length > 0) {
-          const mapped: AduanKomentarItem[] = backendReports.map((item) => {
-            let statusText: "Ditolak" | "Selesai" | "Menunggu" = "Menunggu";
-            if (item.status === "rejected") statusText = "Ditolak";
-            if (item.status === "resolved") statusText = "Selesai";
+        const laporan = await api.getAdminReports();
+        if (!aktif) return;
 
-            const tipeName: "Komentar" | "Tanggapan" =
-              item.type === "tanggapan" ? "Tanggapan" : "Komentar";
-
-            const contentBody =
+        setDaftarAduan(
+          laporan.map((item) => {
+            const isi =
               item.content?.body ||
               item.catatan ||
-              "Isi konten laporan yang dilaporkan oleh warga.";
+              "Konten laporan tidak tersedia.";
 
             return {
               id: item.id,
-              tipe: tipeName,
-              kategori_laporan: item.alasan || "Spam",
+              api_type: item.type,
+              tipe: LABEL_TIPE[item.type],
+              kategori_laporan: item.alasan,
               penjelasan_singkat:
-                contentBody.length > 55
-                  ? contentBody.slice(0, 55) + "..."
-                  : contentBody,
-              isi_lengkap: contentBody,
-              status: statusText,
-              nama_pelapor: item.reported_user?.nama_user || "Warga Bogor",
-              lokasi_pelapor: "Kel. Menteng, Kec. Bogor Barat",
-              waktu: "Hari Ini, 09:42 WIB",
+                isi.length > 55 ? `${isi.slice(0, 55)}...` : isi,
+              isi_lengkap: isi,
+              status: LABEL_STATUS[item.status],
+              nama_pelapor: item.reported_user?.nama_user || "Pengguna",
+              kontak_pelapor: item.reported_user?.email_user || "-",
+              waktu: formatWaktu(item.created_at),
+              catatan: item.catatan ?? null,
             };
+          })
+        );
+      } catch (err) {
+        if (aktif) {
+          setDaftarAduan([]);
+          setPesanNotif({
+            tipe: "error",
+            pesan: messageFromError(err, "Gagal memuat laporan dari server."),
           });
-
-          // Merge backend items with mock items to keep full view
-          const backendIds = new Set(mapped.map((m) => m.id));
-          const combined = [
-            ...mapped,
-            ...DAFTAR_ADUAN_KOMENTAR_MOCK.filter((d) => !backendIds.has(d.id)),
-          ];
-          setDaftarAduan(combined);
         }
-      } catch {
-        // Fallback default
       } finally {
         if (aktif) setSedangMemuat(false);
       }
@@ -176,50 +121,43 @@ export default function LaporanDataDiskusiPage() {
     };
   }, []);
 
-  // Update status (Ditolak / Selesai)
   const handleUbahStatus = async (
-    id: number,
-    tipe: "Komentar" | "Tanggapan",
+    row: AduanKomentarItem,
     statusBaru: "Ditolak" | "Selesai"
   ) => {
     try {
-      const apiType = tipe === "Tanggapan" ? "tanggapan" : "komentar";
-      const apiStatus = statusBaru === "Ditolak" ? "rejected" : "resolved";
-      await api
-        .updateAdminReportStatus(apiType, id, apiStatus)
-        .catch(() => null);
+      const status = statusBaru === "Ditolak" ? "rejected" : "resolved";
+      await api.updateAdminReportStatus(row.api_type, row.id, status);
 
       setDaftarAduan((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, status: statusBaru } : item
+          item.id === row.id && item.api_type === row.api_type
+            ? { ...item, status: statusBaru }
+            : item
         )
       );
 
       setPesanNotif({
         tipe: "sukses",
-        pesan: `Status aduan ${tipe} berhasil diubah menjadi "${statusBaru}".`,
+        pesan: `Status aduan ${row.tipe} berhasil diubah menjadi "${statusBaru}".`,
       });
-    } catch {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: "Gagal memperbarui status aduan.",
+        pesan: messageFromError(err, "Gagal memperbarui status aduan."),
       });
     }
   };
 
-  // Filter list
   const aduanTerfilter = daftarAduan.filter((item) => {
-    // Filter Kategori (Pill)
     if (tabKategori !== "Semua Kategori" && item.tipe !== tabKategori) {
       return false;
     }
 
-    // Filter Status dropdown
     if (filterStatus !== "Semua Status" && item.status !== filterStatus) {
       return false;
     }
 
-    // Filter Search
     if (!kataKunci.trim()) return true;
     const q = kataKunci.toLowerCase();
     const matchTipe = item.tipe.toLowerCase().includes(q);
@@ -306,24 +244,6 @@ export default function LaporanDataDiskusiPage() {
                 />
               </div>
 
-              {/* Dropdown Kecamatan */}
-              <div className="sm:col-span-3">
-                <select
-                  value={filterKecamatan}
-                  onChange={(e) => setFilterKecamatan(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A]"
-                >
-                  <option value="Semua Kecamatan (Kota Bogor)">
-                    Semua Kecamatan (Kota Bogor)
-                  </option>
-                  <option value="Bogor Barat">Bogor Barat</option>
-                  <option value="Bogor Tengah">Bogor Tengah</option>
-                  <option value="Bogor Timur">Bogor Timur</option>
-                  <option value="Bogor Selatan">Bogor Selatan</option>
-                  <option value="Bogor Utara">Bogor Utara</option>
-                  <option value="Tanah Sareal">Tanah Sareal</option>
-                </select>
-              </div>
 
               {/* Dropdown Status */}
               <div className="sm:col-span-3">
@@ -393,6 +313,18 @@ export default function LaporanDataDiskusiPage() {
             >
               Tanggapan
             </button>
+
+            <button
+              type="button"
+              onClick={() => setTabKategori("Diskusi")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs ${
+                tabKategori === "Diskusi"
+                  ? "bg-[#007E7A] text-white"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              Diskusi
+            </button>
           </div>
         </div>
 
@@ -426,8 +358,25 @@ export default function LaporanDataDiskusiPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {aduanTerfilter.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/80 transition">
+                {sedangMemuat ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-500">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#007E7A]" />
+                      <p className="mt-2">Memuat laporan dari server...</p>
+                    </td>
+                  </tr>
+                ) : aduanTerfilter.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-500">
+                      Tidak ada laporan yang cocok dengan filter.
+                    </td>
+                  </tr>
+                ) : (
+                  aduanTerfilter.map((row) => (
+                  <tr
+                    key={`${row.api_type}-${row.id}`}
+                    className="hover:bg-slate-50/80 transition"
+                  >
                     {/* Tipe */}
                     <td className="py-4 px-6 font-bold text-slate-900 text-xs">
                       {row.tipe}
@@ -481,9 +430,7 @@ export default function LaporanDataDiskusiPage() {
                         {/* Tolak Aduan */}
                         <button
                           type="button"
-                          onClick={() =>
-                            handleUbahStatus(row.id, row.tipe, "Ditolak")
-                          }
+                          onClick={() => handleUbahStatus(row, "Ditolak")}
                           className="p-1 hover:text-red-600 rounded transition"
                           title="Tolak Aduan"
                         >
@@ -493,9 +440,7 @@ export default function LaporanDataDiskusiPage() {
                         {/* Selesaikan / Validasi Aduan */}
                         <button
                           type="button"
-                          onClick={() =>
-                            handleUbahStatus(row.id, row.tipe, "Selesai")
-                          }
+                          onClick={() => handleUbahStatus(row, "Selesai")}
                           className="p-1 hover:text-emerald-600 rounded transition"
                           title="Setujui / Selesaikan Aduan"
                         >
@@ -504,56 +449,14 @@ export default function LaporanDataDiskusiPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* Footer Paginasi */}
-          <div className="px-6 py-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
-            <span>
-              Menampilkan data ke 1 - 5 dari total 38 aduan • Hal 1 dari 8
-            </span>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg bg-[#007E7A] text-white font-bold flex items-center justify-center shadow-xs"
-              >
-                1
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                2
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                8
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                ›
-              </button>
-            </div>
+          <div className="px-6 py-4 border-t border-slate-200/80 text-xs text-slate-500 font-medium">
+            Menampilkan {aduanTerfilter.length} dari {daftarAduan.length} aduan.
           </div>
         </div>
 
@@ -601,7 +504,7 @@ export default function LaporanDataDiskusiPage() {
                         {itemTerpilih.nama_pelapor}
                       </span>
                       <span className="text-[11.5px] text-slate-500">
-                        {itemTerpilih.lokasi_pelapor}
+                        {itemTerpilih.kontak_pelapor}
                       </span>
                     </div>
                     <span className="text-[11.5px] text-slate-400 font-medium">
@@ -616,6 +519,8 @@ export default function LaporanDataDiskusiPage() {
                       <span>
                         {itemTerpilih.tipe === "Komentar"
                           ? "Komentar:"
+                          : itemTerpilih.tipe === "Diskusi"
+                          ? "Diskusi:"
                           : "Tanggapan:"}
                       </span>
                     </div>

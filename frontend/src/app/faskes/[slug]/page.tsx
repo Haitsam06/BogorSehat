@@ -20,10 +20,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-import {
-  daftar_faskes_utama,
-  DataFaskesItem,
-} from "@/data/data_faskes";
+import type { DataFaskesItem } from "@/data/data_faskes";
 import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import ModalReportFaskes from "@/components/faskes/ModalReportFaskes";
@@ -34,6 +31,7 @@ import {
   mapApiFaskesToItem,
   getAuthToken,
   getAuthUser,
+  messageFromError,
 } from "@/lib/api";
 
 export default function DetailFaskesPage({
@@ -43,14 +41,10 @@ export default function DetailFaskesPage({
 }) {
   const { slug } = use(params);
 
-  const [faskesItem, setFaskesItem] = useState<DataFaskesItem>(() => {
-    return (
-      daftar_faskes_utama.find((item) => item.slug_faskes === slug) ||
-      daftar_faskes_utama[0]
-    );
-  });
+  const [faskesItem, setFaskesItem] = useState<DataFaskesItem | null>(null);
   const [rawApiFaskes, setRawApiFaskes] = useState<ApiFaskes | null>(null);
   const [sedangMemuat, setSedangMemuat] = useState(true);
+  const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
 
   // Comments state
   const [daftarKomentar, setDaftarKomentar] = useState<ApiKomentar[]>([]);
@@ -63,6 +57,13 @@ export default function DetailFaskesPage({
 
   // Modal Report Faskes state
   const [modalFeedbackBuka, setModalFeedbackBuka] = useState(false);
+  const [targetLaporKomentar, setTargetLaporKomentar] = useState<{
+    id: number;
+    ringkasan: string;
+  } | null>(null);
+  const [alasanLapor, setAlasanLapor] = useState("Komentar tidak relevan");
+  const [catatanLapor, setCatatanLapor] = useState("");
+  const [sedangLapor, setSedangLapor] = useState(false);
 
   // Status message
   const [pesanNotif, setPesanNotif] = useState<{
@@ -86,30 +87,37 @@ export default function DetailFaskesPage({
       try {
         if (targetId) {
           const res = await api.getFaskesDetail(targetId);
-          if (aktif && res) {
+          if (aktif) {
             setRawApiFaskes(res);
             setFaskesItem(mapApiFaskesToItem(res));
           }
         } else {
-          // Cari berdasarkan slug/nama
           const resSearch = await api.getFaskes({ search: slug });
-          if (aktif && resSearch.data && resSearch.data.length > 0) {
-            const found = resSearch.data[0];
+          const found = resSearch.data?.[0];
+          if (found) {
             targetId = found.id_faskes;
-            setRawApiFaskes(found);
-            setFaskesItem(mapApiFaskesToItem(found));
+            if (aktif) {
+              setRawApiFaskes(found);
+              setFaskesItem(mapApiFaskesToItem(found));
+            }
           }
         }
 
-        // Muat komentar jika ada ID
         if (targetId) {
-          const komRes = await api.getComments(targetId).catch(() => null);
-          if (aktif && komRes?.data) {
-            setDaftarKomentar(komRes.data);
+          const komRes = await api.getComments(targetId);
+          if (aktif) {
+            setDaftarKomentar(komRes.data || []);
           }
+        } else if (aktif) {
+          setPesanKesalahan("Fasilitas kesehatan tidak ditemukan.");
         }
-      } catch {
-        // Fallback tetap ke faskesItem awal
+      } catch (err) {
+        if (aktif) {
+          setFaskesItem(null);
+          setPesanKesalahan(
+            messageFromError(err, "Gagal memuat detail fasilitas kesehatan.")
+          );
+        }
       } finally {
         if (aktif) setSedangMemuat(false);
       }
@@ -121,6 +129,32 @@ export default function DetailFaskesPage({
       aktif = false;
     };
   }, [slug]);
+
+  if (faskesItem === null) {
+    return (
+      <div className="max-w-[1140px] mx-auto px-4 sm:px-6 py-16 text-center space-y-3">
+        {sedangMemuat ? (
+          <>
+            <Loader2 className="w-8 h-8 animate-spin text-[#007E7A] mx-auto" />
+            <p className="text-xs text-slate-500">Memuat detail faskes...</p>
+          </>
+        ) : (
+          <>
+            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+            <p className="text-sm font-bold text-slate-800">
+              {pesanKesalahan ?? "Fasilitas kesehatan tidak ditemukan."}
+            </p>
+            <Link
+              href="/cari-faskes"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#007E7A] text-white text-xs font-bold"
+            >
+              Kembali ke Pencarian Faskes
+            </Link>
+          </>
+        )}
+      </div>
+    );
+  }
 
   // Kirim ulasan baru
   const tanganiKirimUlasan = async (e: React.FormEvent) => {
@@ -145,10 +179,10 @@ export default function DetailFaskesPage({
       setDaftarKomentar([baru, ...daftarKomentar]);
       set_teks_ulasan_baru("");
       setPesanNotif({ tipe: "sukses", pesan: "Ulasan Anda berhasil dikirim." });
-    } catch (err: any) {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: err?.message || "Gagal mengirim ulasan.",
+        pesan: messageFromError(err, "Gagal mengirim ulasan."),
       });
     } finally {
       setSedangKirimUlasan(false);
@@ -187,10 +221,10 @@ export default function DetailFaskesPage({
       setBalasKeId(null);
       setTeksBalasan("");
       setPesanNotif({ tipe: "sukses", pesan: "Balasan berhasil dikirim." });
-    } catch (err: any) {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: err?.message || "Gagal mengirim balasan.",
+        pesan: messageFromError(err, "Gagal mengirim balasan."),
       });
     } finally {
       setSedangKirimBalasan(false);
@@ -205,11 +239,45 @@ export default function DetailFaskesPage({
         prev.filter((k) => k.id_komentar !== idKomentar)
       );
       setPesanNotif({ tipe: "sukses", pesan: "Ulasan berhasil dihapus." });
-    } catch (err: any) {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: err?.message || "Gagal menghapus ulasan.",
+        pesan: messageFromError(err, "Gagal menghapus ulasan."),
       });
+    }
+  };
+
+  const tanganiLaporKomentar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetLaporKomentar) return;
+
+    if (!token) {
+      setPesanNotif({
+        tipe: "error",
+        pesan: "Silakan login terlebih dahulu untuk melaporkan komentar.",
+      });
+      return;
+    }
+
+    setSedangLapor(true);
+    try {
+      await api.reportComment(targetLaporKomentar.id, {
+        alasan: alasanLapor,
+        catatan: catatanLapor.trim() || undefined,
+      });
+      setPesanNotif({
+        tipe: "sukses",
+        pesan: "Laporan komentar berhasil dikirim ke moderator.",
+      });
+      setTargetLaporKomentar(null);
+      setCatatanLapor("");
+    } catch (err) {
+      setPesanNotif({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal mengirim laporan komentar."),
+      });
+    } finally {
+      setSedangLapor(false);
     }
   };
 
@@ -503,9 +571,11 @@ export default function DetailFaskesPage({
               </div>
             ) : (
               daftarKomentar.map((item) => {
+                const idPenulis = item.user?.id_user ?? item.id_user;
                 const bolehHapus =
-                  currentUser &&
-                  (currentUser.id_user === item.id_user || currentUser.role_user === "admin");
+                  currentUser !== null &&
+                  (currentUser.id_user === idPenulis ||
+                    currentUser.role_user === "admin");
 
                 return (
                   <div
@@ -565,6 +635,21 @@ export default function DetailFaskesPage({
                         <CornerUpLeft className="w-3 h-3" />
                         <span>Balas ({item.replies?.length || 0})</span>
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetLaporKomentar({
+                            id: item.id_komentar,
+                            ringkasan: item.body,
+                          });
+                          setAlasanLapor("Komentar tidak relevan");
+                          setCatatanLapor("");
+                        }}
+                        className="text-slate-500 flex items-center gap-1 hover:text-rose-600"
+                      >
+                        <Flag className="w-3 h-3" />
+                        <span>Laporkan</span>
+                      </button>
                     </div>
 
                     {/* Form Input Balasan */}
@@ -611,6 +696,20 @@ export default function DetailFaskesPage({
                               </span>
                             </div>
                             <p className="text-slate-600 text-[11px]">{reply.body}</p>
+                            {reply.replies && reply.replies.length > 0 && (
+                              <div className="mt-1.5 pl-3 space-y-1 border-l border-slate-200">
+                                {reply.replies.map((sub) => (
+                                  <div key={sub.id_komentar} className="text-[11px]">
+                                    <span className="font-bold text-slate-900">
+                                      {sub.user?.nama_user || "Warga"}:{" "}
+                                    </span>
+                                    <span className="text-slate-600">
+                                      {sub.body}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -652,7 +751,7 @@ export default function DetailFaskesPage({
             </p>
             {faskesItem.telepon_darurat && (
               <p className="text-slate-700 font-semibold pt-1">
-                Kontak: {rawApiFaskes?.telp_faskes || "0251-8321000"}
+                Kontak: {rawApiFaskes?.telp_faskes || "-"}
               </p>
             )}
           </div>
@@ -675,6 +774,7 @@ export default function DetailFaskesPage({
         isOpen={modalFeedbackBuka}
         onClose={() => setModalFeedbackBuka(false)}
         faskesId={faskesItem.id_faskes}
+
         namaFaskes={faskesItem.nama_faskes}
         onSuccess={() => {
           setPesanNotif({
@@ -683,6 +783,81 @@ export default function DetailFaskesPage({
           });
         }}
       />
+      {targetLaporKomentar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form
+            onSubmit={tanganiLaporKomentar}
+            className="w-full max-w-md bg-white rounded-2xl p-5 space-y-4 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  Laporkan Komentar
+                </h3>
+                <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
+                  {targetLaporKomentar.ringkasan}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTargetLaporKomentar(null)}
+                className="p-1 text-slate-400 hover:text-slate-700"
+                aria-label="Tutup formulir laporan"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <label className="block text-xs font-bold text-slate-800 space-y-1">
+              <span>Alasan</span>
+              <select
+                value={alasanLapor}
+                onChange={(e) => setAlasanLapor(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A]"
+              >
+                <option value="Komentar tidak relevan">
+                  Komentar tidak relevan
+                </option>
+                <option value="Informasi menyesatkan">
+                  Informasi menyesatkan
+                </option>
+                <option value="Kata kasar atau ujaran kebencian">
+                  Kata kasar atau ujaran kebencian
+                </option>
+                <option value="Spam atau promosi">Spam atau promosi</option>
+              </select>
+            </label>
+
+            <label className="block text-xs font-bold text-slate-800 space-y-1">
+              <span>Catatan (opsional)</span>
+              <textarea
+                rows={3}
+                value={catatanLapor}
+                onChange={(e) => setCatatanLapor(e.target.value)}
+                className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-[#007E7A]"
+                placeholder="Jelaskan alasan laporan Anda..."
+              />
+            </label>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setTargetLaporKomentar(null)}
+                className="px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={sedangLapor}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold disabled:opacity-50"
+              >
+                {sedangLapor ? "Mengirim..." : "Kirim Laporan"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

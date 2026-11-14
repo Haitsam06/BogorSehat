@@ -21,7 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
-import { api, ApiFeedbackFaskes } from "@/lib/api";
+import { api, messageFromError } from "@/lib/api";
 
 interface AduanFaskesItem {
   id: number;
@@ -34,223 +34,83 @@ interface AduanFaskesItem {
   kronologi_lengkap: string;
   status: "Ditolak" | "Selesai" | "Menunggu";
   nama_pelapor: string;
-  lokasi_pelapor: string;
+  kontak_pelapor: string;
   waktu: string;
-  bukti_foto: Array<{
-    url: string;
-    caption: string;
-  }>;
+  catatan_admin: string | null;
 }
 
-const DAFTAR_ADUAN_MOCK: AduanFaskesItem[] = [
-  {
-    id: 1,
-    nama_faskes: "RSUD Kota Bogor",
-    lokasi_kecamatan: "Bogor Barat",
-    alamat_lengkap:
-      "Jl. DR. Sumeru No.120, Menteng, Kec. Bogor Barat, Kota Bogor 16111",
-    tipe_badge: "RS Tipe B • UGD 24 Jam",
-    kategori_laporan: "Sarana Rusak",
-    penjelasan_singkat: "Lift Gedung Rawat Inap Rusak &...",
-    kronologi_lengkap:
-      "“Lift pengunjung Gedung Teratai (Rawat Inap) lantai 2 ke lantai 4 sudah 2 hari mati total tanpa papan pemberitahuan estimasi perbaikan.”",
-    status: "Ditolak",
-    nama_pelapor: "Dewi Sartika",
-    lokasi_pelapor: "Kel. Menteng, Kec. Bogor Barat",
-    waktu: "Hari Ini, 09:42 WIB",
-    bukti_foto: [
-      {
-        url: "/images/detail-photo-2.png",
-        caption: "Foto 1: Panel Tombol Lift Mati Gedung Teratai",
-      },
-      {
-        url: "/images/detail-photo-3.png",
-        caption: "Foto 2: Tangga Darurat & Kursi Roda Terhambat",
-      },
-    ],
-  },
-  {
-    id: 2,
-    nama_faskes: "RSUD Kota Bogor",
-    lokasi_kecamatan: "Bogor Barat",
-    alamat_lengkap:
-      "Jl. DR. Sumeru No.120, Menteng, Kec. Bogor Barat, Kota Bogor 16111",
-    tipe_badge: "RS Tipe B • UGD 24 Jam",
-    kategori_laporan: "Operasional",
-    penjelasan_singkat: "Klaim UGD 24 Jam di WebGIS ternyata...",
-    kronologi_lengkap:
-      "“Warga datang malam hari pukul 02.00 WIB untuk penanganan darurat, namun loket pendaftaran IGD menyatakan dokter jaga sedang istirahat dan dialihkan.”",
-    status: "Ditolak",
-    nama_pelapor: "Rian Hidayat",
-    lokasi_pelapor: "Kel. Loji, Kec. Bogor Barat",
-    waktu: "Kemarin, 21:15 WIB",
-    bukti_foto: [
-      {
-        url: "/images/detail-photo-1.png",
-        caption: "Foto: Pintu Masuk UGD Saat Kejadian",
-      },
-    ],
-  },
-  {
-    id: 3,
-    nama_faskes: "RSUD Kota Bogor",
-    lokasi_kecamatan: "Bogor Barat",
-    alamat_lengkap:
-      "Jl. DR. Sumeru No.120, Menteng, Kec. Bogor Barat, Kota Bogor 16111",
-    tipe_badge: "RS Tipe B • UGD 24 Jam",
-    kategori_laporan: "Sarana Rusak",
-    penjelasan_singkat: "Lift Gedung Rawat Inap Rusak &...",
-    kronologi_lengkap:
-      "“Perbaikan lift gedung rawat inap sudah selesai dikerjakan teknisi dan telah beroperasi normal kembali untuk pasien rawat inap.”",
-    status: "Selesai",
-    nama_pelapor: "Ahmad Fauzi",
-    lokasi_pelapor: "Kel. Menteng, Kec. Bogor Barat",
-    waktu: "2 Hari lalu",
-    bukti_foto: [
-      {
-        url: "/images/detail-photo-2.png",
-        caption: "Foto: Lift Sudah Diperbaiki & Aktif",
-      },
-    ],
-  },
-  {
-    id: 4,
-    nama_faskes: "RSUD Kota Bogor",
-    lokasi_kecamatan: "Bogor Barat",
-    alamat_lengkap:
-      "Jl. DR. Sumeru No.120, Menteng, Kec. Bogor Barat, Kota Bogor 16111",
-    tipe_badge: "RS Tipe B • UGD 24 Jam",
-    kategori_laporan: "Sarana Rusak",
-    penjelasan_singkat: "Lift Gedung Rawat Inap Rusak &...",
-    kronologi_lengkap:
-      "“AC di ruang tunggu pendaftaran poli rawat jalan mati sehingga ruangan pengap bagi lansia dan anak-anak.”",
-    status: "Selesai",
-    nama_pelapor: "Budi Santoso",
-    lokasi_pelapor: "Kel. Pasir Mulya, Kec. Bogor Barat",
-    waktu: "3 Hari lalu",
-    bukti_foto: [
-      {
-        url: "/images/detail-photo-3.png",
-        caption: "Foto: Ruang Tunggu Rawat Jalan",
-      },
-    ],
-  },
-  {
-    id: 5,
-    nama_faskes: "Puskesmas Bogor Tengah",
-    lokasi_kecamatan: "Bogor Barat",
-    alamat_lengkap:
-      "Jl. Telepon No.1, Pabaton, Kec. Bogor Tengah, Kota Bogor 16121",
-    tipe_badge: "RS Tipe B • UGD 24 Jam",
-    kategori_laporan: "Pelayanan Buruk",
-    penjelasan_singkat: "Petugas Administrasi Minta...",
-    kronologi_lengkap:
-      "“Petugas loket menolak pendaftaran BPJS karena kartu digital di HP dianggap tidak berlaku padahal barcode valid di Mobile JKN.”",
-    status: "Selesai",
-    nama_pelapor: "Siti Rahma",
-    lokasi_pelapor: "Kel. Babakan, Kec. Bogor Tengah",
-    waktu: "4 Hari lalu",
-    bukti_foto: [
-      {
-        url: "/images/detail-photo-1.png",
-        caption: "Foto: Loket Pendaftaran Puskesmas",
-      },
-    ],
-  },
-  {
-    id: 6,
-    nama_faskes: "Puskesmas Bogor Tengah",
-    lokasi_kecamatan: "Bogor Barat",
-    alamat_lengkap:
-      "Jl. Telepon No.1, Pabaton, Kec. Bogor Tengah, Kota Bogor 16121",
-    tipe_badge: "RS Tipe B • UGD 24 Jam",
-    kategori_laporan: "Layanan BPJS",
-    penjelasan_singkat: "Petugas Administrasi Minta...",
-    kronologi_lengkap:
-      "“Penjelasan alur rujukan dari faskes 1 ke rumah sakit rujukan sudah diverifikasi dan diluruskan oleh Kepala Puskesmas.”",
-    status: "Selesai",
-    nama_pelapor: "Hendra Wijaya",
-    lokasi_pelapor: "Kel. Sempur, Kec. Bogor Tengah",
-    waktu: "5 Hari lalu",
-    bukti_foto: [
-      {
-        url: "/images/detail-photo-2.png",
-        caption: "Foto: Alur Rujukan di Faskes",
-      },
-    ],
-  },
-];
+const LABEL_STATUS = {
+  pending: "Menunggu",
+  resolved: "Selesai",
+  rejected: "Ditolak",
+} as const;
+
+function formatWaktu(value: string): string {
+  const tanggal = new Date(value);
+  if (Number.isNaN(tanggal.getTime())) return "-";
+  return tanggal.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 export default function LaporanDataFaskesPage() {
-  const [daftarAduan, setDaftarAduan] = useState<AduanFaskesItem[]>(DAFTAR_ADUAN_MOCK);
+  const [daftarAduan, setDaftarAduan] = useState<AduanFaskesItem[]>([]);
   const [kataKunci, setKataKunci] = useState("");
-  const [filterKota, setFilterKota] = useState("Kota Bogor");
   const [filterStatus, setFilterStatus] = useState("Semua Status");
   const [aduanTerpilih, setAduanTerpilih] = useState<AduanFaskesItem | null>(null);
-  const [sedangMemuat, setSedangMemuat] = useState(false);
+  const [sedangMemuat, setSedangMemuat] = useState(true);
 
-  // Status message
   const [pesanNotif, setPesanNotif] = useState<{
     tipe: "sukses" | "error";
     pesan: string;
   } | null>(null);
 
-  // Load backend feedback if available
   useEffect(() => {
     let aktif = true;
     async function muatFeedback() {
       try {
         setSedangMemuat(true);
-        const dataBackend = await api.getAdminFeedbacks().catch(() => null);
-        if (aktif && dataBackend && dataBackend.length > 0) {
-          const mapped: AduanFaskesItem[] = dataBackend.map((item) => {
-            let statusText: "Ditolak" | "Selesai" | "Menunggu" = "Menunggu";
-            if (item.status === "rejected") statusText = "Ditolak";
-            if (item.status === "resolved") statusText = "Selesai";
+        const dataBackend = await api.getAdminFeedbacks();
+        if (!aktif) return;
+
+        setDaftarAduan(
+          dataBackend.map((item) => {
+            const ringkas = item.saran_perbaikan;
+            const faskes = item.faskes;
 
             return {
               id: item.id_feedback_faskes,
-              nama_faskes: item.faskes?.nama_faskes || "Faskes Kota Bogor",
+              nama_faskes: faskes?.nama_faskes || "Faskes",
               lokasi_kecamatan:
-                item.faskes?.kecamatan || item.kecamatan_pelapor || "Bogor Barat",
-              alamat_lengkap:
-                item.faskes?.alamat_faskes ||
-                "Jl. DR. Sumeru No.120, Menteng, Kota Bogor",
-              tipe_badge: `${item.faskes?.jenis_faskes || "RS Tipe B"} • UGD 24 Jam`,
-              kategori_laporan: item.alasan || "Sarana Rusak",
+                faskes?.kecamatan || faskes?.kota_kabupaten || "-",
+              alamat_lengkap: faskes?.alamat_faskes || "-",
+              tipe_badge: `${faskes?.jenis_faskes || "Faskes"} • ${
+                faskes?.is_support_bpjs ? "BPJS" : "Non-BPJS"
+              }`,
+              kategori_laporan: item.alasan,
               penjelasan_singkat:
-                item.saran_perbaikan.length > 30
-                  ? item.saran_perbaikan.slice(0, 30) + "..."
-                  : item.saran_perbaikan,
-              kronologi_lengkap: `“${item.saran_perbaikan}”`,
-              status: statusText,
-              nama_pelapor: item.user?.nama_user || "Dewi Sartika",
-              lokasi_pelapor:
-                item.kelurahan_pelapor || "Kel. Menteng, Kec. Bogor Barat",
-              waktu: "Hari Ini, 09:42 WIB",
-              bukti_foto: [
-                {
-                  url: "/images/detail-photo-2.png",
-                  caption: "Foto 1: Panel Tombol Lift Mati Gedung Teratai",
-                },
-                {
-                  url: "/images/detail-photo-3.png",
-                  caption: "Foto 2: Tangga Darurat & Kursi Roda Terhambat",
-                },
-              ],
+                ringkas.length > 40 ? `${ringkas.slice(0, 40)}...` : ringkas,
+              kronologi_lengkap: ringkas,
+              status: LABEL_STATUS[item.status],
+              nama_pelapor: item.user?.nama_user || "Pengguna",
+              kontak_pelapor: item.user?.email_user || "-",
+              waktu: formatWaktu(item.created_at),
+              catatan_admin: item.catatan_admin ?? null,
             };
+          })
+        );
+      } catch (err) {
+        if (aktif) {
+          setDaftarAduan([]);
+          setPesanNotif({
+            tipe: "error",
+            pesan: messageFromError(
+              err,
+              "Gagal memuat laporan faskes dari server."
+            ),
           });
-
-          // Merge backend with mock to preserve complete screenshot view
-          const backendIds = new Set(mapped.map((m) => m.id));
-          const combined = [
-            ...mapped,
-            ...DAFTAR_ADUAN_MOCK.filter((d) => !backendIds.has(d.id)),
-          ];
-          setDaftarAduan(combined);
         }
-      } catch {
-        // Fallback default mock
       } finally {
         if (aktif) setSedangMemuat(false);
       }
@@ -262,18 +122,17 @@ export default function LaporanDataFaskesPage() {
     };
   }, []);
 
-  // Update status aduan
   const handleUbahStatus = async (
-    id: number,
+    row: AduanFaskesItem,
     statusBaru: "Ditolak" | "Selesai"
   ) => {
     try {
       const apiStatus = statusBaru === "Ditolak" ? "rejected" : "resolved";
-      await api.updateAdminFeedback(id, { status: apiStatus }).catch(() => null);
+      await api.updateAdminFeedback(row.id, { status: apiStatus });
 
       setDaftarAduan((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, status: statusBaru } : item
+          item.id === row.id ? { ...item, status: statusBaru } : item
         )
       );
 
@@ -281,15 +140,14 @@ export default function LaporanDataFaskesPage() {
         tipe: "sukses",
         pesan: `Status aduan berhasil diubah menjadi "${statusBaru}".`,
       });
-    } catch {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: "Gagal memperbarui status aduan.",
+        pesan: messageFromError(err, "Gagal memperbarui status aduan."),
       });
     }
   };
 
-  // Filter list
   const aduanTerfilter = daftarAduan.filter((item) => {
     if (filterStatus !== "Semua Status" && item.status !== filterStatus) {
       return false;
@@ -380,18 +238,6 @@ export default function LaporanDataFaskesPage() {
               />
             </div>
 
-            {/* Dropdown Kota */}
-            <div className="sm:col-span-3">
-              <select
-                value={filterKota}
-                onChange={(e) => setFilterKota(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A]"
-              >
-                <option value="Kota Bogor">Kota Bogor</option>
-                <option value="Kabupaten Bogor">Kabupaten Bogor</option>
-                <option value="Semua Wilayah">Semua Wilayah</option>
-              </select>
-            </div>
 
             {/* Dropdown Status */}
             <div className="sm:col-span-3">
@@ -453,7 +299,21 @@ export default function LaporanDataFaskesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {aduanTerfilter.map((row) => (
+                {sedangMemuat ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-500">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#007E7A]" />
+                      <p className="mt-2">Memuat laporan dari server...</p>
+                    </td>
+                  </tr>
+                ) : aduanTerfilter.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-500">
+                      Tidak ada laporan yang cocok dengan filter.
+                    </td>
+                  </tr>
+                ) : (
+                  aduanTerfilter.map((row) => (
                   <tr key={row.id} className="hover:bg-slate-50/80 transition">
                     {/* Faskes & Lokasi */}
                     <td className="py-4 px-6 space-y-1">
@@ -517,7 +377,7 @@ export default function LaporanDataFaskesPage() {
                         {/* Tolak Aduan */}
                         <button
                           type="button"
-                          onClick={() => handleUbahStatus(row.id, "Ditolak")}
+                          onClick={() => handleUbahStatus(row, "Ditolak")}
                           className="p-1 hover:text-red-600 rounded transition"
                           title="Tolak Aduan"
                         >
@@ -527,7 +387,7 @@ export default function LaporanDataFaskesPage() {
                         {/* Selesaikan / Validasi Aduan */}
                         <button
                           type="button"
-                          onClick={() => handleUbahStatus(row.id, "Selesai")}
+                          onClick={() => handleUbahStatus(row, "Selesai")}
                           className="p-1 hover:text-emerald-600 rounded transition"
                           title="Setujui / Selesaikan Aduan"
                         >
@@ -536,56 +396,14 @@ export default function LaporanDataFaskesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* Footer Paginasi */}
-          <div className="px-6 py-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
-            <span>
-              Menampilkan data ke 1 - 5 dari total 38 aduan • Hal 1 dari 8
-            </span>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg bg-[#007E7A] text-white font-bold flex items-center justify-center shadow-xs"
-              >
-                1
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                2
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                8
-              </button>
-              <button
-                type="button"
-                className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition"
-              >
-                ›
-              </button>
-            </div>
+          <div className="px-6 py-4 border-t border-slate-200/80 text-xs text-slate-500 font-medium">
+            Menampilkan {aduanTerfilter.length} dari {daftarAduan.length} aduan.
           </div>
         </div>
 
@@ -650,7 +468,7 @@ export default function LaporanDataFaskesPage() {
                           {aduanTerpilih.nama_pelapor}
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          {aduanTerpilih.lokasi_pelapor}
+                          {aduanTerpilih.kontak_pelapor}
                         </span>
                       </div>
                       <span className="text-[11px] text-slate-400 font-medium">
@@ -671,50 +489,15 @@ export default function LaporanDataFaskesPage() {
                   </div>
                 </div>
 
-                {/* Kolom Kanan: Bukti Lampiran */}
                 <div className="bg-slate-50/80 rounded-xl border border-slate-200/80 p-4 space-y-3">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    <Images className="w-4 h-4 text-[#007E7A]" />
-                    <span>BUKTI LAMPIRAN</span>
+                    <FileText className="w-4 h-4 text-[#007E7A]" />
+                    <span>CATATAN ADMIN</span>
                   </div>
-
-                  {/* Foto 1 */}
-                  <div className="relative rounded-lg overflow-hidden border border-slate-200 group bg-slate-900">
-                    <img
-                      src={
-                        aduanTerpilih.bukti_foto[0]?.url ||
-                        "/images/detail-photo-2.png"
-                      }
-                      alt="Bukti Lampiran 1"
-                      className="w-full h-36 object-cover opacity-90 group-hover:opacity-100 transition"
-                    />
-                    <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs px-3 py-1.5 text-[11px] text-white font-medium flex items-center gap-1.5">
-                      <span>📷</span>
-                      <span className="truncate">
-                        {aduanTerpilih.bukti_foto[0]?.caption ||
-                          "Foto 1: Panel Tombol Lift Mati Gedung Teratai"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Foto 2 */}
-                  <div className="relative rounded-lg overflow-hidden border border-slate-200 group bg-slate-900">
-                    <img
-                      src={
-                        aduanTerpilih.bukti_foto[1]?.url ||
-                        "/images/detail-photo-3.png"
-                      }
-                      alt="Bukti Lampiran 2"
-                      className="w-full h-36 object-cover opacity-90 group-hover:opacity-100 transition"
-                    />
-                    <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs px-3 py-1.5 text-[11px] text-white font-medium flex items-center gap-1.5">
-                      <span>📷</span>
-                      <span className="truncate">
-                        {aduanTerpilih.bukti_foto[1]?.caption ||
-                          "Foto 2: Tangga Darurat & Kursi Roda Terhambat"}
-                      </span>
-                    </div>
-                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {aduanTerpilih.catatan_admin ??
+                      "Belum ada catatan admin untuk laporan ini."}
+                  </p>
                 </div>
               </div>
             </div>

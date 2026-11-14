@@ -9,7 +9,6 @@ import {
   MessageSquare,
   Eye,
   Share2,
-  Pencil,
   Trash2,
   Flag,
   Send,
@@ -31,9 +30,19 @@ import {
   ApiTanggapan,
   getAuthUser,
   getAuthToken,
+  messageFromError,
 } from "@/lib/api";
-import { daftar_diskusi_default } from "@/data/data_diskusi";
 import ModalReportKonten from "@/components/forum/ModalReportKonten";
+
+function formatTanggal(value?: string): string {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 export default function DetailDiskusiPage({
   params,
@@ -46,24 +55,22 @@ export default function DetailDiskusiPage({
   const idDiskusiNum = parseInt(id, 10);
 
   // Discussion state
-  const [diskusi, setDiskusi] = useState<ApiDiskusi>(() => {
-    return (
-      daftar_diskusi_default.find((d) => d.id_diskusi === idDiskusiNum) ||
-      daftar_diskusi_default[0]
-    );
-  });
-  const [sedangMemuat, setSedangMemuat] = useState(false);
+  const [diskusi, setDiskusi] = useState<ApiDiskusi | null>(null);
+  const [sedangMemuat, setSedangMemuat] = useState(true);
+  const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
 
   // Like states
   const [sudahLikeDiskusi, setSudahLikeDiskusi] = useState(false);
-  const [jumlahLikeDiskusi, setJumlahLikeDiskusi] = useState(
-    diskusi.jumlah_suka || 24
+  const [jumlahLikeDiskusi, setJumlahLikeDiskusi] = useState(0);
+  const [tanggapanDisukai, setTanggapanDisukai] = useState<number[]>([]);
+  const [sedangLike, setSedangLike] = useState(false);
+  const [sedangLikeTanggapan, setSedangLikeTanggapan] = useState<number | null>(
+    null
   );
 
   // Reply form states
   const [teksTanggapan, setTeksTanggapan] = useState("");
   const [sedangKirimTanggapan, setSedangKirimTanggapan] = useState(false);
-
   // Nested reply states
   const [balasKeTanggapanId, setBalasKeTanggapanId] = useState<number | null>(
     null
@@ -71,9 +78,6 @@ export default function DetailDiskusiPage({
   const [teksSubBalasan, setTeksSubBalasan] = useState("");
   const [sedangKirimSubBalasan, setSedangKirimSubBalasan] = useState(false);
 
-  // Editing reply
-  const [editTanggapanId, setEditTanggapanId] = useState<number | null>(null);
-  const [teksEditTanggapan, setTeksEditTanggapan] = useState("");
 
   // Report modal
   const [modalReportBuka, setModalReportBuka] = useState(false);
@@ -84,7 +88,7 @@ export default function DetailDiskusiPage({
   }>({
     tipe: "diskusi",
     id: idDiskusiNum,
-    title: diskusi.judul_diskusi,
+    title: "",
   });
 
   // Notification
@@ -100,27 +104,26 @@ export default function DetailDiskusiPage({
   useEffect(() => {
     let aktif = true;
     async function muatDetail() {
-      if (isNaN(idDiskusiNum)) return;
+      if (isNaN(idDiskusiNum)) {
+        setSedangMemuat(false);
+        setPesanKesalahan("Diskusi tidak ditemukan.");
+        return;
+      }
       setSedangMemuat(true);
+      setPesanKesalahan(null);
       try {
-        const res = await api.getDiscussionDetail(idDiskusiNum).catch(() => null);
-        if (aktif && res) {
-          // Merge with mock details if missing relations
-          const mockMatch = daftar_diskusi_default.find(
-            (d) => d.id_diskusi === idDiskusiNum
-          );
-          setDiskusi({
-            ...mockMatch,
-            ...res,
-            tanggapan: res.tanggapan || mockMatch?.tanggapan || [],
-            faskes_terkait: mockMatch?.faskes_terkait || res.faskes_terkait,
-          });
-          setJumlahLikeDiskusi(
-            res.jumlah_suka || mockMatch?.jumlah_suka || 24
+        const res = await api.getDiscussionDetail(idDiskusiNum);
+        if (aktif) {
+          setDiskusi(res);
+          setJumlahLikeDiskusi(res.jumlah_suka ?? 0);
+        }
+      } catch (err) {
+        if (aktif) {
+          setDiskusi(null);
+          setPesanKesalahan(
+            messageFromError(err, "Gagal memuat detail diskusi.")
           );
         }
-      } catch {
-        // Fallback default
       } finally {
         if (aktif) setSedangMemuat(false);
       }
@@ -132,21 +135,63 @@ export default function DetailDiskusiPage({
     };
   }, [idDiskusiNum]);
 
+  if (diskusi === null) {
+    return (
+      <div className="max-w-[1140px] mx-auto px-4 sm:px-6 py-16 text-center space-y-3">
+        {sedangMemuat ? (
+          <>
+            <Loader2 className="w-8 h-8 animate-spin text-[#007E7A] mx-auto" />
+            <p className="text-xs text-slate-500">Memuat diskusi...</p>
+          </>
+        ) : (
+          <>
+            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+            <p className="text-sm font-bold text-slate-800">
+              {pesanKesalahan ?? "Diskusi tidak ditemukan."}
+            </p>
+            <Link
+              href="/diskusi"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#007E7A] text-white text-xs font-bold"
+            >
+              Kembali ke Forum Diskusi
+            </Link>
+          </>
+        )}
+      </div>
+    );
+  }
+
   // Check if current user is owner
   const isDiskusiOwner =
-    diskusi.id_user === 1 ||
-    (currentUser &&
-      (diskusi.id_user === currentUser.id_user ||
-        diskusi.user?.id_user === currentUser.id_user));
+    currentUser !== null &&
+    (diskusi.id_user === currentUser.id_user ||
+      diskusi.user?.id_user === currentUser.id_user);
 
   // Toggle Like Discussion
-  const handleToggleLike = () => {
-    if (sudahLikeDiskusi) {
-      setSudahLikeDiskusi(false);
-      setJumlahLikeDiskusi((prev) => Math.max(0, prev - 1));
-    } else {
-      setSudahLikeDiskusi(true);
-      setJumlahLikeDiskusi((prev) => prev + 1);
+  const handleToggleLike = async () => {
+    if (!token) {
+      setPesanNotif({
+        tipe: "error",
+        pesan: "Silakan login terlebih dahulu untuk menyukai diskusi.",
+      });
+      return;
+    }
+    if (sedangLike) return;
+
+    setSedangLike(true);
+    try {
+      const res = sudahLikeDiskusi
+        ? await api.unlikeDiscussion(diskusi.id_diskusi)
+        : await api.likeDiscussion(diskusi.id_diskusi);
+      setSudahLikeDiskusi(res.disukai);
+      setJumlahLikeDiskusi(res.jumlah_suka);
+    } catch (err) {
+      setPesanNotif({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal memperbarui suka diskusi."),
+      });
+    } finally {
+      setSedangLike(false);
     }
   };
 
@@ -166,39 +211,27 @@ export default function DetailDiskusiPage({
     setSedangKirimTanggapan(true);
     setPesanNotif(null);
     try {
-      const res = await api.addDiscussionReply(diskusi.id_diskusi, {
+      const newTanggapan = await api.addDiscussionReply(diskusi.id_diskusi, {
         body: teksTanggapan.trim(),
-      }).catch(() => null);
+      });
 
-      const newTanggapan: ApiTanggapan = res || {
-        id_tanggapan_diskusi: Date.now(),
-        id_diskusi: diskusi.id_diskusi,
-        id_user: currentUser?.id_user || 1,
-        id_parent: null,
-        body: teksTanggapan.trim(),
-        created_at: new Date().toISOString(),
-        jumlah_suka: 0,
-        user: {
-          id_user: currentUser?.id_user || 1,
-          nama_user: currentUser?.nama_user || "Warga Bogor",
-          email_user: currentUser?.email_user || "",
-          role_user: "user",
-        },
-      };
-
-      setDiskusi((prev) => ({
-        ...prev,
-        tanggapan: [newTanggapan, ...(prev.tanggapan || [])],
-      }));
+      setDiskusi((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              tanggapan: [newTanggapan, ...(prev.tanggapan || [])],
+            }
+      );
       setTeksTanggapan("");
       setPesanNotif({
         tipe: "sukses",
         pesan: "Tanggapan Anda berhasil dikirim!",
       });
-    } catch (err: any) {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: err?.message || "Gagal mengirim tanggapan.",
+        pesan: messageFromError(err, "Gagal mengirim tanggapan."),
       });
     } finally {
       setSedangKirimTanggapan(false);
@@ -218,38 +251,22 @@ export default function DetailDiskusiPage({
 
     setSedangKirimSubBalasan(true);
     try {
-      const res = await api.replyToReply(idParent, {
+      const newReply = await api.replyToReply(idParent, {
         body: teksSubBalasan.trim(),
-      }).catch(() => null);
+      });
 
-      const newReply: ApiTanggapan = res || {
-        id_tanggapan_diskusi: Date.now(),
-        id_diskusi: diskusi.id_diskusi,
-        id_user: currentUser?.id_user || 1,
-        id_parent: idParent,
-        body: teksSubBalasan.trim(),
-        created_at: new Date().toISOString(),
-        jumlah_suka: 0,
-        user: {
-          id_user: currentUser?.id_user || 1,
-          nama_user: currentUser?.nama_user || "Warga Bogor",
-          email_user: currentUser?.email_user || "",
-          role_user: "user",
-        },
-      };
-
-      setDiskusi((prev) => ({
-        ...prev,
-        tanggapan: (prev.tanggapan || []).map((t) => {
-          if (t.id_tanggapan_diskusi === idParent) {
-            return {
-              ...t,
-              replies: [...(t.replies || []), newReply],
-            };
-          }
-          return t;
-        }),
-      }));
+      setDiskusi((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              tanggapan: (prev.tanggapan || []).map((t) =>
+                t.id_tanggapan_diskusi === idParent
+                  ? { ...t, replies: [...(t.replies || []), newReply] }
+                  : t
+              ),
+            }
+      );
 
       setBalasKeTanggapanId(null);
       setTeksSubBalasan("");
@@ -257,10 +274,10 @@ export default function DetailDiskusiPage({
         tipe: "sukses",
         pesan: "Balasan berhasil dikirim!",
       });
-    } catch (err: any) {
+    } catch (err) {
       setPesanNotif({
         tipe: "error",
-        pesan: err?.message || "Gagal mengirim balasan.",
+        pesan: messageFromError(err, "Gagal mengirim balasan."),
       });
     } finally {
       setSedangKirimSubBalasan(false);
@@ -271,13 +288,17 @@ export default function DetailDiskusiPage({
   const handleHapusTanggapan = async (idTanggapan: number) => {
     if (!confirm("Hapus tanggapan ini?")) return;
     try {
-      await api.deleteReply(idTanggapan).catch(() => null);
-      setDiskusi((prev) => ({
-        ...prev,
-        tanggapan: (prev.tanggapan || []).filter(
-          (t) => t.id_tanggapan_diskusi !== idTanggapan
-        ),
-      }));
+      await api.deleteReply(idTanggapan);
+      setDiskusi((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              tanggapan: (prev.tanggapan || []).filter(
+                (t) => t.id_tanggapan_diskusi !== idTanggapan
+              ),
+            }
+      );
       setPesanNotif({
         tipe: "sukses",
         pesan: "Tanggapan berhasil dihapus.",
@@ -294,7 +315,7 @@ export default function DetailDiskusiPage({
   const handleHapusDiskusi = async () => {
     if (!confirm("Apakah Anda yakin ingin menghapus diskusi ini?")) return;
     try {
-      await api.deleteDiscussion(diskusi.id_diskusi).catch(() => null);
+      await api.deleteDiscussion(diskusi.id_diskusi);
       router.push("/diskusi");
     } catch {
       setPesanNotif({
@@ -315,7 +336,58 @@ export default function DetailDiskusiPage({
     }
   };
 
-  const authorName = diskusi.user?.nama_user || "Ahmad Fauzi";
+  const handleToggleLikeTanggapan = async (idTanggapan: number) => {
+    if (!token) {
+      setPesanNotif({
+        tipe: "error",
+        pesan: "Silakan login terlebih dahulu untuk menyukai tanggapan.",
+      });
+      return;
+    }
+    if (sedangLikeTanggapan === idTanggapan) return;
+
+    setSedangLikeTanggapan(idTanggapan);
+    const sudahDisukai = tanggapanDisukai.includes(idTanggapan);
+    try {
+      const res = sudahDisukai
+        ? await api.unlikeReply(idTanggapan)
+        : await api.likeReply(idTanggapan);
+
+      setTanggapanDisukai((prev) =>
+        res.disukai
+          ? [...new Set([...prev, idTanggapan])]
+          : prev.filter((id) => id !== idTanggapan)
+      );
+      setDiskusi((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              tanggapan: (prev.tanggapan || []).map((t) =>
+                t.id_tanggapan_diskusi === idTanggapan
+                  ? { ...t, jumlah_suka: res.jumlah_suka }
+                  : {
+                      ...t,
+                      replies: (t.replies || []).map((r) =>
+                        r.id_tanggapan_diskusi === idTanggapan
+                          ? { ...r, jumlah_suka: res.jumlah_suka }
+                          : r
+                      ),
+                    }
+              ),
+            }
+      );
+    } catch (err) {
+      setPesanNotif({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal memperbarui suka tanggapan."),
+      });
+    } finally {
+      setSedangLikeTanggapan(null);
+    }
+  };
+
+  const authorName = diskusi.user?.nama_user || "Warga Bogor";
   const initials = authorName
     .split(" ")
     .map((n) => n[0])
@@ -323,7 +395,8 @@ export default function DetailDiskusiPage({
     .join("")
     .toUpperCase();
   const faskes = diskusi.faskes_terkait;
-  const totalTanggapanCount = diskusi.tanggapan?.length || 18;
+  const totalTanggapanCount =
+    diskusi.jumlah_tanggapan ?? diskusi.tanggapan?.length ?? 0;
 
   return (
     <div className="max-w-[1140px] mx-auto px-4 sm:px-6 py-6 w-full space-y-6">
@@ -399,7 +472,8 @@ export default function DetailDiskusiPage({
                     {authorName}
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Kota Bogor • 2 jam yang lalu
+                    {diskusi.sublokasi_penulis ?? "Bogor"} •{" "}
+                    {formatTanggal(diskusi.created_at)}
                   </p>
                 </div>
               </div>
@@ -408,13 +482,6 @@ export default function DetailDiskusiPage({
               <div className="flex items-center gap-2">
                 {isDiskusiOwner ? (
                   <>
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
                     <button
                       type="button"
                       onClick={handleHapusDiskusi}
@@ -460,6 +527,7 @@ export default function DetailDiskusiPage({
                 <button
                   type="button"
                   onClick={handleToggleLike}
+                  disabled={sedangLike}
                   className={`px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition shadow-xs ${
                     sudahLikeDiskusi
                       ? "bg-[#007E7A] text-white"
@@ -477,7 +545,7 @@ export default function DetailDiskusiPage({
 
                 <span className="flex items-center gap-1.5 text-slate-400 font-medium">
                   <Eye className="w-3.5 h-3.5" />
-                  <span>{diskusi.jumlah_dilihat ?? 342} Dilihat</span>
+                  <span>{diskusi.jumlah_dilihat ?? 0} Dilihat</span>
                 </span>
               </div>
 
@@ -588,7 +656,7 @@ export default function DetailDiskusiPage({
                             )}
                           </div>
                           <p className="text-[11px] text-slate-400 mt-0.5">
-                            30 menit yang lalu (Diedit)
+                            {formatTanggal(tanggapan.created_at)}
                           </p>
                         </div>
                       </div>
@@ -597,19 +665,6 @@ export default function DetailDiskusiPage({
                       <div>
                         {isReplyOwner ? (
                           <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditTanggapanId(
-                                  tanggapan.id_tanggapan_diskusi
-                                );
-                                setTeksEditTanggapan(tanggapan.body);
-                              }}
-                              className="p-1 text-slate-400 hover:text-slate-700 rounded transition"
-                              title="Edit tanggapan"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
                             <button
                               type="button"
                               onClick={() =>
@@ -652,10 +707,25 @@ export default function DetailDiskusiPage({
                     <div className="flex items-center gap-4 pl-11 pt-1 text-xs text-slate-500 font-medium">
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:text-[#007E7A] transition"
+                        onClick={() =>
+                          handleToggleLikeTanggapan(
+                            tanggapan.id_tanggapan_diskusi
+                          )
+                        }
+                        disabled={
+                          sedangLikeTanggapan ===
+                          tanggapan.id_tanggapan_diskusi
+                        }
+                        className={`flex items-center gap-1 transition ${
+                          tanggapanDisukai.includes(
+                            tanggapan.id_tanggapan_diskusi
+                          )
+                            ? "text-[#007E7A] font-bold"
+                            : "hover:text-[#007E7A]"
+                        }`}
                       >
                         <ThumbsUp className="w-3.5 h-3.5" />
-                        <span>{tanggapan.jumlah_suka ?? 9} Suka</span>
+                        <span>{tanggapan.jumlah_suka ?? 0} Suka</span>
                       </button>
 
                       <button
@@ -724,7 +794,7 @@ export default function DetailDiskusiPage({
                                 {sub.user?.nama_user || "Warga"}
                               </span>
                               <span className="text-[10px] text-slate-400">
-                                Baru saja
+                                {formatTanggal(sub.created_at)}
                               </span>
                             </div>
                             <p className="text-slate-600">{sub.body}</p>
@@ -748,14 +818,14 @@ export default function DetailDiskusiPage({
                   Faskes Terkait Diskusi
                 </span>
                 <span className="bg-amber-50 text-[#B45309] border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {faskes.jarak_km || "1.2 km"}
+                  {faskes.kota_kabupaten ?? "Bogor"}
                 </span>
               </div>
 
               {/* Map Snapshot Visual Preview */}
               <div className="relative rounded-xl overflow-hidden border border-slate-100 bg-slate-100">
                 <img
-                  src={faskes.gambar || "/images/detail-photo-1.png"}
+                  src="/images/detail-photo-1.png"
                   alt={faskes.nama_faskes}
                   className="w-full h-36 object-cover"
                 />

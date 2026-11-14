@@ -18,15 +18,13 @@ import {
   X,
   FileText,
 } from "lucide-react";
-import { api, getAuthToken, getAuthUser } from "@/lib/api";
+import { api, getAuthToken, getAuthUser, messageFromError } from "@/lib/api";
 
 const KATEGORI_DISKUSI_OPTIONS = [
-  "Rujukan BPJS & Prosedur",
-  "Rekomendasi Faskes & Dokter",
-  "Ketersediaan Obat & Farmasi",
-  "Pengalaman Pelayanan Kesehatan",
-  "Tips & Informasi Kesehatan Umum",
-  "Lainnya",
+  { nilai: "kesehatan", label: "Tips & Informasi Kesehatan Umum" },
+  { nilai: "fasilitas", label: "Rekomendasi Faskes & Dokter" },
+  { nilai: "layanan", label: "Rujukan BPJS & Prosedur Layanan" },
+  { nilai: "lainnya", label: "Lainnya" },
 ];
 
 export default function BuatDiskusiBaruPage() {
@@ -139,9 +137,12 @@ export default function BuatDiskusiBaruPage() {
           router.push("/diskusi");
         }
       }, 2000);
-    } catch (err: any) {
+    } catch (err) {
       setErrorMessage(
-        err?.message || "Gagal mempublikasikan diskusi. Silakan coba kembali."
+        messageFromError(
+          err,
+          "Gagal mempublikasikan diskusi. Silakan coba kembali."
+        )
       );
     } finally {
       setSedangKirim(false);
@@ -247,8 +248,12 @@ export default function BuatDiskusiBaruPage() {
                   Text
                 </option>
                 {KATEGORI_DISKUSI_OPTIONS.map((kat) => (
-                  <option key={kat} value={kat} className="text-slate-800">
-                    {kat}
+                  <option
+                    key={kat.nilai}
+                    value={kat.nilai}
+                    className="text-slate-800"
+                  >
+                    {kat.label}
                   </option>
                 ))}
               </select>

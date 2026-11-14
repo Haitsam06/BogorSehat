@@ -3,12 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MapPin, Search, MessageSquare, User, ShieldCheck } from "lucide-react";
+import { Home, MapPin, Search, MessageSquare, User, ShieldCheck, LogOut } from "lucide-react";
 import { useFaskes } from "@/context/FaskesContext";
 
 export default function Navbar() {
   const path_aktif = usePathname();
-  const { pengguna, sudahLogin } = useFaskes();
+  const { pengguna, sudahLogin, keluar } = useFaskes();
 
   if (path_aktif.startsWith("/admin")) {
     return null;
@@ -107,13 +107,30 @@ export default function Navbar() {
               <ShieldCheck className="w-4 h-4" />
               <span className="hidden sm:inline">Portal Admin</span>
             </Link>
+          ) : sudahLogin && pengguna ? (
+            <>
+              <span className="hidden sm:inline text-xs font-bold text-slate-700">
+                {pengguna.nama_user}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  void keluar();
+                }}
+                className="p-2.5 rounded-full text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition"
+                title="Keluar akun"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </>
           ) : (
             <Link
-              href="/admin/login"
-              className="p-2.5 rounded-full text-slate-600 hover:text-[#007A78] hover:bg-slate-100 transition"
-              title="Login Portal Petugas"
+              href="/masuk"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+              title="Masuk atau daftar akun warga"
             >
-              <User className="w-5 h-5" />
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">Masuk</span>
             </Link>
           )}
         </div>

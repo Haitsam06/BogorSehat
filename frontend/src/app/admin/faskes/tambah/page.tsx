@@ -15,7 +15,7 @@ import {
   Crosshair,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
-import { api } from "@/lib/api";
+import { api, messageFromError } from "@/lib/api";
 import type LType from "leaflet";
 
 const DAFTAR_KECAMATAN = [
@@ -227,9 +227,12 @@ export default function TambahFaskesBaruPage() {
     try {
       await api.createFaskes(payload);
       router.push("/admin/faskes");
-    } catch (err: any) {
+    } catch (err) {
       setPesanError(
-        err?.message || "Gagal menambahkan data faskes. Silakan coba kembali."
+        messageFromError(
+          err,
+          "Gagal menambahkan data faskes. Silakan coba kembali."
+        )
       );
     } finally {
       setSedangSimpan(false);

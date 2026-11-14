@@ -25,7 +25,7 @@ interface FaskesContextType {
   memuatGPS: boolean;
   pengguna: ApiUser | null;
   sudahLogin: boolean;
-  masuk: (email: string, sandi: string) => Promise<void>;
+  masuk: (email: string, sandi: string) => Promise<ApiUser>;
   keluar: () => Promise<void>;
 }
 
@@ -65,9 +65,10 @@ export function FaskesProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const masuk = async (email: string, sandi: string) => {
+  const masuk = async (email: string, sandi: string): Promise<ApiUser> => {
     const res = await api.login(email, sandi);
     setPengguna(res.data);
+    return res.data;
   };
 
   const keluar = async () => {
@@ -104,7 +105,9 @@ export function useFaskes() {
       memuatGPS: false,
       pengguna: null,
       sudahLogin: false,
-      masuk: async () => {},
+      masuk: async (): Promise<ApiUser> => {
+        throw new Error("FaskesProvider tidak tersedia.");
+      },
       keluar: async () => {},
     };
   }

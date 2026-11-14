@@ -17,12 +17,13 @@ export interface ApiAdminReportItem {
   id: number;
   status: "pending" | "resolved" | "rejected";
   alasan: string;
-  catatan?: string | null;
-  reported_user?: ApiUser | null;
   content?: {
     body?: string;
-    [key: string]: any;
+    judul_diskusi?: string;
+    [key: string]: unknown;
   } | null;
+  catatan?: string | null;
+  reported_user?: ApiUser | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +75,8 @@ export interface ApiFaskes {
   is_support_bpjs: boolean;
   link_maps: string | null;
   distance_km?: number | string;
+  rating_avg?: number;
+  rating_count?: number;
   spesialisasi?: ApiSpesialisasi[];
   fasilitas?: ApiFasilitas[];
   created_at?: string;
@@ -111,6 +114,8 @@ export interface ApiUser {
   nama_user: string;
   email_user: string;
   role_user: "admin" | "user";
+  foto_profil?: string | null;
+  created_at?: string;
 }
 
 export interface ApiLoginResponse {
@@ -136,7 +141,7 @@ export interface ApiAdminDashboard {
 export interface ApiKomentar {
   id_komentar: number;
   id_faskes: number;
-  id_user: number;
+  id_user?: number;
   id_parent: number | null;
   body: string;
   rating: number | null;
@@ -151,6 +156,8 @@ export interface ApiFaskesTerkait {
   id_faskes?: number;
   nama_faskes: string;
   alamat: string;
+  kecamatan?: string | null;
+  kota_kabupaten?: string | null;
   jarak_km?: string;
   slug?: string;
   link_maps?: string;
@@ -172,6 +179,7 @@ export interface ApiDiskusi {
   jumlah_suka?: number;
   jumlah_dilihat?: number;
   sublokasi_penulis?: string;
+  jumlah_tanggapan?: number;
 }
 
 export interface ApiTanggapan {
@@ -290,6 +298,7 @@ export function mapApiFaskesToItem(
     "/images/detail-photo-1.png",
     "/images/detail-photo-2.png",
   ];
+
   const gambar = images[(api.id_faskes + indexFallback) % images.length];
 
   const lat = Number(api.latitude) || -6.595;
@@ -298,7 +307,7 @@ export function mapApiFaskesToItem(
   const poliList =
     api.spesialisasi && api.spesialisasi.length > 0
       ? api.spesialisasi.map((s) => s.nama_spesialisasi)
-      : ["Poli Umum", "Poli Anak", "Poli Gigi"];
+      : [];
 
   const hasIgd =
     api.fasilitas?.some((f) =>
@@ -307,10 +316,8 @@ export function mapApiFaskesToItem(
     (api.jenis_faskes?.toLowerCase().includes("rumah sakit") || false);
 
   const jarakNum =
-    typeof api.distance_km !== "undefined"
-      ? Number(api.distance_km)
-      : 1.2 + (api.id_faskes % 5) * 0.8;
-  const estimasiMenit = Math.max(5, Math.round(jarakNum * 3));
+    typeof api.distance_km !== "undefined" ? Number(api.distance_km) : 0;
+  const estimasiMenit = Math.round(jarakNum * 3);
 
   const wilayah: "KOTA_BOGOR" | "KABUPATEN_BOGOR" =
     api.kota_kabupaten?.toUpperCase().includes("KOTA")
@@ -320,18 +327,18 @@ export function mapApiFaskesToItem(
   return {
     id_faskes: api.id_faskes,
     slug_faskes: String(api.id_faskes),
-    kode_kemenkes: api.kdppk || `FSK-${api.id_faskes.toString().padStart(3, "0")}`,
+    kode_kemenkes: api.kdppk || "-",
     nama_faskes: api.nama_faskes,
-    kategori_faskes: api.jenis_faskes || "Rumah Sakit",
+    kategori_faskes: api.jenis_faskes || "Faskes",
     label_singkat_kategori: api.jenis_faskes || "Faskes",
-    kelas_faskes: api.kelas_faskes ? `Kelas ${api.kelas_faskes}` : "Standar",
+    kelas_faskes: api.kelas_faskes ? `Kelas ${api.kelas_faskes}` : "-",
     alamat_lengkap: api.alamat_faskes,
     kecamatan: api.kecamatan || "",
     wilayah_kota_kab: wilayah,
     jarak_km: `${jarakNum.toFixed(1)} km`,
     waktu_tempuh: `${estimasiMenit} mnt`,
-    rating_faskes: "4.8",
-    jumlah_ulasan: 18 + (api.id_faskes % 40),
+    rating_faskes: Number(api.rating_avg ?? 0).toFixed(1),
+    jumlah_ulasan: api.rating_count ?? 0,
     status_bpjs: Boolean(api.is_support_bpjs),
     status_igd_24jam: hasIgd,
     telepon_darurat: Boolean(api.telp_faskes),
@@ -341,6 +348,13 @@ export function mapApiFaskesToItem(
     gambar_faskes: gambar,
     daftar_poli: poliList,
   };
+}
+
+export function messageFromError(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message !== "") {
+    return err.message;
+  }
+  return fallback;
 }
 
 // -------------------------------------------------------------
@@ -354,16 +368,42 @@ export const api = {
     return res.data;
   },
 
-  async getSpesialisasi(): Promise<ApiSpesialisasi[]> {
-    const res = await request<ApiCollectionResponse<ApiSpesialisasi>>(
-      "/spesialisasi"
+  async getSpesialisasi(
+    page = 1
+  ): Promise<ApiCollectionResponse<ApiSpesialisasi>> {
+    return request<ApiCollectionResponse<ApiSpesialisasi>>(
+      `/spesialisasi?page=${page}`
     );
-    return res.data;
   },
 
-  async getFasilitas(): Promise<ApiFasilitas[]> {
-    const res = await request<ApiCollectionResponse<ApiFasilitas>>("/fasilitas");
-    return res.data;
+  async getAllSpesialisasi(): Promise<ApiSpesialisasi[]> {
+    const first = await this.getSpesialisasi(1);
+    const items = [...first.data];
+    const lastPage = first.meta?.last_page ?? 1;
+    for (let page = 2; page <= lastPage; page += 1) {
+      const next = await this.getSpesialisasi(page);
+      items.push(...next.data);
+    }
+    return items;
+  },
+
+  async getFasilitas(
+    page = 1
+  ): Promise<ApiCollectionResponse<ApiFasilitas>> {
+    return request<ApiCollectionResponse<ApiFasilitas>>(
+      `/fasilitas?page=${page}`
+    );
+  },
+
+  async getAllFasilitas(): Promise<ApiFasilitas[]> {
+    const first = await this.getFasilitas(1);
+    const items = [...first.data];
+    const lastPage = first.meta?.last_page ?? 1;
+    for (let page = 2; page <= lastPage; page += 1) {
+      const next = await this.getFasilitas(page);
+      items.push(...next.data);
+    }
+    return items;
   },
 
   // --- Faskes Directory & WebGIS ---
@@ -567,8 +607,8 @@ export const api = {
   async reportDiscussion(
     idDiskusi: number,
     data: { alasan: string; catatan?: string }
-  ): Promise<{ data: any }> {
-    return request<{ data: any }>(`/diskusi/${idDiskusi}/report`, {
+  ): Promise<{ data: unknown }> {
+    return request<{ data: unknown }>(`/diskusi/${idDiskusi}/report`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -577,8 +617,8 @@ export const api = {
   async reportReply(
     idTanggapan: number,
     data: { alasan: string; catatan?: string }
-  ): Promise<{ data: any }> {
-    return request<{ data: any }>(
+  ): Promise<{ data: unknown }> {
+    return request<{ data: unknown }>(
       `/tanggapan-diskusi/${idTanggapan}/report`,
       {
         method: "POST",
@@ -616,6 +656,154 @@ export const api = {
   async getCurrentUser(): Promise<ApiUser> {
     const res = await request<ApiSingleResponse<ApiUser>>("/user");
     return res.data;
+  },
+
+  async register(data: {
+    nama_user: string;
+    email_user: string;
+    password_user: string;
+    password_user_confirmation: string;
+  }): Promise<ApiUser> {
+    const res = await request<ApiSingleResponse<ApiUser>>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async getProfile(): Promise<ApiUser> {
+    const res = await request<ApiSingleResponse<ApiUser>>("/profile");
+    return res.data;
+  },
+
+  async updateProfile(data: {
+    nama_user?: string;
+    email_user?: string;
+    password_user?: string;
+    password_user_confirmation?: string;
+    foto_profil?: string | null;
+  }): Promise<ApiUser> {
+    const res = await request<ApiSingleResponse<ApiUser>>("/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    setAuthUser(res.data);
+    return res.data;
+  },
+
+  async getMyComments(
+    page = 1
+  ): Promise<ApiCollectionResponse<ApiKomentar>> {
+    return request<ApiCollectionResponse<ApiKomentar>>(
+      `/me/komentar?page=${page}`
+    );
+  },
+
+  async likeDiscussion(
+    idDiskusi: number
+  ): Promise<{ id_diskusi: number; disukai: boolean; jumlah_suka: number }> {
+    const res = await request<
+      ApiSingleResponse<{
+        id_diskusi: number;
+        disukai: boolean;
+        jumlah_suka: number;
+      }>
+    >(`/diskusi/${idDiskusi}/suka`, { method: "POST" });
+    return res.data;
+  },
+
+  async unlikeDiscussion(
+    idDiskusi: number
+  ): Promise<{ id_diskusi: number; disukai: boolean; jumlah_suka: number }> {
+    const res = await request<
+      ApiSingleResponse<{
+        id_diskusi: number;
+        disukai: boolean;
+        jumlah_suka: number;
+      }>
+    >(`/diskusi/${idDiskusi}/suka`, { method: "DELETE" });
+    return res.data;
+  },
+
+  async likeReply(idTanggapan: number): Promise<{
+    id_tanggapan_diskusi: number;
+    disukai: boolean;
+    jumlah_suka: number;
+  }> {
+    const res = await request<
+      ApiSingleResponse<{
+        id_tanggapan_diskusi: number;
+        disukai: boolean;
+        jumlah_suka: number;
+      }>
+    >(`/tanggapan-diskusi/${idTanggapan}/suka`, { method: "POST" });
+    return res.data;
+  },
+
+  async unlikeReply(idTanggapan: number): Promise<{
+    id_tanggapan_diskusi: number;
+    disukai: boolean;
+    jumlah_suka: number;
+  }> {
+    const res = await request<
+      ApiSingleResponse<{
+        id_tanggapan_diskusi: number;
+        disukai: boolean;
+        jumlah_suka: number;
+      }>
+    >(`/tanggapan-diskusi/${idTanggapan}/suka`, { method: "DELETE" });
+    return res.data;
+  },
+
+  async markDiscussionViewed(
+    idDiskusi: number
+  ): Promise<{ id_diskusi: number; jumlah_dilihat: number }> {
+    const res = await request<
+      ApiSingleResponse<{ id_diskusi: number; jumlah_dilihat: number }>
+    >(`/diskusi/${idDiskusi}/dilihat`, { method: "POST" });
+    return res.data;
+  },
+
+  async getAdminUsers(
+    page = 1
+  ): Promise<ApiCollectionResponse<ApiUser>> {
+    return request<ApiCollectionResponse<ApiUser>>(
+      `/admin/users?page=${page}`
+    );
+  },
+
+  async getAdminUser(idUser: number): Promise<ApiUser> {
+    const res = await request<ApiSingleResponse<ApiUser>>(
+      `/admin/users/${idUser}`
+    );
+    return res.data;
+  },
+
+  async updateAdminUser(
+    idUser: number,
+    data: Partial<{
+      nama_user: string;
+      email_user: string;
+      password_user: string;
+      password_user_confirmation: string;
+      role_user: "admin" | "user";
+      foto_profil: string | null;
+    }>
+  ): Promise<ApiUser> {
+    const res = await request<ApiSingleResponse<ApiUser>>(
+      `/admin/users/${idUser}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+    return res.data;
+  },
+
+  async deleteAdminUser(idUser: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/admin/users/${idUser}`, {
+      method: "DELETE",
+    });
   },
 
   // --- Admin Endpoints (Require role_user=admin) ---

@@ -14,19 +14,17 @@ import {
   Building2,
   Loader2,
 } from "lucide-react";
-import {
-  daftar_faskes_utama,
-  DataFaskesItem,
-  lokasi_default_pengguna,
-} from "@/data/data_faskes";
+import type { DataFaskesItem } from "@/data/data_faskes";
+import { lokasi_default_pengguna } from "@/data/data_faskes";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
 import PetaLeaflet from "@/components/map/peta_leaflet";
-import { api, mapApiFaskesToItem } from "@/lib/api";
+import { api, mapApiFaskesToItem, messageFromError } from "@/lib/api";
 import { useFaskes } from "@/context/FaskesContext";
 
 export default function PetaInteraktifPage() {
   const { lokasiPengguna } = useFaskes();
-  const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>(daftar_faskes_utama);
+  const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
+  const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
   const [kata_kunci_lokasi, set_kata_kunci_lokasi] = useState("");
   const [faskes_terpilih, set_faskes_terpilih] = useState<DataFaskesItem | null>(null);
   const [sedangMemuat, setSedangMemuat] = useState(true);
@@ -50,20 +48,11 @@ export default function PetaInteraktifPage() {
           setDaftarFaskes(mapped);
           set_faskes_terpilih(mapped[0]);
         }
-      } catch {
-        // Fallback coba ambil dari /faskes?per_page=100
-        try {
-          const fRes = await api.getFaskes({ per_page: 100 });
-          if (aktif && fRes.data && fRes.data.length > 0) {
-            const mapped = fRes.data.map((f, i) => mapApiFaskesToItem(f, i));
-            setDaftarFaskes(mapped);
-            set_faskes_terpilih(mapped[0]);
-          }
-        } catch {
-          // Fallback ke data bawaan
-          if (aktif && daftar_faskes_utama.length > 0) {
-            set_faskes_terpilih(daftar_faskes_utama[0]);
-          }
+      } catch (err) {
+        if (aktif) {
+          setPesanKesalahan(
+            messageFromError(err, "Gagal memuat titik faskes dari server.")
+          );
         }
       } finally {
         if (aktif) setSedangMemuat(false);
@@ -97,6 +86,11 @@ export default function PetaInteraktifPage() {
 
   return (
     <div className="relative w-full h-[calc(100dvh-76px)] max-h-[calc(100dvh-76px)] overflow-hidden select-none bg-[#E8EEF2]">
+      {pesanKesalahan && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-800 shadow-sm">
+          {pesanKesalahan}
+        </div>
+      )}
       {/* Komponen Peta Leaflet Layar Penuh dengan Tile OSM & Pin Tooltip */}
       <div className="absolute inset-0 z-0 w-full h-full overflow-hidden">
         <PetaLeaflet
