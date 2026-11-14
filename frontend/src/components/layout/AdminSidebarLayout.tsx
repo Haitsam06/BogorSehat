@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Building2, LogOut, User, ChevronRight, ThumbsUp, MessageSquare, Users } from "lucide-react";
+import { LayoutGrid, Building2, LogOut, User, ChevronRight, ThumbsUp, MessageSquare, Users, Stethoscope, Wrench } from "lucide-react";
 import { api, getAuthToken, getAuthUser, removeAuthToken } from "@/lib/api";
 
 export default function AdminSidebarLayout({
@@ -17,6 +17,8 @@ export default function AdminSidebarLayout({
   const adalah_kelola_faskes = path_aktif.startsWith("/admin/faskes");
   const adalah_laporan_faskes = path_aktif.startsWith("/admin/laporan-faskes");
   const adalah_laporan_diskusi = path_aktif.startsWith("/admin/laporan-diskusi");
+  const adalah_spesialisasi = path_aktif.startsWith("/admin/spesialisasi");
+  const adalah_fasilitas_penunjang = path_aktif.startsWith("/admin/fasilitas-penunjang");
 
   const [namaAdmin, setNamaAdmin] = useState("Administrator");
 
@@ -107,6 +109,30 @@ export default function AdminSidebarLayout({
                 <Users className="w-4 h-4" />
                 <span>Laporan Data Diskusi</span>
               </Link>
+
+              <Link
+                href="/admin/spesialisasi"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold transition ${
+                  adalah_spesialisasi
+                    ? "bg-[#007E7A] text-white shadow-sm"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <Stethoscope className="w-4 h-4" />
+                <span>Master Spesialisasi</span>
+              </Link>
+
+              <Link
+                href="/admin/fasilitas-penunjang"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold transition ${
+                  adalah_fasilitas_penunjang
+                    ? "bg-[#007E7A] text-white shadow-sm"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <Wrench className="w-4 h-4" />
+                <span>Master Fasilitas Penunjang</span>
+              </Link>
             </nav>
           </div>
         </div>
@@ -140,6 +166,10 @@ export default function AdminSidebarLayout({
                 ? "Laporan Data Faskes"
                 : adalah_laporan_diskusi
                 ? "Laporan Data Diskusi"
+                : adalah_spesialisasi
+                ? "Master Spesialisasi"
+                : adalah_fasilitas_penunjang
+                ? "Master Fasilitas Penunjang"
                 : adalah_kelola_faskes
                 ? "Kelola Data Faskes"
                 : "Portal Administrasi Faskes"}

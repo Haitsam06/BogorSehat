@@ -13,9 +13,11 @@ class KomentarController extends Controller
 {
     public function index(Faskes $faskes): mixed
     {
-        return KomentarResource::collection(
+        $comments = KomentarResource::collection(
             $faskes->komentar()->whereNull('id_parent')->with(['user', 'replies.user', 'replies.replies.user'])->latest()->paginate(15),
         );
+
+        return $comments->additional(['rating' => $this->ratingSummary($faskes)]);
     }
 
     public function store(Request $request, Faskes $faskes): JsonResponse
@@ -27,7 +29,10 @@ class KomentarController extends Controller
         ]);
         $comment = $faskes->komentar()->create([...$data, 'id_user' => $request->user()->id_user]);
 
-        return response()->json(['data' => new KomentarResource($comment->load('user'))], 201);
+        return response()->json([
+            'data' => new KomentarResource($comment->load('user')),
+            'rating' => $this->ratingSummary($faskes),
+        ], 201);
     }
 
     public function reply(Request $request, Komentar $komentar): JsonResponse
@@ -55,5 +60,20 @@ class KomentarController extends Controller
         return KomentarResource::collection(
             $request->user()->komentar()->with(['faskes', 'replies.user'])->latest()->paginate(15),
         );
+    }
+
+    /** @return array{rating_avg: float, rating_count: int} */
+    private function ratingSummary(Faskes $faskes): array
+    {
+        $aggregate = $faskes->komentar()
+            ->whereNull('id_parent')
+            ->whereNotNull('rating')
+            ->selectRaw('avg(rating) as rating_avg, count(*) as rating_count')
+            ->first();
+
+        return [
+            'rating_avg' => round((float) ($aggregate->rating_avg ?? 0), 2),
+            'rating_count' => (int) ($aggregate->rating_count ?? 0),
+        ];
     }
 }

@@ -68,8 +68,7 @@ class Faskes extends Model
     }
 
     /**
-     * Build a Google Maps directions link using facility identity plus coordinates.
-     * Name/address helps resolve the facility; coordinates disambiguate nearby places.
+     * Build a Google Maps place link anchored on the facility coordinates.
      *
      * @param  array<string, mixed>  $attributes
      */
@@ -80,15 +79,19 @@ class Faskes extends Model
             $attributes['alamat_faskes'] ?? null,
             $attributes['kota_kabupaten'] ?? null,
         ], static fn ($value): bool => filled($value)));
-        $coordinates = array_filter([
+        $coordinates = array_values(array_filter([
             $attributes['latitude'] ?? null,
             $attributes['longitude'] ?? null,
-        ], static fn ($value): bool => filled($value));
+        ], static fn ($value): bool => filled($value)));
 
-        if ($coordinates !== []) {
-            $query .= ($query === '' ? '' : ' ').'('.implode(',', $coordinates).')';
+        if ($query === '') {
+            return 'https://www.google.com/maps/search/?api=1&query='.rawurlencode(implode(',', $coordinates));
         }
 
-        return 'https://www.google.com/maps/dir/?api=1&destination='.rawurlencode($query);
+        if (count($coordinates) === 2) {
+            return 'https://www.google.com/maps/search/'.rawurlencode($query).'/@'.implode(',', $coordinates).',17z';
+        }
+
+        return 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($query);
     }
 }

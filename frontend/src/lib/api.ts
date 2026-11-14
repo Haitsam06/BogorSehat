@@ -59,6 +59,14 @@ export interface ApiFasilitas {
   nama_fasilitas: string;
 }
 
+export interface ApiMasterItem {
+  id_spesialisasi?: string;
+  id_fasilitas?: number;
+  nama_spesialisasi?: string;
+  nama_fasilitas?: string;
+  faskes_count: number;
+}
+
 export interface ApiFaskes {
   id_faskes: number;
   kdppk: string | null;
@@ -233,6 +241,19 @@ export function getAuthUser(): ApiUser | null {
 export function setAuthUser(user: ApiUser): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+function buildAdminMasterQuery(
+  endpoint: string,
+  params: { search?: string; page?: number; per_page?: number }
+): string {
+  const searchParams = new URLSearchParams();
+  if (params.search) searchParams.append("search", params.search);
+  if (params.page) searchParams.append("page", String(params.page));
+  if (params.per_page) searchParams.append("per_page", String(params.per_page));
+  const queryString = searchParams.toString();
+
+  return queryString ? `${endpoint}?${queryString}` : endpoint;
 }
 
 // -------------------------------------------------------------
@@ -762,6 +783,86 @@ export const api = {
       ApiSingleResponse<{ id_diskusi: number; jumlah_dilihat: number }>
     >(`/diskusi/${idDiskusi}/dilihat`, { method: "POST" });
     return res.data;
+  },
+
+  async getAdminSpesialisasi(
+    params: { search?: string; page?: number; per_page?: number } = {}
+  ): Promise<ApiCollectionResponse<ApiMasterItem>> {
+    return request<ApiCollectionResponse<ApiMasterItem>>(
+      buildAdminMasterQuery("/admin/spesialisasi", params)
+    );
+  },
+
+  async createAdminSpesialisasi(data: {
+    id_spesialisasi: string;
+    nama_spesialisasi: string;
+  }): Promise<ApiMasterItem> {
+    const res = await request<ApiSingleResponse<ApiMasterItem>>(
+      "/admin/spesialisasi",
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    return res.data;
+  },
+
+  async updateAdminSpesialisasi(
+    id: string,
+    data: { nama_spesialisasi: string }
+  ): Promise<ApiMasterItem> {
+    const res = await request<ApiSingleResponse<ApiMasterItem>>(
+      `/admin/spesialisasi/${encodeURIComponent(id)}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    return res.data;
+  },
+
+  async deleteAdminSpesialisasi(
+    id: string,
+    force = false
+  ): Promise<{ message: string }> {
+    return request<{ message: string }>(
+      `/admin/spesialisasi/${encodeURIComponent(id)}${force ? "?force=1" : ""}`,
+      { method: "DELETE" }
+    );
+  },
+
+  async getAdminFasilitas(
+    params: { search?: string; page?: number; per_page?: number } = {}
+  ): Promise<ApiCollectionResponse<ApiMasterItem>> {
+    return request<ApiCollectionResponse<ApiMasterItem>>(
+      buildAdminMasterQuery("/admin/fasilitas", params)
+    );
+  },
+
+  async createAdminFasilitas(data: {
+    nama_fasilitas: string;
+    id_fasilitas?: number;
+  }): Promise<ApiMasterItem> {
+    const res = await request<ApiSingleResponse<ApiMasterItem>>(
+      "/admin/fasilitas",
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    return res.data;
+  },
+
+  async updateAdminFasilitas(
+    id: number,
+    data: { nama_fasilitas: string }
+  ): Promise<ApiMasterItem> {
+    const res = await request<ApiSingleResponse<ApiMasterItem>>(
+      `/admin/fasilitas/${id}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    return res.data;
+  },
+
+  async deleteAdminFasilitas(
+    id: number,
+    force = false
+  ): Promise<{ message: string }> {
+    return request<{ message: string }>(
+      `/admin/fasilitas/${id}${force ? "?force=1" : ""}`,
+      { method: "DELETE" }
+    );
   },
 
   async getAdminUsers(

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\AdminFasilitasController;
 use App\Http\Controllers\Api\AdminFaskesController;
+use App\Http\Controllers\Api\AdminSpesialisasiController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
@@ -10,6 +12,7 @@ use App\Http\Controllers\Api\KomentarController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\ModerationController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\UploadController;
 use App\Http\Middleware\AdminOnly;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\ApiTokenAuthOptional;
@@ -56,6 +59,7 @@ Route::middleware(ApiTokenAuth::class)->group(function (): void {
     Route::post('faskes/{faskes}/feedback', [ModerationController::class, 'feedback']);
     Route::get('me/komentar', [KomentarController::class, 'mine']);
     Route::get('me/diskusi', [ForumController::class, 'mine']);
+    Route::post('uploads', [UploadController::class, 'store']);
     Route::prefix('admin')->middleware(AdminOnly::class)->group(function (): void {
         Route::get('dashboard', [DashboardController::class, 'admin']);
         Route::get('faskes', [FaskesController::class, 'index']);
@@ -66,6 +70,14 @@ Route::middleware(ApiTokenAuth::class)->group(function (): void {
         Route::get('users/{user}', [AdminUserController::class, 'show']);
         Route::put('users/{user}', [AdminUserController::class, 'update']);
         Route::delete('users/{user}', [AdminUserController::class, 'destroy']);
+        Route::get('spesialisasi', [AdminSpesialisasiController::class, 'index']);
+        Route::post('spesialisasi', [AdminSpesialisasiController::class, 'store']);
+        Route::put('spesialisasi/{spesialisasi}', [AdminSpesialisasiController::class, 'update']);
+        Route::delete('spesialisasi/{spesialisasi}', [AdminSpesialisasiController::class, 'destroy']);
+        Route::get('fasilitas', [AdminFasilitasController::class, 'index']);
+        Route::post('fasilitas', [AdminFasilitasController::class, 'store']);
+        Route::put('fasilitas/{fasilitas}', [AdminFasilitasController::class, 'update']);
+        Route::delete('fasilitas/{fasilitas}', [AdminFasilitasController::class, 'destroy']);
         Route::get('laporan', [ModerationController::class, 'reports']);
         Route::patch('laporan/{type}/{id}/status', [ModerationController::class, 'updateReport']);
         Route::delete('laporan/{type}/{id}', [ModerationController::class, 'deleteReport']);

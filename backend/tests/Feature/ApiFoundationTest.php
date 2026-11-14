@@ -78,13 +78,14 @@ class ApiFoundationTest extends TestCase
         $this->getJson('/api/faskes?kecamatan=CIJERUK')->assertOk()->assertJsonPath('data.0.kecamatan', 'CIJERUK');
     }
 
-    public function test_maps_link_resolves_place_name_instead_of_bare_coordinates(): void
+    public function test_maps_link_targets_place_name_at_facility_coordinates(): void
     {
         $this->seed();
 
         $link = $this->getJson('/api/faskes/1')->assertOk()->json('data.link_maps');
-        $this->assertStringContainsString('destination='.rawurlencode('RSUD R. MOH. NOH NUR'), $link);
-        $this->assertStringContainsString(rawurlencode('(-6.57451,106.628)'), $link);
+        $this->assertStringStartsWith('https://www.google.com/maps/search/', $link);
+        $this->assertStringContainsString(rawurlencode('RSUD R. MOH. NOH NUR'), $link);
+        $this->assertStringEndsWith('@-6.57451,106.628,17z', $link);
     }
 
     public function test_faskes_endpoints_return_distance_from_request_coordinates(): void

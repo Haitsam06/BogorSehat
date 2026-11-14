@@ -1,0 +1,440 @@
+"use client";
+
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Pencil,
+  PlusCircle,
+  Search,
+  Stethoscope,
+  Trash2,
+  X,
+} from "lucide-react";
+import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
+import {
+  api,
+  ApiMasterItem,
+  ApiPaginationMeta,
+} from "@/lib/api";
+
+function messageFromError(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
+export default function AdminSpesialisasiPage() {
+  const [daftar, setDaftar] = useState<ApiMasterItem[]>([]);
+  const [meta, setMeta] = useState<ApiPaginationMeta | null>(null);
+  const [halaman, setHalaman] = useState(1);
+  const [kataKunci, setKataKunci] = useState("");
+  const [sedangMemuat, setSedangMemuat] = useState(true);
+  const [pesan, setPesan] = useState<{
+    tipe: "sukses" | "error";
+    pesan: string;
+  } | null>(null);
+
+  const [modalBuka, setModalBuka] = useState(false);
+  const [modeEdit, setModeEdit] = useState<string | null>(null);
+  const [formId, setFormId] = useState("");
+  const [formNama, setFormNama] = useState("");
+  const [sedangSimpan, setSedangSimpan] = useState(false);
+  const [konfirmasi, setKonfirmasi] = useState<ApiMasterItem | null>(null);
+  const [sedangHapus, setSedangHapus] = useState(false);
+
+  const muatData = useCallback(async () => {
+    setSedangMemuat(true);
+    try {
+      const res = await api.getAdminSpesialisasi({
+        search: kataKunci.trim() || undefined,
+        page: halaman,
+        per_page: 15,
+      });
+      setDaftar(res.data || []);
+      setMeta(res.meta || null);
+    } catch (err) {
+      setPesan({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal memuat master spesialisasi."),
+      });
+    } finally {
+      setSedangMemuat(false);
+    }
+  }, [halaman, kataKunci]);
+
+  useEffect(() => {
+    muatData();
+  }, [muatData]);
+
+  const bukaTambah = () => {
+    setModeEdit(null);
+    setFormId("");
+    setFormNama("");
+    setModalBuka(true);
+  };
+
+  const bukaEdit = (item: ApiMasterItem) => {
+    setModeEdit(item.id_spesialisasi || null);
+    setFormId(item.id_spesialisasi || "");
+    setFormNama(item.nama_spesialisasi || "");
+    setModalBuka(true);
+  };
+
+  const tanganiSimpan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSedangSimpan(true);
+    setPesan(null);
+    try {
+      if (modeEdit) {
+        await api.updateAdminSpesialisasi(modeEdit, {
+          nama_spesialisasi: formNama.trim(),
+        });
+        setPesan({ tipe: "sukses", pesan: "Spesialisasi berhasil diperbarui." });
+      } else {
+        await api.createAdminSpesialisasi({
+          id_spesialisasi: formId.trim().toUpperCase(),
+          nama_spesialisasi: formNama.trim(),
+        });
+        setPesan({ tipe: "sukses", pesan: "Spesialisasi berhasil ditambahkan." });
+      }
+      setModalBuka(false);
+      await muatData();
+    } catch (err) {
+      setPesan({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal menyimpan spesialisasi."),
+      });
+    } finally {
+      setSedangSimpan(false);
+    }
+  };
+
+  const tanganiHapus = async (item: ApiMasterItem, force = false) => {
+    setSedangHapus(true);
+    setPesan(null);
+    try {
+      await api.deleteAdminSpesialisasi(item.id_spesialisasi || "", force);
+      setPesan({ tipe: "sukses", pesan: "Spesialisasi berhasil dihapus." });
+      setKonfirmasi(null);
+      await muatData();
+    } catch (err) {
+      setPesan({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal menghapus spesialisasi."),
+      });
+    } finally {
+      setSedangHapus(false);
+    }
+  };
+
+  return (
+    <AdminSidebarLayout>
+      <div className="space-y-6 max-w-[1120px]">
+        {pesan && (
+          <div
+            className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
+              pesan.tipe === "sukses"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {pesan.tipe === "sukses" ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-600" />
+              )}
+              <span>{pesan.pesan}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPesan(null)}
+              className="text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl sm:text-[26px] font-extrabold text-slate-900">
+              Master Spesialisasi
+            </h1>
+            <p className="text-xs sm:text-[13px] text-slate-500 max-w-xl leading-relaxed">
+              Kelola daftar poliklinik dan spesialisasi yang dapat dipilih pada
+              setiap fasilitas kesehatan.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 self-start lg:self-center">
+            <button
+              type="button"
+              onClick={bukaTambah}
+              className="h-11 px-5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-extrabold flex items-center gap-2 shadow-sm transition"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Tambah Spesialisasi</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-500 absolute left-4 top-3.5" />
+            <input
+              type="text"
+              value={kataKunci}
+              onChange={(e) => {
+                setKataKunci(e.target.value);
+                setHalaman(1);
+              }}
+              placeholder="Cari nama atau kode spesialisasi..."
+              className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#F2F4F7] text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                  <th className="py-4 pl-8 pr-4">NO &amp; KODE</th>
+                  <th className="py-4 px-4">NAMA SPESIALISASI</th>
+                  <th className="py-4 px-4">DIPAKAI FASKES</th>
+                  <th className="py-4 pl-4 pr-8 text-center">AKSI MANAJEMEN</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {sedangMemuat ? (
+                  <tr>
+                    <td colSpan={4} className="py-12 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#007E7A]" />
+                        <span>Memuat master spesialisasi...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : daftar.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-12 text-center text-slate-500">
+                      Tidak ada spesialisasi yang cocok dengan pencarian.
+                    </td>
+                  </tr>
+                ) : (
+                  daftar.map((item, index) => {
+                    const noUrut =
+                      (meta ? (meta.current_page - 1) * meta.per_page : 0) +
+                      index +
+                      1;
+
+                    return (
+                      <tr
+                        key={item.id_spesialisasi}
+                        className="hover:bg-slate-50/70 transition"
+                      >
+                        <td className="py-4 pl-8 pr-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <span className="w-7 h-7 rounded bg-slate-200/80 text-slate-800 font-bold text-[11px] flex items-center justify-center shrink-0">
+                              {noUrut}
+                            </span>
+                            <span className="font-extrabold text-slate-900 text-[13px]">
+                              {item.id_spesialisasi}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <Stethoscope className="w-4 h-4 text-[#007E7A] shrink-0" />
+                            <span className="font-bold text-slate-900 text-[13px]">
+                              {item.nama_spesialisasi}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              item.faskes_count > 0
+                                ? "bg-[#A5F3FC]/60 text-[#0E7490]"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {item.faskes_count} faskes
+                          </span>
+                        </td>
+                        <td className="py-4 pl-4 pr-8">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => bukaEdit(item)}
+                              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center gap-1.5 transition"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setKonfirmasi(item)}
+                              className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold flex items-center gap-1.5 transition"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <span className="text-slate-600">
+              Menampilkan{" "}
+              <strong className="text-slate-900">{daftar.length}</strong> dari
+              total <strong className="text-slate-900">{meta?.total ?? 0}</strong>{" "}
+              spesialisasi
+            </span>
+
+            {meta && meta.last_page > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={halaman <= 1}
+                  onClick={() => setHalaman((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold hover:bg-slate-200 disabled:opacity-40"
+                >
+                  Sebelumnya
+                </button>
+                <span className="px-3 py-1 text-slate-700 font-bold">
+                  Halaman {meta.current_page} dari {meta.last_page}
+                </span>
+                <button
+                  type="button"
+                  disabled={halaman >= meta.last_page}
+                  onClick={() =>
+                    setHalaman((p) => Math.min(meta.last_page, p + 1))
+                  }
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold hover:bg-slate-200 disabled:opacity-40"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {modalBuka && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-base font-extrabold text-slate-900">
+                {modeEdit ? "Edit Spesialisasi" : "Tambah Spesialisasi"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setModalBuka(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={tanganiSimpan} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Kode Spesialisasi *</label>
+                <input
+                  type="text"
+                  required
+                  disabled={modeEdit !== null}
+                  value={formId}
+                  onChange={(e) => setFormId(e.target.value)}
+                  placeholder="Contoh: ANA"
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A] disabled:bg-slate-100 disabled:text-slate-500"
+                />
+                <p className="text-[11px] text-slate-500">
+                  Kode maksimal 10 karakter dan tidak dapat diubah setelah dibuat.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Nama Spesialisasi *</label>
+                <input
+                  type="text"
+                  required
+                  value={formNama}
+                  onChange={(e) => setFormNama(e.target.value)}
+                  placeholder="Contoh: ANAK"
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalBuka(false)}
+                  className="h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={sedangSimpan}
+                  className="h-10 px-5 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-extrabold flex items-center gap-2 transition disabled:opacity-50"
+                >
+                  {sedangSimpan && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Simpan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {konfirmasi && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h2 className="text-base font-extrabold text-slate-900">
+              Hapus Spesialisasi?
+            </h2>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Spesialisasi <strong>{konfirmasi.nama_spesialisasi}</strong> (
+              {konfirmasi.id_spesialisasi}) akan dihapus dari basis data.
+              {konfirmasi.faskes_count > 0 && (
+                <>
+                  {" "}
+                  Data ini dipakai oleh{" "}
+                  <strong>{konfirmasi.faskes_count} faskes</strong>; menghapusnya
+                  juga menghapus relasi tersebut.
+                </>
+              )}
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setKonfirmasi(null)}
+                className="h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={sedangHapus}
+                onClick={() => tanganiHapus(konfirmasi, konfirmasi.faskes_count > 0)}
+                className="h-10 px-5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold flex items-center gap-2 transition disabled:opacity-50"
+              >
+                {sedangHapus && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Ya, Hapus</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminSidebarLayout>
+  );
+}

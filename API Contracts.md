@@ -123,7 +123,7 @@ Every faskes response carries `distance_km` in kilometers, rounded to two decima
   "latitude": "-6.57451000", 
   "telp_faskes": "0251-8643290",
   "is_support_bpjs": true,
-  "link_maps": "https://www.google.com/maps/dir/?api=1&destination=RSUD%20R.%20MOH.%20NOH%20NUR%2C%20JL.%20RAYA%20CIBEBER%20NO.1%2C%20KAB.%20BOGOR",
+  "link_maps": "https://www.google.com/maps/search/RSUD%20R.%20MOH.%20NOH%20NUR%2C%20JL.%20RAYA%20CIBEBER%20NO.1%2C%20KAB.%20BOGOR/@-6.57451,106.628,17z",
   "rating_avg": 4.35,
   "rating_count": 12,
   "spesialisasi": [],
@@ -280,6 +280,45 @@ All endpoints in this section require a valid token with `role_user=admin`.
 | GET | `/admin/users/{id_user}` | User detail |
 | PUT | `/admin/users/{id_user}` | Update user/account role |
 | DELETE | `/admin/users/{id_user}` | Delete user; current admin cannot delete itself |
+| GET | `/admin/spesialisasi` | Paginated specialization master data with `faskes_count` |
+| POST | `/admin/spesialisasi` | Create specialization |
+| PUT | `/admin/spesialisasi/{id_spesialisasi}` | Rename specialization |
+| DELETE | `/admin/spesialisasi/{id_spesialisasi}` | Delete specialization; add `?force=1` when still used |
+| GET | `/admin/fasilitas` | Paginated supporting-facility master data with `faskes_count` |
+| POST | `/admin/fasilitas` | Create supporting facility |
+| PUT | `/admin/fasilitas/{id_fasilitas}` | Rename supporting facility |
+| DELETE | `/admin/fasilitas/{id_fasilitas}` | Delete supporting facility; add `?force=1` when still used |
+
+### Master data bodies
+
+`GET /admin/spesialisasi` and `GET /admin/fasilitas` accept `search`, `page`, and `per_page` (max `100`, default `25`) and return `data` plus `meta`:
+
+```json
+{
+  "data": [
+    { "id_spesialisasi": "ANA", "nama_spesialisasi": "ANAK", "faskes_count": 52 }
+  ],
+  "meta": { "current_page": 1, "last_page": 4, "per_page": 25, "total": 51 }
+}
+```
+
+Specialization create body:
+
+```json
+{ "id_spesialisasi": "ANA", "nama_spesialisasi": "ANAK" }
+```
+
+`id_spesialisasi` is required, max 10 characters, must be unique, and cannot be changed afterwards. Update only accepts `nama_spesialisasi`.
+
+Supporting facility create body:
+
+```json
+{ "id_fasilitas": 900, "nama_fasilitas": "Ruang Laktasi" }
+```
+
+`id_fasilitas` is optional; when omitted the backend assigns `max(id_fasilitas) + 1`. Update only accepts `nama_fasilitas`.
+
+Deleting a specialization or facility that is still referenced returns `409` with the usage count. Repeating the request with `?force=1` deletes the row and cascades its relation rows.
 
 ### Admin faskes body
 
@@ -302,7 +341,50 @@ Optional fields:
 - `id_spesialisasi`: array of valid specialization IDs
 - `id_fasilitas`: array of valid facility IDs
 
-`link_maps` uses the place name, address, city, and coordinates. Name/address identifies the facility; coordinates disambiguate nearby places. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
+`link_maps` targets the place by name, address, and city, anchored on the facility coordinates with a 17z zoom. Format: `https://www.google.com/maps/search/<url-encoded query>/@<latitude>,<longitude>,17z`. Without coordinates it falls back to `https://www.google.com/maps/search/?api=1&query=<url-encoded query>`. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
+
+## File uploads
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| POST | `/uploads` | Token | Upload one image or PDF and get a public URL |
+
+Multipart body:
+
+- `file`: required; max `5120` KB; `image/jpeg`, `image/png`, `image/webp`, or `application/pdf`.
+- `context`: optional; `diskusi`, `tanggapan`, or `komentar`. Defaults to `diskusi` and selects the storage folder.
+
+Response:
+
+```json
+{
+  "data": {
+    "path": "uploads/diskusi/2f1c....png",
+    "url": "http://localhost:8000/storage/uploads/diskusi/2f1c....png",
+    "name": "bukti.png",
+    "mime": "image/png",
+    "size": 20480
+  }
+}
+```
+
+Pass `url` back in the `image_path` array when creating a discussion, discussion reply, or comment. Files are served from `public/storage`, so run `php artisan storage:link` once per environment.
+
+## Review rating
+
+`GET /faskes/{id_faskes}/komentar` returns a `rating` block next to the paginated comments, and `POST /faskes/{id_faskes}/komentar` returns the same block in the create response:
+
+```json
+{
+  "data": [],
+  "rating": {
+    "rating_avg": 4.35,
+    "rating_count": 12
+  }
+}
+```
+
+`rating_avg` is the mean of `rating` across top-level comments that carry a rating; replies are excluded. A client can refresh the displayed score right after submitting a review instead of re-fetching the facility.
 
 ## Seed and verification
 
