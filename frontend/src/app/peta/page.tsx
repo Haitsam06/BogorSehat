@@ -13,19 +13,41 @@ import {
   ExternalLink,
   Building2,
   Loader2,
+  Radar,
 } from "lucide-react";
 import type { DataFaskesItem } from "@/data/data_faskes";
 import { lokasi_default_pengguna } from "@/data/data_faskes";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
+import { getFaskesVisual } from "@/components/ui/faskes_thumbnail";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import { api, mapApiFaskesToItem, messageFromError } from "@/lib/api";
 import { useFaskes } from "@/context/FaskesContext";
+
+function hitungJarakKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
 
 export default function PetaInteraktifPage() {
   const { lokasiPengguna } = useFaskes();
   const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
   const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
   const [kata_kunci_lokasi, set_kata_kunci_lokasi] = useState("");
+  const [radiusKm, setRadiusKm] = useState<number>(5);
+  const [hanyaDalamRadius, setHanyaDalamRadius] = useState<boolean>(false);
   const [faskes_terpilih, set_faskes_terpilih] = useState<DataFaskesItem | null>(null);
   const [sedangMemuat, setSedangMemuat] = useState(true);
 
@@ -66,12 +88,23 @@ export default function PetaInteraktifPage() {
     };
   }, [lokasiPengguna.latitude, lokasiPengguna.longitude]);
 
-  // Saring daftar faskes berdasarkan kata kunci pencarian
+  // Saring daftar faskes berdasarkan radius & kata kunci pencarian
   const daftar_faskes_terfilter = useMemo(() => {
     const query = kata_kunci_lokasi.trim().toLowerCase();
-    if (!query) return daftarFaskes;
 
     return daftarFaskes.filter((faskes_item) => {
+      if (hanyaDalamRadius) {
+        const jarak = hitungJarakKm(
+          lokasiPengguna.latitude,
+          lokasiPengguna.longitude,
+          faskes_item.latitude,
+          faskes_item.longitude
+        );
+        if (jarak > radiusKm) return false;
+      }
+
+      if (!query) return true;
+
       return (
         faskes_item.nama_faskes.toLowerCase().includes(query) ||
         faskes_item.alamat_lengkap.toLowerCase().includes(query) ||
@@ -82,7 +115,14 @@ export default function PetaInteraktifPage() {
         )
       );
     });
-  }, [kata_kunci_lokasi, daftarFaskes]);
+  }, [
+    kata_kunci_lokasi,
+    daftarFaskes,
+    hanyaDalamRadius,
+    radiusKm,
+    lokasiPengguna.latitude,
+    lokasiPengguna.longitude,
+  ]);
 
   return (
     <div className="relative w-full h-[calc(100dvh-76px)] max-h-[calc(100dvh-76px)] overflow-hidden select-none bg-[#E8EEF2]">
@@ -98,6 +138,8 @@ export default function PetaInteraktifPage() {
           faskes_terpilih={faskes_terpilih}
           zoom_awal={13}
           tampilkan_kontrol_kanan_bawah={true}
+          tampilkan_radius={true}
+          radius_km={radiusKm}
           saat_pilih_faskes={(item_dipilih) => set_faskes_terpilih(item_dipilih)}
         />
       </div>
@@ -150,6 +192,59 @@ export default function PetaInteraktifPage() {
             )}
           </div>
 
+          {/* Pengaturan Radius Circle & Filter Dalam Radius */}
+          <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-2 shrink-0">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                <Radar className="w-3.5 h-3.5 text-[#007E7A]" />
+                <span>Radius Circle</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-[#007E7A]/10 text-[#007E7A] text-[10px] font-extrabold">
+                {radiusKm} km
+              </span>
+            </div>
+
+            <input
+              type="range"
+              min={1}
+              max={20}
+              step={1}
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#007E7A]"
+              aria-label="Atur jarak radius circle"
+            />
+
+            <div className="flex items-center justify-between gap-1">
+              {[1, 3, 5, 10, 20].map((nilai) => (
+                <button
+                  key={nilai}
+                  type="button"
+                  onClick={() => setRadiusKm(nilai)}
+                  className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition ${
+                    radiusKm === nilai
+                      ? "bg-[#007E7A] text-white shadow-sm"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {nilai} km
+                </button>
+              ))}
+            </div>
+
+            <label className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/70 cursor-pointer">
+              <span className="text-[11px] font-semibold text-slate-700">
+                Hanya faskes dalam radius
+              </span>
+              <input
+                type="checkbox"
+                checked={hanyaDalamRadius}
+                onChange={(e) => setHanyaDalamRadius(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#007E7A] focus:ring-[#007E7A] cursor-pointer accent-[#007E7A]"
+              />
+            </label>
+          </div>
+
           {/* Daftar Kartu Faskes Terdekat (Scroll Mandiri di Dalam Panel) */}
           <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0">
             {daftar_faskes_terfilter.length === 0 ? (
@@ -163,8 +258,9 @@ export default function PetaInteraktifPage() {
               daftar_faskes_terfilter.map((faskes_item) => {
                 const sedang_dipilih =
                   faskes_terpilih?.id_faskes === faskes_item.id_faskes;
-                const adalah_rumah_sakit =
-                  faskes_item.kategori_faskes.toUpperCase().includes("RUMAH SAKIT");
+                const { iconBgClass, Icon } = getFaskesVisual(
+                  faskes_item.kategori_faskes
+                );
 
                 return (
                   <div
@@ -180,11 +276,9 @@ export default function PetaInteraktifPage() {
                       <div className="flex items-start gap-2 min-w-0">
                         {/* Ikon Kategori Faskes */}
                         <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 text-white ${
-                            adalah_rumah_sakit ? "bg-red-600" : "bg-[#007E7A]"
-                          }`}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white ${iconBgClass}`}
                         >
-                          {adalah_rumah_sakit ? "H" : "+"}
+                          <Icon className="w-3.5 h-3.5" />
                         </div>
 
                         <div className="min-w-0">
@@ -252,17 +346,18 @@ export default function PetaInteraktifPage() {
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-200/80 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-all">
             {/* Kiri: Ikon & Detail Faskes */}
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-xs text-white shadow-sm ${
-                  faskes_terpilih.kategori_faskes.toUpperCase().includes("RUMAH SAKIT")
-                    ? "bg-red-600"
-                    : "bg-[#007E7A]"
-                }`}
-              >
-                {faskes_terpilih.kategori_faskes.toUpperCase().includes("RUMAH SAKIT")
-                  ? "H"
-                  : "+"}
-              </div>
+              {(() => {
+                const { iconBgClass, Icon } = getFaskesVisual(
+                  faskes_terpilih.kategori_faskes
+                );
+                return (
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-white shadow-sm ${iconBgClass}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                );
+              })()}
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 leading-none mb-0.5">

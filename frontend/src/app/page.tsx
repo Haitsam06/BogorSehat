@@ -26,6 +26,7 @@ import {
   DataFaskesItem,
 } from "@/data/data_faskes";
 import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
+import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import AnimasiScroll from "@/components/ui/animasi_scroll";
 import {
@@ -218,15 +219,16 @@ export default function BerandaPage() {
                 >
                   <div className="group bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-[#007E7A]/40 hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col justify-between h-full">
                     <div>
-                      {/* Gambar Thumbnail Faskes */}
+                      {/* Gambar Thumbnail Faskes (atau Icon + Warna per Jenis Faskes) */}
                       <Link
                         href={`/faskes/${faskes_item.slug_faskes}`}
                         className="block relative overflow-hidden h-[180px] bg-slate-100"
                       >
-                        <img
-                          src={faskes_item.gambar_faskes}
-                          alt={faskes_item.nama_faskes}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        <FaskesThumbnail
+                          gambar_faskes={faskes_item.gambar_faskes}
+                          nama_faskes={faskes_item.nama_faskes}
+                          kategori_faskes={faskes_item.kategori_faskes}
+                          className="w-full h-full"
                         />
                         <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[11px] font-extrabold shadow-sm">
                           {faskes_item.jarak_km}

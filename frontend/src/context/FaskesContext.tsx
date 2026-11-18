@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useCallback, useContext, useState, useEffect } from "react";
 import {
   api,
   ApiUser,
@@ -46,7 +46,7 @@ export function FaskesProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const deteksiLokasiGPS = () => {
+  const deteksiLokasiGPS = useCallback(() => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) return;
     setMemuatGPS(true);
     navigator.geolocation.getCurrentPosition(
@@ -61,9 +61,14 @@ export function FaskesProvider({ children }: { children: React.ReactNode }) {
       () => {
         setMemuatGPS(false);
       },
-      { timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
-  };
+  }, []);
+
+  // Deteksi lokasi asli pengguna otomatis saat aplikasi dimuat
+  useEffect(() => {
+    deteksiLokasiGPS();
+  }, [deteksiLokasiGPS]);
 
   const masuk = async (email: string, sandi: string): Promise<ApiUser> => {
     const res = await api.login(email, sandi);

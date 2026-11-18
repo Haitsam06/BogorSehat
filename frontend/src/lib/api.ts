@@ -312,15 +312,7 @@ export function mapApiFaskesToItem(
   api: ApiFaskes,
   indexFallback = 0
 ): DataFaskesItem {
-  const images = [
-    "/images/beranda-card-1.png",
-    "/images/beranda-card-2.png",
-    "/images/beranda-card-3.png",
-    "/images/detail-photo-1.png",
-    "/images/detail-photo-2.png",
-  ];
-
-  const gambar = images[(api.id_faskes + indexFallback) % images.length];
+  const gambar = "";
 
   const lat = Number(api.latitude) || -6.595;
   const lng = Number(api.longitude) || 106.799;

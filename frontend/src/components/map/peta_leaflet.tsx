@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import type LType from "leaflet";
-import { DataFaskesItem, lokasi_default_pengguna } from "@/data/data_faskes";
+import { DataFaskesItem } from "@/data/data_faskes";
+import { useFaskes } from "@/context/FaskesContext";
+import { getFaskesVisual } from "@/components/ui/faskes_thumbnail";
 
 interface PetaLeafletProps {
   daftar_faskes: DataFaskesItem[];
@@ -11,6 +13,8 @@ interface PetaLeafletProps {
   tampilkan_legenda?: boolean;
   tampilkan_kontrol_kanan_atas?: boolean;
   tampilkan_kontrol_kanan_bawah?: boolean;
+  tampilkan_radius?: boolean;
+  radius_km?: number;
   saat_pilih_faskes?: (faskes_item: DataFaskesItem) => void;
 }
 
@@ -21,11 +25,16 @@ export default function PetaLeaflet({
   tampilkan_legenda = false,
   tampilkan_kontrol_kanan_atas = false,
   tampilkan_kontrol_kanan_bawah = false,
+  tampilkan_radius = false,
+  radius_km = 5,
   saat_pilih_faskes,
 }: PetaLeafletProps) {
+  const { lokasiPengguna, deteksiLokasiGPS } = useFaskes();
   const kontainer_peta_ref = useRef<HTMLDivElement | null>(null);
   const instansi_peta_ref = useRef<LType.Map | null>(null);
   const grup_marker_ref = useRef<LType.LayerGroup | null>(null);
+  const marker_pengguna_ref = useRef<LType.Marker | null>(null);
+  const circle_radius_ref = useRef<LType.Circle | null>(null);
   const [peta_siap, set_peta_siap] = useState(false);
 
   // Inisialisasi Peta Leaflet dengan Tile OpenStreetMap Tanpa Watermark
@@ -39,10 +48,7 @@ export default function PetaLeaflet({
 
       const titik_pusat_awal: [number, number] = faskes_terpilih
         ? [faskes_terpilih.latitude, faskes_terpilih.longitude]
-        : [
-            lokasi_default_pengguna.latitude,
-            lokasi_default_pengguna.longitude,
-          ];
+        : [lokasiPengguna.latitude, lokasiPengguna.longitude];
 
       const peta = L.map(kontainer_peta_ref.current, {
         center: titik_pusat_awal,
@@ -66,7 +72,7 @@ export default function PetaLeaflet({
               <div style="width:8px;height:8px;border-radius:9999px;background:#ffffff;"></div>
             </div>
             <div style="margin-top:4px;padding:3px 10px;border-radius:9999px;background:#ffffff;color:#007E7A;font-size:10px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.12);border:1px solid #e2e8f0;white-space:nowrap;">
-              📍 Posisi Anda
+              Posisi Anda
             </div>
           </div>
         `,
@@ -75,19 +81,36 @@ export default function PetaLeaflet({
       });
 
       const marker_pengguna = L.marker(
-        [lokasi_default_pengguna.latitude, lokasi_default_pengguna.longitude],
+        [lokasiPengguna.latitude, lokasiPengguna.longitude],
         { icon: ikon_pengguna }
       ).addTo(peta);
 
+      const koordinat_teks = `${lokasiPengguna.latitude.toFixed(5)}, ${lokasiPengguna.longitude.toFixed(5)}`;
       marker_pengguna.bindTooltip(
         `<div style="font-size:11px;font-weight:700;color:#0f172a;">Lokasi Anda Saat Ini</div>
-         <div style="font-size:10px;color:#007E7A;font-weight:600;">${lokasi_default_pengguna.nama_jalan} (${lokasi_default_pengguna.koordinat_teks})</div>`,
+         <div style="font-size:10px;color:#007E7A;font-weight:600;">${lokasiPengguna.nama_jalan} (${koordinat_teks})</div>`,
         {
           direction: "top",
           offset: [0, -10],
           className: "tooltip_faskes_custom",
         }
       );
+
+      marker_pengguna_ref.current = marker_pengguna;
+
+      if (tampilkan_radius && radius_km > 0) {
+        circle_radius_ref.current = L.circle(
+          [lokasiPengguna.latitude, lokasiPengguna.longitude],
+          {
+            radius: radius_km * 1000,
+            color: "#007E7A",
+            fillColor: "#007E7A",
+            fillOpacity: 0.1,
+            weight: 2,
+            dashArray: "6, 6",
+          }
+        ).addTo(peta);
+      }
 
       grup_marker_ref.current = L.layerGroup().addTo(peta);
       instansi_peta_ref.current = peta;
@@ -118,12 +141,16 @@ export default function PetaLeaflet({
       daftar_faskes.forEach((faskes_item) => {
         const sedang_dipilih =
           faskes_terpilih?.id_faskes === faskes_item.id_faskes;
-        const adalah_rumah_sakit =
-          faskes_item.kategori_faskes.includes("RUMAH SAKIT");
+        const adalah_rumah_sakit = faskes_item.kategori_faskes
+          .toUpperCase()
+          .includes("RUMAH SAKIT");
 
-        const warna_pin = adalah_rumah_sakit ? "#DC2626" : "#007E7A";
-        const simbol_pin = adalah_rumah_sakit ? "H" : "+";
+        const { hexColor, svgInner } = getFaskesVisual(
+          faskes_item.kategori_faskes
+        );
+        const warna_pin = hexColor;
         const ukuran_pin = sedang_dipilih ? 40 : 34;
+        const ukuran_ikon = sedang_dipilih ? 19 : 16;
 
         const ikon_faskes = L.divIcon({
           className: "pin_faskes_leaflet",
@@ -134,21 +161,18 @@ export default function PetaLeaflet({
               border-radius:${adalah_rumah_sakit ? "9999px" : "12px"};
               background:${warna_pin};
               color:#ffffff;
-              font-weight:900;
-              font-size:${sedang_dipilih ? "16px" : "14px"};
               display:flex;
               align-items:center;
               justify-content:center;
               border:${sedang_dipilih ? "3px solid #0f172a" : "2.5px solid #ffffff"};
-              box-shadow:${
-                sedang_dipilih
-                  ? "0 6px 18px rgba(0,0,0,0.35)"
-                  : "0 3px 10px rgba(0,0,0,0.22)"
-              };
+              box-shadow:${sedang_dipilih
+              ? "0 6px 18px rgba(0,0,0,0.35)"
+              : "0 3px 10px rgba(0,0,0,0.22)"
+            };
               cursor:pointer;
               transition:transform 0.2s ease;
             ">
-              ${simbol_pin}
+              <svg xmlns="http://www.w3.org/2000/svg" width="${ukuran_ikon}" height="${ukuran_ikon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
             </div>
           `,
           iconSize: [ukuran_pin, ukuran_pin],
@@ -166,20 +190,17 @@ export default function PetaLeaflet({
 
         const html_sisa_poli =
           faskes_item.daftar_poli.length > 4
-            ? `<span style="display:inline-block;padding:2px 6px;margin:2px 0;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;">+${
-                faskes_item.daftar_poli.length - 4
-              } Poli</span>`
+            ? `<span style="display:inline-block;padding:2px 6px;margin:2px 0;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;">+${faskes_item.daftar_poli.length - 4
+            } Poli</span>`
             : "";
 
         const html_tooltip = `
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
-              <span style="font-size:9px;font-weight:800;color:#007E7A;text-transform:uppercase;">${
-                faskes_item.kategori_faskes
-              }</span>
-              <span style="padding:1px 7px;border-radius:9999px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;">${
-                faskes_item.jarak_km
-              }</span>
+              <span style="font-size:9px;font-weight:800;color:#007E7A;text-transform:uppercase;">${faskes_item.kategori_faskes
+          }</span>
+              <span style="padding:1px 7px;border-radius:9999px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;">${faskes_item.jarak_km
+          }</span>
             </div>
             <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:2px;">
               ${faskes_item.nama_faskes}
@@ -188,16 +209,14 @@ export default function PetaLeaflet({
               ${faskes_item.alamat_lengkap}
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
-              ${
-                faskes_item.status_bpjs
-                  ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
-                  : ""
-              }
-              ${
-                faskes_item.status_igd_24jam
-                  ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`
-                  : ""
-              }
+              ${faskes_item.status_bpjs
+            ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
+            : ""
+          }
+              ${faskes_item.status_igd_24jam
+            ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`
+            : ""
+          }
             </div>
             <div style="border-top:1px solid #f1f5f9;padding-top:6px;">
               <div style="font-size:9px;font-weight:700;color:#94a3b8;margin-bottom:3px;">LAYANAN POLI:</div>
@@ -232,6 +251,82 @@ export default function PetaLeaflet({
     render_marker_faskes();
   }, [daftar_faskes, faskes_terpilih, peta_siap, saat_pilih_faskes]);
 
+  // Perbarui pin posisi pengguna ketika lokasi GPS berubah
+  useEffect(() => {
+    if (!peta_siap || !marker_pengguna_ref.current || !instansi_peta_ref.current)
+      return;
+
+    marker_pengguna_ref.current.setLatLng([
+      lokasiPengguna.latitude,
+      lokasiPengguna.longitude,
+    ]);
+
+    const koordinat_teks = `${lokasiPengguna.latitude.toFixed(5)}, ${lokasiPengguna.longitude.toFixed(5)}`;
+    marker_pengguna_ref.current.setTooltipContent(
+      `<div style="font-size:11px;font-weight:700;color:#0f172a;">Lokasi Anda Saat Ini</div>
+       <div style="font-size:10px;color:#007E7A;font-weight:600;">${lokasiPengguna.nama_jalan} (${koordinat_teks})</div>`
+    );
+
+    if (!faskes_terpilih) {
+      instansi_peta_ref.current.flyTo(
+        [lokasiPengguna.latitude, lokasiPengguna.longitude],
+        14,
+        { duration: 0.7 }
+      );
+    }
+  }, [
+    lokasiPengguna.latitude,
+    lokasiPengguna.longitude,
+    lokasiPengguna.nama_jalan,
+    faskes_terpilih,
+    peta_siap,
+  ]);
+
+  // Perbarui circle radius di peta saat lokasi atau radius_km berubah
+  useEffect(() => {
+    async function perbarui_circle_radius() {
+      if (!peta_siap || !instansi_peta_ref.current) return;
+
+      if (!tampilkan_radius || radius_km <= 0) {
+        if (circle_radius_ref.current) {
+          circle_radius_ref.current.remove();
+          circle_radius_ref.current = null;
+        }
+        return;
+      }
+
+      if (circle_radius_ref.current) {
+        circle_radius_ref.current.setLatLng([
+          lokasiPengguna.latitude,
+          lokasiPengguna.longitude,
+        ]);
+        circle_radius_ref.current.setRadius(radius_km * 1000);
+      } else {
+        const L = (await import("leaflet")).default;
+        if (!instansi_peta_ref.current) return;
+        circle_radius_ref.current = L.circle(
+          [lokasiPengguna.latitude, lokasiPengguna.longitude],
+          {
+            radius: radius_km * 1000,
+            color: "#007E7A",
+            fillColor: "#007E7A",
+            fillOpacity: 0.1,
+            weight: 2,
+            dashArray: "6, 6",
+          }
+        ).addTo(instansi_peta_ref.current);
+      }
+    }
+
+    perbarui_circle_radius();
+  }, [
+    lokasiPengguna.latitude,
+    lokasiPengguna.longitude,
+    radius_km,
+    tampilkan_radius,
+    peta_siap,
+  ]);
+
   // Geser peta ke faskes_terpilih ketika berubah
   useEffect(() => {
     if (peta_siap && instansi_peta_ref.current && faskes_terpilih) {
@@ -252,8 +347,9 @@ export default function PetaLeaflet({
   };
 
   const pusatkan_lokasi_pengguna = () => {
+    deteksiLokasiGPS();
     instansi_peta_ref.current?.flyTo(
-      [lokasi_default_pengguna.latitude, lokasi_default_pengguna.longitude],
+      [lokasiPengguna.latitude, lokasiPengguna.longitude],
       14,
       { duration: 0.7 }
     );
@@ -341,7 +437,7 @@ export default function PetaLeaflet({
           </div>
           <div className="flex items-center gap-2 text-slate-600">
             <span className="w-3 h-3 rounded-full bg-[#007E7A] border-2 border-white shadow-sm inline-block shrink-0" />
-            <span>Posisi Anda (Jl. Padjajaran)</span>
+            <span>Posisi Anda ({lokasiPengguna.nama_jalan})</span>
           </div>
         </div>
       )}

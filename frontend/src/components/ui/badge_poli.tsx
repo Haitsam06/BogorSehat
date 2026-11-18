@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Stethoscope } from "lucide-react";
+import React, { useState } from "react";
+import { Building2, Stethoscope } from "lucide-react";
 
 interface BadgePoliProps {
   nama_poli: string;
@@ -90,6 +90,63 @@ export function DaftarBadgePoli({
         >
           +{sisa_poli} Poli
         </span>
+      )}
+    </div>
+  );
+}
+
+interface DaftarBadgeFasilitasProps {
+  daftar_fasilitas: string[];
+  maksimal_tampil?: number;
+}
+
+export function DaftarBadgeFasilitas({
+  daftar_fasilitas,
+  maksimal_tampil = 12,
+}: DaftarBadgeFasilitasProps) {
+  const [tampilkanSemua, setTampilkanSemua] = useState(false);
+
+  if (!daftar_fasilitas || daftar_fasilitas.length === 0) {
+    return (
+      <p className="text-xs text-slate-400 italic">
+        Belum ada data sarana &amp; fasilitas penunjang medis yang tercatat.
+      </p>
+    );
+  }
+
+  const fasilitasDitampilkan = tampilkanSemua
+    ? daftar_fasilitas
+    : daftar_fasilitas.slice(0, maksimal_tampil);
+  const sisaFasilitas = daftar_fasilitas.length - fasilitasDitampilkan.length;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {fasilitasDitampilkan.map((nama_fasilitas) => (
+        <span
+          key={nama_fasilitas}
+          className="inline-flex items-center gap-1 whitespace-nowrap shrink-0 font-bold rounded-full border px-2.5 py-0.5 text-[10px] bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 transition"
+        >
+          <Building2 className="w-2.5 h-2.5 shrink-0" />
+          <span>{nama_fasilitas}</span>
+        </span>
+      ))}
+      {sisaFasilitas > 0 && (
+        <button
+          type="button"
+          onClick={() => setTampilkanSemua(true)}
+          className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold px-2.5 py-0.5 text-[10px] transition cursor-pointer"
+        >
+          +{sisaFasilitas} Fasilitas lainnya
+        </button>
+      )}
+      {tampilkanSemua && daftar_fasilitas.length > maksimal_tampil && (
+        <button
+          type="button"
+          onClick={() => setTampilkanSemua(false)}
+          className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 font-bold px-2.5 py-0.5 text-[10px] transition cursor-pointer"
+        >
+          Tampilkan lebih sedikit
+        </button>
       )}
     </div>
   );

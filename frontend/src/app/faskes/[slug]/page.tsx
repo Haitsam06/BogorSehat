@@ -18,10 +18,10 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Stethoscope,
   X,
 } from "lucide-react";
 import type { DataFaskesItem } from "@/data/data_faskes";
-import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import ModalReportFaskes from "@/components/faskes/ModalReportFaskes";
 import {
@@ -43,6 +43,8 @@ export default function DetailFaskesPage({
 
   const [faskesItem, setFaskesItem] = useState<DataFaskesItem | null>(null);
   const [rawApiFaskes, setRawApiFaskes] = useState<ApiFaskes | null>(null);
+  const [tampilkanSemuaPoli, setTampilkanSemuaPoli] = useState(false);
+  const [tampilkanSemuaFasilitas, setTampilkanSemuaFasilitas] = useState(false);
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
 
@@ -433,37 +435,6 @@ export default function DetailFaskesPage({
                 layanan darurat, poliklinik spesialis, serta integrasi rujukan BPJS Kesehatan.
               </p>
             </div>
-
-            {/* Seksi Layanan Poliklinik */}
-            <div className="pt-3 border-t border-slate-100 space-y-2.5">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                Layanan Poliklinik &amp; Spesialisasi Tersedia
-              </h3>
-              <DaftarBadgePoli
-                daftar_poli={faskesItem.daftar_poli}
-                maksimal_tampil={12}
-                ukuran_badge="kecil"
-              />
-            </div>
-
-            {/* Sarana & Fasilitas Penunjang (dari database jika ada) */}
-            {rawApiFaskes?.fasilitas && rawApiFaskes.fasilitas.length > 0 && (
-              <div className="pt-3 border-t border-slate-100 space-y-2">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                  Sarana &amp; Fasilitas Penunjang Medis
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {rawApiFaskes.fasilitas.map((fas) => (
-                    <span
-                      key={fas.id_fasilitas}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold"
-                    >
-                      ✓ {fas.nama_fasilitas}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Kartu Ringkasan Skor & Input Ulasan */}
@@ -721,51 +692,143 @@ export default function DetailFaskesPage({
           </div>
         </div>
 
-        {/* Kolom Kanan: Peta Mini & Petunjuk Arah */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 font-extrabold text-sm text-slate-900">
-              <MapPin className="w-4 h-4 text-[#007E7A]" />
-              <span>Titik Lokasi GIS</span>
+        {/* Kolom Kanan: Peta Mini, Poliklinik, dan Sarana & Fasilitas */}
+        <div className="lg:col-span-4 space-y-5">
+          {/* Kartu Peta Mini & Petunjuk Arah */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-extrabold text-sm text-slate-900">
+                <MapPin className="w-4 h-4 text-[#007E7A]" />
+                <span>Titik Lokasi GIS</span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 font-mono">
+                WGS84 EPSG:4326
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 font-mono">
-              WGS84 EPSG:4326
-            </span>
-          </div>
 
-          <div className="h-56 rounded-xl overflow-hidden border border-slate-200">
-            <PetaLeaflet
-              daftar_faskes={[faskesItem]}
-              faskes_terpilih={faskesItem}
-              zoom_awal={15}
-            />
-          </div>
+            <div className="h-56 rounded-xl overflow-hidden border border-slate-200">
+              <PetaLeaflet
+                daftar_faskes={[faskesItem]}
+                faskes_terpilih={faskesItem}
+                zoom_awal={15}
+              />
+            </div>
 
-          <div className="text-[11px] space-y-1">
-            <span className="font-bold text-slate-900 block">
-              Alamat Resmi:
-            </span>
-            <p className="text-slate-500 leading-relaxed">
-              {faskesItem.alamat_lengkap}, {faskesItem.kecamatan ? `${faskesItem.kecamatan}, ` : ""}
-              {faskesItem.wilayah_kota_kab === "KOTA_BOGOR" ? "Kota Bogor" : "Kabupaten Bogor"}
-            </p>
-            {faskesItem.telepon_darurat && (
-              <p className="text-slate-700 font-semibold pt-1">
-                Kontak: {rawApiFaskes?.telp_faskes || "-"}
+            <div className="text-[11px] space-y-1">
+              <span className="font-bold text-slate-900 block">
+                Alamat Resmi:
+              </span>
+              <p className="text-slate-500 leading-relaxed">
+                {faskesItem.alamat_lengkap}, {faskesItem.kecamatan ? `${faskesItem.kecamatan}, ` : ""}
+                {faskesItem.wilayah_kota_kab === "KOTA_BOGOR" ? "Kota Bogor" : "Kabupaten Bogor"}
               </p>
+              {faskesItem.telepon_darurat && (
+                <p className="text-slate-700 font-semibold pt-1">
+                  Kontak: {rawApiFaskes?.telp_faskes || "-"}
+                </p>
+              )}
+            </div>
+
+            <a
+              href={linkMapsTujuan}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 px-4 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>Navigasi Rute Cepat (Google Maps)</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          {/* Kartu Daftar Poliklinik */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-3.5">
+            <h3 className="text-sm font-extrabold text-slate-900">
+              Poliklinik
+            </h3>
+            {faskesItem.daftar_poli.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">
+                Belum ada data poliklinik &amp; spesialisasi tercatat.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {(tampilkanSemuaPoli
+                  ? faskesItem.daftar_poli
+                  : faskesItem.daftar_poli.slice(0, 7)
+                ).map((namaPoli) => (
+                  <div
+                    key={namaPoli}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-100"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#E6F4F3] text-[#007E7A] flex items-center justify-center shrink-0">
+                      <Stethoscope className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                      <span className="text-xs font-bold text-slate-800 leading-snug">
+                        {namaPoli}
+                      </span>
+                      {faskesItem.status_bpjs && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold leading-none">
+                          BPJS Aktif
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {faskesItem.daftar_poli.length > 7 && (
+                  <button
+                    type="button"
+                    onClick={() => setTampilkanSemuaPoli((prev) => !prev)}
+                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+                  >
+                    {tampilkanSemuaPoli
+                      ? "Tampilkan lebih sedikit"
+                      : `+${faskesItem.daftar_poli.length - 7} Poliklinik lainnya`}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
-          <a
-            href={linkMapsTujuan}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-2.5 px-4 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs"
-          >
-            <Navigation className="w-3.5 h-3.5" />
-            <span>Navigasi Rute Cepat (Google Maps)</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          {/* Kartu Sarana & Fasilitas Penunjang Medis */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-3.5">
+            <h3 className="text-sm font-extrabold text-slate-900">
+              Sarana &amp; Fasilitas Penunjang Medis
+            </h3>
+            {!rawApiFaskes?.fasilitas || rawApiFaskes.fasilitas.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">
+                Belum ada data sarana &amp; fasilitas penunjang medis tercatat.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {(tampilkanSemuaFasilitas
+                  ? rawApiFaskes.fasilitas
+                  : rawApiFaskes.fasilitas.slice(0, 8)
+                ).map((fas) => (
+                  <div
+                    key={fas.id_fasilitas}
+                    className="flex items-start gap-2 text-xs font-semibold text-slate-700"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-[#007E7A] shrink-0 mt-0.5" />
+                    <span className="leading-snug">{fas.nama_fasilitas}</span>
+                  </div>
+                ))}
+
+                {rawApiFaskes.fasilitas.length > 8 && (
+                  <button
+                    type="button"
+                    onClick={() => setTampilkanSemuaFasilitas((prev) => !prev)}
+                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition mt-1"
+                  >
+                    {tampilkanSemuaFasilitas
+                      ? "Tampilkan lebih sedikit"
+                      : `+${rawApiFaskes.fasilitas.length - 8} Fasilitas lainnya`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
