@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Loader2,
   Sparkles,
+  ArrowLeft,
 } from "lucide-react";
 import { api, messageFromError } from "@/lib/api";
 
@@ -247,6 +248,16 @@ export default function AdminLoginPage() {
                   )}
                 </button>
               </form>
+
+              <div className="pt-2 border-t border-slate-100 flex justify-center">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#007E7A] transition py-1.5 px-3 rounded-lg hover:bg-slate-50"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali ke Beranda</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

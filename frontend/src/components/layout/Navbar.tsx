@@ -10,7 +10,7 @@ export default function Navbar() {
   const path_aktif = usePathname();
   const { pengguna, sudahLogin, keluar } = useFaskes();
 
-  if (path_aktif.startsWith("/admin")) {
+  if (path_aktif.startsWith("/admin") || path_aktif.startsWith("/masuk")) {
     return null;
   }
 
