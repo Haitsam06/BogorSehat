@@ -67,6 +67,23 @@ export interface ApiMasterItem {
   faskes_count: number;
 }
 
+export interface ApiFaskesImage {
+  id_faskes_image?: number;
+  path: string;
+  url: string;
+  is_banner: boolean;
+  is_thumbnail: boolean;
+  sort_order?: number;
+}
+
+export interface ApiUploadedFile {
+  path: string;
+  url: string;
+  name: string;
+  mime: string;
+  size: number;
+}
+
 export interface ApiFaskes {
   id_faskes: number;
   kdppk: string | null;
@@ -85,8 +102,12 @@ export interface ApiFaskes {
   distance_km?: number | string;
   rating_avg?: number;
   rating_count?: number;
+  has_igd?: boolean;
   spesialisasi?: ApiSpesialisasi[];
   fasilitas?: ApiFasilitas[];
+  images?: ApiFaskesImage[];
+  banner_url?: string | null;
+  thumbnail_url?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -310,9 +331,23 @@ async function request<T>(
 
 export function mapApiFaskesToItem(
   api: ApiFaskes,
-  indexFallback = 0
+  _indexFallback = 0
 ): DataFaskesItem {
-  const gambar = "";
+  const galeriGambar = (api.images ?? []).slice(0, 5).map((img) => ({
+    url: img.url,
+    is_banner: Boolean(img.is_banner),
+    is_thumbnail: Boolean(img.is_thumbnail),
+  }));
+  const gambar =
+    api.thumbnail_url ||
+    galeriGambar.find((img) => img.is_thumbnail)?.url ||
+    galeriGambar[0]?.url ||
+    "";
+  const banner =
+    api.banner_url ||
+    galeriGambar.find((img) => img.is_banner)?.url ||
+    galeriGambar[0]?.url ||
+    "";
 
   const lat = Number(api.latitude) || -6.595;
   const lng = Number(api.longitude) || 106.799;
@@ -323,10 +358,12 @@ export function mapApiFaskesToItem(
       : [];
 
   const hasIgd =
-    api.fasilitas?.some((f) =>
-      f.nama_fasilitas.toLowerCase().includes("igd")
-    ) ??
-    (api.jenis_faskes?.toLowerCase().includes("rumah sakit") || false);
+    typeof api.has_igd === "boolean"
+      ? api.has_igd
+      : api.fasilitas?.some((f) =>
+          f.nama_fasilitas.toLowerCase().includes("igd")
+        ) ??
+        (api.jenis_faskes?.toLowerCase().includes("rumah sakit") || false);
 
   const jarakNum =
     typeof api.distance_km !== "undefined" ? Number(api.distance_km) : 0;
@@ -336,6 +373,9 @@ export function mapApiFaskesToItem(
     api.kota_kabupaten?.toUpperCase().includes("KOTA")
       ? "KOTA_BOGOR"
       : "KABUPATEN_BOGOR";
+
+  const ratingCount = api.rating_count ?? 0;
+  const sudahDirating = ratingCount > 0;
 
   return {
     id_faskes: api.id_faskes,
@@ -350,8 +390,11 @@ export function mapApiFaskesToItem(
     wilayah_kota_kab: wilayah,
     jarak_km: `${jarakNum.toFixed(1)} km`,
     waktu_tempuh: `${estimasiMenit} mnt`,
-    rating_faskes: Number(api.rating_avg ?? 0).toFixed(1),
-    jumlah_ulasan: api.rating_count ?? 0,
+    rating_faskes: sudahDirating
+      ? Number(api.rating_avg ?? 0).toFixed(1)
+      : "Belum Dirating",
+    jumlah_ulasan: ratingCount,
+    sudah_dirating: sudahDirating,
     status_bpjs: Boolean(api.is_support_bpjs),
     status_igd_24jam: hasIgd,
     telepon_darurat: Boolean(api.telp_faskes),
@@ -359,6 +402,8 @@ export function mapApiFaskesToItem(
     longitude: lng,
     koordinat_teks: `${lat.toFixed(4)}° S, ${lng.toFixed(4)}° E`,
     gambar_faskes: gambar,
+    banner_faskes: banner,
+    galeri_gambar: galeriGambar,
     daftar_poli: poliList,
   };
 }
@@ -393,9 +438,13 @@ export const api = {
     const first = await this.getSpesialisasi(1);
     const items = [...first.data];
     const lastPage = first.meta?.last_page ?? 1;
-    for (let page = 2; page <= lastPage; page += 1) {
-      const next = await this.getSpesialisasi(page);
-      items.push(...next.data);
+    if (lastPage > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: lastPage - 1 }, (_, idx) =>
+          this.getSpesialisasi(idx + 2)
+        )
+      );
+      rest.forEach((res) => items.push(...res.data));
     }
     return items;
   },
@@ -412,9 +461,13 @@ export const api = {
     const first = await this.getFasilitas(1);
     const items = [...first.data];
     const lastPage = first.meta?.last_page ?? 1;
-    for (let page = 2; page <= lastPage; page += 1) {
-      const next = await this.getFasilitas(page);
-      items.push(...next.data);
+    if (lastPage > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: lastPage - 1 }, (_, idx) =>
+          this.getFasilitas(idx + 2)
+        )
+      );
+      rest.forEach((res) => items.push(...res.data));
     }
     return items;
   },
@@ -462,9 +515,11 @@ export const api = {
   async getNearbyFaskes(
     latitude: number,
     longitude: number,
-    radius = 10
+    radius = 10,
+    options: { compact?: boolean } = {}
   ): Promise<ApiFaskes[]> {
-    const endpoint = `/faskes/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`;
+    const compactParam = options.compact ? "&compact=1" : "";
+    const endpoint = `/faskes/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}${compactParam}`;
     const res = await request<ApiSingleResponse<ApiFaskes[]>>(endpoint);
     return res.data;
   },
@@ -785,6 +840,32 @@ export const api = {
     );
   },
 
+  async getAdminSpesialisasiDetail(id: string): Promise<ApiMasterItem> {
+    try {
+      const res = await request<ApiSingleResponse<ApiMasterItem>>(
+        `/admin/spesialisasi/${encodeURIComponent(id)}`
+      );
+      return res.data;
+    } catch (err) {
+      const status = (err as Error & { status?: number })?.status;
+      if (status !== 404 && status !== 405) {
+        throw err;
+      }
+
+      const all = await this.getAllSpesialisasi();
+      const found = all.find((item) => item.id_spesialisasi === id);
+      if (!found) {
+        throw new Error("Spesialisasi tidak ditemukan.");
+      }
+
+      return {
+        id_spesialisasi: found.id_spesialisasi,
+        nama_spesialisasi: found.nama_spesialisasi,
+        faskes_count: 0,
+      };
+    }
+  },
+
   async createAdminSpesialisasi(data: {
     id_spesialisasi: string;
     nama_spesialisasi: string;
@@ -823,6 +904,32 @@ export const api = {
     return request<ApiCollectionResponse<ApiMasterItem>>(
       buildAdminMasterQuery("/admin/fasilitas", params)
     );
+  },
+
+  async getAdminFasilitasDetail(id: number): Promise<ApiMasterItem> {
+    try {
+      const res = await request<ApiSingleResponse<ApiMasterItem>>(
+        `/admin/fasilitas/${id}`
+      );
+      return res.data;
+    } catch (err) {
+      const status = (err as Error & { status?: number })?.status;
+      if (status !== 404 && status !== 405) {
+        throw err;
+      }
+
+      const all = await this.getAllFasilitas();
+      const found = all.find((item) => item.id_fasilitas === id);
+      if (!found) {
+        throw new Error("Fasilitas penunjang tidak ditemukan.");
+      }
+
+      return {
+        id_fasilitas: found.id_fasilitas,
+        nama_fasilitas: found.nama_fasilitas,
+        faskes_count: 0,
+      };
+    }
   },
 
   async createAdminFasilitas(data: {
@@ -923,6 +1030,46 @@ export const api = {
     );
   },
 
+  async uploadFile(
+    file: File,
+    context: "diskusi" | "tanggapan" | "komentar" | "faskes" = "faskes"
+  ): Promise<ApiUploadedFile> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("context", context);
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    const token = getAuthToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/uploads`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    const responseData = await response.json().catch(() => null);
+    if (!response.ok) {
+      const errorMsg =
+        responseData?.message ||
+        responseData?.error ||
+        `Unggah file gagal dengan status ${response.status}`;
+      const error = new Error(errorMsg) as Error & {
+        status?: number;
+        errors?: Record<string, string[]>;
+      };
+      error.status = response.status;
+      error.errors = responseData?.errors;
+      throw error;
+    }
+
+    return (responseData as ApiSingleResponse<ApiUploadedFile>).data;
+  },
+
   async createFaskes(data: {
     nama_faskes: string;
     alamat_faskes: string;
@@ -939,6 +1086,7 @@ export const api = {
     link_maps?: string;
     id_spesialisasi?: string[];
     id_fasilitas?: number[];
+    images?: ApiFaskesImage[];
   }): Promise<ApiFaskes> {
     const res = await request<ApiSingleResponse<ApiFaskes>>("/admin/faskes", {
       method: "POST",
@@ -955,16 +1103,17 @@ export const api = {
       kota_kabupaten: string;
       latitude: number;
       longitude: number;
-      kdppk?: string;
-      jenis_faskes?: string;
-      kelas_faskes?: string;
-      kecamatan?: string;
+      kdppk?: string | null;
+      jenis_faskes?: string | null;
+      kelas_faskes?: string | null;
+      kecamatan?: string | null;
       provinsi?: string;
-      telp_faskes?: string;
+      telp_faskes?: string | null;
       is_support_bpjs?: boolean;
       link_maps?: string;
       id_spesialisasi?: string[];
       id_fasilitas?: number[];
+      images?: ApiFaskesImage[];
     }>
   ): Promise<ApiFaskes> {
     const res = await request<ApiSingleResponse<ApiFaskes>>(

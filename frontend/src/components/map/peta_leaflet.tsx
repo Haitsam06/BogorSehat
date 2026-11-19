@@ -18,6 +18,114 @@ interface PetaLeafletProps {
   saat_pilih_faskes?: (faskes_item: DataFaskesItem) => void;
 }
 
+const MARKER_BATCH_SIZE = 60;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function createMarkerIcon(
+  L: typeof LType,
+  faskes_item: DataFaskesItem,
+  sedang_dipilih: boolean
+): LType.DivIcon {
+  const adalah_rumah_sakit = faskes_item.kategori_faskes
+    .toUpperCase()
+    .includes("RUMAH SAKIT");
+  const { hexColor, svgInner } = getFaskesVisual(faskes_item.kategori_faskes);
+  const ukuran_pin = sedang_dipilih ? 40 : 34;
+  const ukuran_ikon = sedang_dipilih ? 19 : 16;
+
+  return L.divIcon({
+    className: "pin_faskes_leaflet",
+    html: `
+      <div style="
+        width:${ukuran_pin}px;
+        height:${ukuran_pin}px;
+        border-radius:${adalah_rumah_sakit ? "9999px" : "12px"};
+        background:${hexColor};
+        color:#ffffff;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border:${sedang_dipilih ? "3px solid #0f172a" : "2.5px solid #ffffff"};
+        box-shadow:${
+          sedang_dipilih
+            ? "0 6px 18px rgba(0,0,0,0.35)"
+            : "0 3px 10px rgba(0,0,0,0.22)"
+        };
+        cursor:pointer;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${ukuran_ikon}" height="${ukuran_ikon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
+      </div>
+    `,
+    iconSize: [ukuran_pin, ukuran_pin],
+    iconAnchor: [ukuran_pin / 2, ukuran_pin / 2],
+  });
+}
+
+function buildTooltipHtml(faskes_item: DataFaskesItem): string {
+  const html_badge_poli = faskes_item.daftar_poli
+    .slice(0, 4)
+    .map(
+      (nama_poli) =>
+        `<span style="display:inline-block;padding:2px 7px;margin:2px 3px 2px 0;border-radius:9999px;background:#E6F4F3;color:#007E7A;border:1px solid #BCE3E0;font-size:10px;font-weight:700;">${escapeHtml(nama_poli)}</span>`
+    )
+    .join("");
+
+  const html_sisa_poli =
+    faskes_item.daftar_poli.length > 4
+      ? `<span style="display:inline-block;padding:2px 6px;margin:2px 0;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;">+${
+          faskes_item.daftar_poli.length - 4
+        } Poli</span>`
+      : "";
+
+  const html_poli_section =
+    faskes_item.daftar_poli.length > 0
+      ? `<div style="border-top:1px solid #f1f5f9;padding-top:6px;">
+          <div style="font-size:9px;font-weight:700;color:#94a3b8;margin-bottom:3px;">LAYANAN POLI:</div>
+          <div>${html_badge_poli}${html_sisa_poli}</div>
+        </div>`
+      : "";
+
+  return `
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
+        <span style="font-size:9px;font-weight:800;color:#007E7A;text-transform:uppercase;">${escapeHtml(
+          faskes_item.kategori_faskes
+        )}</span>
+        <span style="padding:1px 7px;border-radius:9999px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;">${escapeHtml(
+          faskes_item.jarak_km
+        )}</span>
+      </div>
+      <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:2px;">
+        ${escapeHtml(faskes_item.nama_faskes)}
+      </div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:6px;line-height:1.3;">
+        ${escapeHtml(faskes_item.alamat_lengkap)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+        ${
+          faskes_item.status_bpjs
+            ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
+            : ""
+        }
+        ${
+          faskes_item.status_igd_24jam
+            ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`
+            : ""
+        }
+      </div>
+      ${html_poli_section}
+    </div>
+  `;
+}
+
 export default function PetaLeaflet({
   daftar_faskes,
   faskes_terpilih = null,
@@ -32,9 +140,23 @@ export default function PetaLeaflet({
   const { lokasiPengguna, deteksiLokasiGPS } = useFaskes();
   const kontainer_peta_ref = useRef<HTMLDivElement | null>(null);
   const instansi_peta_ref = useRef<LType.Map | null>(null);
+  const leaflet_lib_ref = useRef<typeof LType | null>(null);
   const grup_marker_ref = useRef<LType.LayerGroup | null>(null);
   const marker_pengguna_ref = useRef<LType.Marker | null>(null);
   const circle_radius_ref = useRef<LType.Circle | null>(null);
+
+  const markersByIdRef = useRef<
+    Map<number, { marker: LType.Marker; item: DataFaskesItem }>
+  >(new Map());
+  const prevSelectedIdRef = useRef<number | null>(null);
+  const selectedIdRef = useRef<number | null>(
+    faskes_terpilih?.id_faskes ?? null
+  );
+  const saatPilihFaskesRef = useRef(saat_pilih_faskes);
+
+  selectedIdRef.current = faskes_terpilih?.id_faskes ?? null;
+  saatPilihFaskesRef.current = saat_pilih_faskes;
+
   const [peta_siap, set_peta_siap] = useState(false);
 
   // Inisialisasi Peta Leaflet dengan Tile OpenStreetMap Tanpa Watermark
@@ -46,6 +168,8 @@ export default function PetaLeaflet({
       const L = (await import("leaflet")).default;
       if (!komponen_aktif || !kontainer_peta_ref.current) return;
 
+      leaflet_lib_ref.current = L;
+
       const titik_pusat_awal: [number, number] = faskes_terpilih
         ? [faskes_terpilih.latitude, faskes_terpilih.longitude]
         : [lokasiPengguna.latitude, lokasiPengguna.longitude];
@@ -56,14 +180,12 @@ export default function PetaLeaflet({
         zoomControl: false,
       });
 
-      // Menggunakan Tile OpenStreetMap Standar Resmi (Bebas Watermark & Gratis)
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
       }).addTo(peta);
 
-      // Tambahkan Pin Posisi Pengguna ("Posisi Anda")
       const ikon_pengguna = L.divIcon({
         className: "pin_lokasi_pengguna",
         html: `
@@ -88,7 +210,9 @@ export default function PetaLeaflet({
       const koordinat_teks = `${lokasiPengguna.latitude.toFixed(5)}, ${lokasiPengguna.longitude.toFixed(5)}`;
       marker_pengguna.bindTooltip(
         `<div style="font-size:11px;font-weight:700;color:#0f172a;">Lokasi Anda Saat Ini</div>
-         <div style="font-size:10px;color:#007E7A;font-weight:600;">${lokasiPengguna.nama_jalan} (${koordinat_teks})</div>`,
+         <div style="font-size:10px;color:#007E7A;font-weight:600;">${escapeHtml(
+           lokasiPengguna.nama_jalan
+         )} (${koordinat_teks})</div>`,
         {
           direction: "top",
           offset: [0, -10],
@@ -125,131 +249,130 @@ export default function PetaLeaflet({
         instansi_peta_ref.current.remove();
         instansi_peta_ref.current = null;
       }
+      leaflet_lib_ref.current = null;
+      grup_marker_ref.current = null;
+      markersByIdRef.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Render Pin Faskes & Tooltip yang Menampilkan Badge Poli
+  // Render poin-poin faskes secara bertahap per frame tanpa membangun HTML tooltip di awal.
+  // Badge card tooltip baru dibuat secara lazy saat marker di-hover atau diklik.
   useEffect(() => {
+    if (!peta_siap || !grup_marker_ref.current) return;
+
+    let cancelled = false;
+    let rafId: number | null = null;
+
     async function render_marker_faskes() {
-      if (!peta_siap || !grup_marker_ref.current || !instansi_peta_ref.current)
-        return;
-      const L = (await import("leaflet")).default;
+      const L = leaflet_lib_ref.current ?? (await import("leaflet")).default;
+      if (cancelled || !grup_marker_ref.current) return;
 
-      grup_marker_ref.current.clearLayers();
+      const markerGroup = grup_marker_ref.current;
+      markerGroup.clearLayers();
+      markersByIdRef.current.clear();
+      prevSelectedIdRef.current = null;
 
-      daftar_faskes.forEach((faskes_item) => {
-        const sedang_dipilih =
-          faskes_terpilih?.id_faskes === faskes_item.id_faskes;
-        const adalah_rumah_sakit = faskes_item.kategori_faskes
-          .toUpperCase()
-          .includes("RUMAH SAKIT");
-
-        const { hexColor, svgInner } = getFaskesVisual(
-          faskes_item.kategori_faskes
-        );
-        const warna_pin = hexColor;
-        const ukuran_pin = sedang_dipilih ? 40 : 34;
-        const ukuran_ikon = sedang_dipilih ? 19 : 16;
-
-        const ikon_faskes = L.divIcon({
-          className: "pin_faskes_leaflet",
-          html: `
-            <div style="
-              width:${ukuran_pin}px;
-              height:${ukuran_pin}px;
-              border-radius:${adalah_rumah_sakit ? "9999px" : "12px"};
-              background:${warna_pin};
-              color:#ffffff;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              border:${sedang_dipilih ? "3px solid #0f172a" : "2.5px solid #ffffff"};
-              box-shadow:${sedang_dipilih
-              ? "0 6px 18px rgba(0,0,0,0.35)"
-              : "0 3px 10px rgba(0,0,0,0.22)"
-            };
-              cursor:pointer;
-              transition:transform 0.2s ease;
-            ">
-              <svg xmlns="http://www.w3.org/2000/svg" width="${ukuran_ikon}" height="${ukuran_ikon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
-            </div>
-          `,
-          iconSize: [ukuran_pin, ukuran_pin],
-          iconAnchor: [ukuran_pin / 2, ukuran_pin / 2],
-        });
-
-        // Susun HTML Badge Poli untuk di dalam Tooltip Pin
-        const html_badge_poli = faskes_item.daftar_poli
-          .slice(0, 4)
-          .map(
-            (nama_poli) =>
-              `<span style="display:inline-block;padding:2px 7px;margin:2px 3px 2px 0;border-radius:9999px;background:#E6F4F3;color:#007E7A;border:1px solid #BCE3E0;font-size:10px;font-weight:700;">${nama_poli}</span>`
-          )
-          .join("");
-
-        const html_sisa_poli =
-          faskes_item.daftar_poli.length > 4
-            ? `<span style="display:inline-block;padding:2px 6px;margin:2px 0;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;">+${faskes_item.daftar_poli.length - 4
-            } Poli</span>`
-            : "";
-
-        const html_tooltip = `
-          <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
-              <span style="font-size:9px;font-weight:800;color:#007E7A;text-transform:uppercase;">${faskes_item.kategori_faskes
-          }</span>
-              <span style="padding:1px 7px;border-radius:9999px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;">${faskes_item.jarak_km
-          }</span>
-            </div>
-            <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:2px;">
-              ${faskes_item.nama_faskes}
-            </div>
-            <div style="font-size:10px;color:#64748b;margin-bottom:6px;line-height:1.3;">
-              ${faskes_item.alamat_lengkap}
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
-              ${faskes_item.status_bpjs
-            ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
-            : ""
-          }
-              ${faskes_item.status_igd_24jam
-            ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`
-            : ""
-          }
-            </div>
-            <div style="border-top:1px solid #f1f5f9;padding-top:6px;">
-              <div style="font-size:9px;font-weight:700;color:#94a3b8;margin-bottom:3px;">LAYANAN POLI:</div>
-              <div>${html_badge_poli}${html_sisa_poli}</div>
-            </div>
-          </div>
-        `;
-
-        const marker_item = L.marker(
-          [faskes_item.latitude, faskes_item.longitude],
-          { icon: ikon_faskes }
+      const appendBatch = (startIndex: number) => {
+        if (cancelled) return;
+        const endIndex = Math.min(
+          startIndex + MARKER_BATCH_SIZE,
+          daftar_faskes.length
         );
 
-        marker_item.bindTooltip(html_tooltip, {
-          direction: "top",
-          offset: [0, -18],
-          opacity: 1,
-          className: "tooltip_faskes_custom",
-        });
+        for (let i = startIndex; i < endIndex; i += 1) {
+          const faskes_item = daftar_faskes[i];
+          const sedang_dipilih =
+            selectedIdRef.current === faskes_item.id_faskes;
 
-        marker_item.on("click", () => {
-          if (saat_pilih_faskes) {
-            saat_pilih_faskes(faskes_item);
+          const marker_item = L.marker(
+            [faskes_item.latitude, faskes_item.longitude],
+            {
+              icon: createMarkerIcon(L, faskes_item, sedang_dipilih),
+              zIndexOffset: sedang_dipilih ? 500 : 0,
+            }
+          );
+
+          const ensureTooltipBound = () => {
+            if (!marker_item.getTooltip()) {
+              marker_item.bindTooltip(buildTooltipHtml(faskes_item), {
+                direction: "top",
+                offset: [0, -18],
+                opacity: 1,
+                className: "tooltip_faskes_custom",
+              });
+            }
+          };
+
+          const handleFirstHover = () => {
+            ensureTooltipBound();
+            marker_item.off("mouseover", handleFirstHover);
+            marker_item.openTooltip();
+          };
+
+          marker_item.on("mouseover", handleFirstHover);
+          marker_item.on("click", () => {
+            ensureTooltipBound();
+            saatPilihFaskesRef.current?.(faskes_item);
+            marker_item.openTooltip();
+          });
+
+          marker_item.addTo(markerGroup);
+          markersByIdRef.current.set(faskes_item.id_faskes, {
+            marker: marker_item,
+            item: faskes_item,
+          });
+
+          if (sedang_dipilih) {
+            prevSelectedIdRef.current = faskes_item.id_faskes;
           }
-          marker_item.openTooltip();
-        });
+        }
 
-        marker_item.addTo(grup_marker_ref.current!);
-      });
+        if (endIndex < daftar_faskes.length && !cancelled) {
+          rafId = window.requestAnimationFrame(() => appendBatch(endIndex));
+        }
+      };
+
+      appendBatch(0);
     }
 
     render_marker_faskes();
-  }, [daftar_faskes, faskes_terpilih, peta_siap, saat_pilih_faskes]);
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [daftar_faskes, peta_siap]);
+
+  // Perbarui hanya ikon marker yang dipilih/sebelumnya dipilih tanpa membuat ulang seluruh pin
+  useEffect(() => {
+    const L = leaflet_lib_ref.current;
+    if (!peta_siap || !L) return;
+
+    const prevId = prevSelectedIdRef.current;
+    const nextId = faskes_terpilih?.id_faskes ?? null;
+    if (prevId === nextId) return;
+
+    if (prevId !== null) {
+      const prevEntry = markersByIdRef.current.get(prevId);
+      if (prevEntry) {
+        prevEntry.marker.setIcon(createMarkerIcon(L, prevEntry.item, false));
+        prevEntry.marker.setZIndexOffset(0);
+      }
+    }
+
+    if (nextId !== null) {
+      const nextEntry = markersByIdRef.current.get(nextId);
+      if (nextEntry) {
+        nextEntry.marker.setIcon(createMarkerIcon(L, nextEntry.item, true));
+        nextEntry.marker.setZIndexOffset(500);
+      }
+    }
+
+    prevSelectedIdRef.current = nextId;
+  }, [faskes_terpilih, peta_siap]);
 
   // Perbarui pin posisi pengguna ketika lokasi GPS berubah
   useEffect(() => {
@@ -264,7 +387,9 @@ export default function PetaLeaflet({
     const koordinat_teks = `${lokasiPengguna.latitude.toFixed(5)}, ${lokasiPengguna.longitude.toFixed(5)}`;
     marker_pengguna_ref.current.setTooltipContent(
       `<div style="font-size:11px;font-weight:700;color:#0f172a;">Lokasi Anda Saat Ini</div>
-       <div style="font-size:10px;color:#007E7A;font-weight:600;">${lokasiPengguna.nama_jalan} (${koordinat_teks})</div>`
+       <div style="font-size:10px;color:#007E7A;font-weight:600;">${escapeHtml(
+         lokasiPengguna.nama_jalan
+       )} (${koordinat_teks})</div>`
     );
 
     if (!faskes_terpilih) {
@@ -302,7 +427,7 @@ export default function PetaLeaflet({
         ]);
         circle_radius_ref.current.setRadius(radius_km * 1000);
       } else {
-        const L = (await import("leaflet")).default;
+        const L = leaflet_lib_ref.current ?? (await import("leaflet")).default;
         if (!instansi_peta_ref.current) return;
         circle_radius_ref.current = L.circle(
           [lokasiPengguna.latitude, lokasiPengguna.longitude],
@@ -333,7 +458,7 @@ export default function PetaLeaflet({
       instansi_peta_ref.current.flyTo(
         [faskes_terpilih.latitude, faskes_terpilih.longitude],
         15,
-        { duration: 0.7 }
+        { duration: 0.5 }
       );
     }
   }, [faskes_terpilih, peta_siap]);

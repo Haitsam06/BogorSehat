@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -41,6 +41,8 @@ function hitungJarakKm(
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+const SIDEBAR_BATCH_SIZE = 30;
+
 export default function PetaInteraktifPage() {
   const { lokasiPengguna } = useFaskes();
   const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
@@ -50,19 +52,20 @@ export default function PetaInteraktifPage() {
   const [hanyaDalamRadius, setHanyaDalamRadius] = useState<boolean>(false);
   const [faskes_terpilih, set_faskes_terpilih] = useState<DataFaskesItem | null>(null);
   const [sedangMemuat, setSedangMemuat] = useState(true);
+  const [jumlahTampilSidebar, setJumlahTampilSidebar] = useState(SIDEBAR_BATCH_SIZE);
 
-  // Ambil data faskes untuk peta dari API
+  // Ambil data faskes ringkas (compact) untuk peta dari API
   useEffect(() => {
     let aktif = true;
 
     async function muatPeta() {
       setSedangMemuat(true);
       try {
-        // Coba ambil dari nearby atau faskes list
         const res = await api.getNearbyFaskes(
           lokasiPengguna.latitude || lokasi_default_pengguna.latitude,
           lokasiPengguna.longitude || lokasi_default_pengguna.longitude,
-          35
+          35,
+          { compact: true }
         );
 
         if (aktif && res && res.length > 0) {
@@ -124,6 +127,29 @@ export default function PetaInteraktifPage() {
     lokasiPengguna.longitude,
   ]);
 
+  const tanganiPilihFaskes = useCallback((item_dipilih: DataFaskesItem) => {
+    set_faskes_terpilih(item_dipilih);
+  }, []);
+
+  useEffect(() => {
+    setJumlahTampilSidebar(SIDEBAR_BATCH_SIZE);
+  }, [daftar_faskes_terfilter]);
+
+  const daftarSidebarTampil = useMemo(
+    () => daftar_faskes_terfilter.slice(0, jumlahTampilSidebar),
+    [daftar_faskes_terfilter, jumlahTampilSidebar]
+  );
+
+  const tanganiScrollSidebar = (e: React.UIEvent<HTMLDivElement>) => {
+    if (jumlahTampilSidebar >= daftar_faskes_terfilter.length) return;
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 120) {
+      setJumlahTampilSidebar((prev) =>
+        Math.min(prev + SIDEBAR_BATCH_SIZE, daftar_faskes_terfilter.length)
+      );
+    }
+  };
+
   return (
     <div className="relative w-full h-[calc(100dvh-76px)] max-h-[calc(100dvh-76px)] overflow-hidden select-none bg-[#E8EEF2]">
       {pesanKesalahan && (
@@ -140,7 +166,7 @@ export default function PetaInteraktifPage() {
           tampilkan_kontrol_kanan_bawah={true}
           tampilkan_radius={true}
           radius_km={radiusKm}
-          saat_pilih_faskes={(item_dipilih) => set_faskes_terpilih(item_dipilih)}
+          saat_pilih_faskes={tanganiPilihFaskes}
         />
       </div>
 
@@ -245,8 +271,11 @@ export default function PetaInteraktifPage() {
             </label>
           </div>
 
-          {/* Daftar Kartu Faskes Terdekat (Scroll Mandiri di Dalam Panel) */}
-          <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0">
+          {/* Daftar Kartu Faskes Terdekat (Infinite Scroll 30 per batch) */}
+          <div
+            onScroll={tanganiScrollSidebar}
+            className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0"
+          >
             {daftar_faskes_terfilter.length === 0 ? (
               <div className="p-5 text-center text-slate-400 space-y-1.5">
                 <Building2 className="w-6 h-6 mx-auto text-slate-300" />
@@ -255,80 +284,100 @@ export default function PetaInteraktifPage() {
                 </p>
               </div>
             ) : (
-              daftar_faskes_terfilter.map((faskes_item) => {
-                const sedang_dipilih =
-                  faskes_terpilih?.id_faskes === faskes_item.id_faskes;
-                const { iconBgClass, Icon } = getFaskesVisual(
-                  faskes_item.kategori_faskes
-                );
+              <>
+                {daftarSidebarTampil.map((faskes_item) => {
+                  const sedang_dipilih =
+                    faskes_terpilih?.id_faskes === faskes_item.id_faskes;
+                  const { iconBgClass, Icon } = getFaskesVisual(
+                    faskes_item.kategori_faskes
+                  );
 
-                return (
-                  <div
-                    key={faskes_item.id_faskes}
-                    onClick={() => set_faskes_terpilih(faskes_item)}
-                    className={`p-2.5 rounded-xl border transition cursor-pointer space-y-1.5 select-none ${
-                      sedang_dipilih
-                        ? "bg-teal-50/40 border-[#007E7A] shadow-sm ring-1 ring-[#007E7A]"
-                        : "bg-white/80 border-slate-200/90 hover:border-slate-300 hover:bg-white"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 min-w-0">
-                        {/* Ikon Kategori Faskes */}
-                        <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white ${iconBgClass}`}
-                        >
-                          <Icon className="w-3.5 h-3.5" />
-                        </div>
-
-                        <div className="min-w-0">
-                          <h3
-                            className={`text-xs font-extrabold leading-tight line-clamp-1 ${
-                              sedang_dipilih
-                                ? "text-[#007E7A]"
-                                : "text-slate-900"
-                            }`}
+                  return (
+                    <div
+                      key={faskes_item.id_faskes}
+                      onClick={() => tanganiPilihFaskes(faskes_item)}
+                      className={`p-2.5 rounded-xl border transition cursor-pointer space-y-1.5 select-none ${
+                        sedang_dipilih
+                          ? "bg-teal-50/40 border-[#007E7A] shadow-sm ring-1 ring-[#007E7A]"
+                          : "bg-white/80 border-slate-200/90 hover:border-slate-300 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
+                          {/* Ikon Kategori Faskes */}
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white ${iconBgClass}`}
                           >
-                            {faskes_item.nama_faskes}
-                          </h3>
-                          <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">
-                            {faskes_item.jarak_km} • {faskes_item.waktu_tempuh}
-                          </p>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <h3
+                              className={`text-xs font-extrabold leading-tight line-clamp-1 ${
+                                sedang_dipilih
+                                  ? "text-[#007E7A]"
+                                  : "text-slate-900"
+                              }`}
+                            >
+                              {faskes_item.nama_faskes}
+                            </h3>
+                            <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">
+                              {faskes_item.jarak_km} • {faskes_item.waktu_tempuh}
+                            </p>
+                          </div>
                         </div>
+
+                        <ChevronRight
+                          className={`w-3.5 h-3.5 shrink-0 transition ${
+                            sedang_dipilih
+                              ? "text-[#007E7A] translate-x-0.5"
+                              : "text-slate-400"
+                          }`}
+                        />
                       </div>
 
-                      <ChevronRight
-                        className={`w-3.5 h-3.5 shrink-0 transition ${
-                          sedang_dipilih
-                            ? "text-[#007E7A] translate-x-0.5"
-                            : "text-slate-400"
-                        }`}
+                      {/* Tag Status BPJS / IGD */}
+                      <div className="flex items-center gap-1">
+                        {faskes_item.status_bpjs && (
+                          <span className="px-1 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200 leading-none">
+                            BPJS
+                          </span>
+                        )}
+                        {faskes_item.status_igd_24jam && (
+                          <span className="px-1 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200 leading-none">
+                            UGD 24 Jam
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Badge Poli di Kartu Lokasi Terdekat */}
+                      <DaftarBadgePoli
+                        daftar_poli={faskes_item.daftar_poli}
+                        maksimal_tampil={2}
+                        ukuran_badge="mikro"
                       />
                     </div>
+                  );
+                })}
 
-                    {/* Tag Status BPJS / IGD */}
-                    <div className="flex items-center gap-1">
-                      {faskes_item.status_bpjs && (
-                        <span className="px-1 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200 leading-none">
-                          BPJS
-                        </span>
-                      )}
-                      {faskes_item.status_igd_24jam && (
-                        <span className="px-1 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200 leading-none">
-                          UGD 24 Jam
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Badge Poli di Kartu Lokasi Terdekat */}
-                    <DaftarBadgePoli
-                      daftar_poli={faskes_item.daftar_poli}
-                      maksimal_tampil={2}
-                      ukuran_badge="mikro"
-                    />
-                  </div>
-                );
-              })
+                {jumlahTampilSidebar < daftar_faskes_terfilter.length && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setJumlahTampilSidebar((prev) =>
+                        Math.min(
+                          prev + SIDEBAR_BATCH_SIZE,
+                          daftar_faskes_terfilter.length
+                        )
+                      )
+                    }
+                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition"
+                  >
+                    Muat lebih banyak ({daftarSidebarTampil.length} /{" "}
+                    {daftar_faskes_terfilter.length})
+                  </button>
+                )}
+              </>
             )}
           </div>
 

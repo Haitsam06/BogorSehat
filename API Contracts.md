@@ -104,6 +104,7 @@ Required:
 Optional:
 
 - `radius`: kilometers; default `10`, maximum `100`.
+- `compact`: boolean (`0` or `1`); when enabled, omits heavy `fasilitas`, `images`, and rating aggregates while returning `spesialisasi` and `has_igd` (boolean) for fast map rendering.
 
 Every faskes response carries `distance_km` in kilometers, rounded to two decimals. `GET /faskes`, `GET /faskes/{id_faskes}`, `GET /faskes/map`, and `GET /faskes/nearby` accept `latitude` and `longitude`; when both are absent the reference point defaults to the Bogor city center (`-6.5950`, `106.7990`). `GET /faskes/nearby` remains sorted ascending by `distance_km`.
 
@@ -127,7 +128,19 @@ Every faskes response carries `distance_km` in kilometers, rounded to two decima
   "rating_avg": 4.35,
   "rating_count": 12,
   "spesialisasi": [],
-  "fasilitas": []
+  "fasilitas": [],
+  "images": [
+    {
+      "id_faskes_image": 1,
+      "path": "uploads/faskes/2f1c....png",
+      "url": "http://localhost:8000/storage/uploads/faskes/2f1c....png",
+      "is_banner": true,
+      "is_thumbnail": true,
+      "sort_order": 0
+    }
+  ],
+  "banner_url": "http://localhost:8000/storage/uploads/faskes/2f1c....png",
+  "thumbnail_url": "http://localhost:8000/storage/uploads/faskes/2f1c....png"
 }
 
 `rating_avg` is the mean of `rating` across top-level comments that carry a rating; `rating_count` counts those comments. Replies never contribute. Both fields are `0` when a facility has no rated comment. They are returned by `GET /faskes`, `GET /faskes/{id_faskes}`, `GET /faskes/map`, and `GET /faskes/nearby`.
@@ -281,10 +294,12 @@ All endpoints in this section require a valid token with `role_user=admin`.
 | PUT | `/admin/users/{id_user}` | Update user/account role |
 | DELETE | `/admin/users/{id_user}` | Delete user; current admin cannot delete itself |
 | GET | `/admin/spesialisasi` | Paginated specialization master data with `faskes_count` |
+| GET | `/admin/spesialisasi/{id_spesialisasi}` | Specialization detail |
 | POST | `/admin/spesialisasi` | Create specialization |
 | PUT | `/admin/spesialisasi/{id_spesialisasi}` | Rename specialization |
 | DELETE | `/admin/spesialisasi/{id_spesialisasi}` | Delete specialization; add `?force=1` when still used |
 | GET | `/admin/fasilitas` | Paginated supporting-facility master data with `faskes_count` |
+| GET | `/admin/fasilitas/{id_fasilitas}` | Supporting facility detail |
 | POST | `/admin/fasilitas` | Create supporting facility |
 | PUT | `/admin/fasilitas/{id_fasilitas}` | Rename supporting facility |
 | DELETE | `/admin/fasilitas/{id_fasilitas}` | Delete supporting facility; add `?force=1` when still used |
@@ -340,6 +355,7 @@ Optional fields:
 - `link_maps`
 - `id_spesialisasi`: array of valid specialization IDs
 - `id_fasilitas`: array of valid facility IDs
+- `images`: array (max `5`) of `{ path, url, is_banner?, is_thumbnail?, sort_order? }`
 
 `link_maps` targets the place by name, address, and city, anchored on the facility coordinates with a 17z zoom. Format: `https://www.google.com/maps/search/<url-encoded query>/@<latitude>,<longitude>,17z`. Without coordinates it falls back to `https://www.google.com/maps/search/?api=1&query=<url-encoded query>`. The backend regenerates the link whenever `nama_faskes`, `alamat_faskes`, `kota_kabupaten`, `latitude`, or `longitude` change and `link_maps` is omitted.
 
@@ -351,8 +367,8 @@ Optional fields:
 
 Multipart body:
 
-- `file`: required; max `5120` KB; `image/jpeg`, `image/png`, `image/webp`, or `application/pdf`.
-- `context`: optional; `diskusi`, `tanggapan`, or `komentar`. Defaults to `diskusi` and selects the storage folder.
+- `file`: required; max `5120` KB; `image/jpeg`, `image/png`, `image/webp`, or `application/pdf` (`faskes` context allows images only).
+- `context`: optional; `diskusi`, `tanggapan`, `komentar`, or `faskes` (admin only). Defaults to `diskusi` and selects the storage folder.
 
 Response:
 
@@ -424,3 +440,30 @@ vendor/bin/pint --dirty --format agent
 | FR43 | Admin user list/detail/update/delete endpoints |
 
 CSV files remain the seeder source of truth. Frontend files are not modified by the API implementation.
+
+## Catatan Perubahan Backend yang Dibutuhkan (Frontend Integration)
+
+Bagian berikut merangkum penyesuaian backend yang dibutuhkan untuk mendukung pembaruan frontend terbaru (upload galeri faskes, banner/thumbnail, carousel, halaman edit master data, dan optimasi peta):
+
+1. **Galeri Gambar Faskes (maks. 5 gambar, Banner & Thumbnail)**
+   - Tambahkan penyimpanan/relasi `faskes_images` per faskes (`id_faskes_image`, `id_faskes`, `path`, `url`, `is_banner`, `is_thumbnail`, `sort_order`).
+   - Pada `POST /api/admin/faskes` dan `PUT /api/admin/faskes/{id_faskes}`, terima field opsional `images` (`array`, `max:5`, masing-masing item: `path` required string, `url` required string, `is_banner` boolean, `is_thumbnail` boolean, `sort_order` integer `0..4`).
+   - Normalisasi flag di backend: maksimal 1 gambar bertanda `is_banner=true` dan 1 bertanda `is_thumbnail=true` (gambar yang sama boleh menjadi keduanya; jika belum ada yang ditandai saat `images` tidak kosong, jadikan gambar index `0` sebagai default keduanya).
+   - Pada `PUT /api/admin/faskes/{id_faskes}`: jika key `images` tidak dikirim, biarkan gambar lama tetap utuh; jika `images: []` dikirim, hapus seluruh gambar faskes terkait; hapus juga file yatim di disk `public` (`uploads/faskes/...`) saat gambar dihapus atau faskes dihapus.
+   - Sertakan `images`, `banner_url`, dan `thumbnail_url` pada response `GET /api/faskes`, `GET /api/faskes/{id_faskes}`, `GET /api/faskes/nearby` (mode non-compact), `POST /api/admin/faskes`, dan `PUT /api/admin/faskes/{id_faskes}`.
+
+2. **Upload Gambar Faskes (`POST /api/uploads`)**
+   - Tambahkan `faskes` sebagai nilai `context` yang valid (selain `diskusi`, `tanggapan`, `komentar`).
+   - Batasi `context=faskes` khusus user dengan `role_user=admin` (tolak user non-admin dengan HTTP `403`).
+   - Untuk `context=faskes`, izinkan hanya tipe file gambar (`image/jpeg`, `image/png`, `image/webp`, maks. `5120` KB; tolak PDF dengan `422`).
+   - Pastikan `php artisan storage:link` dijalankan agar URL `/storage/uploads/faskes/...` dapat diakses.
+
+3. **Endpoint Detail Master Data Admin**
+   - Tambahkan `GET /api/admin/spesialisasi/{id_spesialisasi}` yang mengembalikan `{ "data": { "id_spesialisasi", "nama_spesialisasi", "faskes_count" } }`.
+   - Tambahkan `GET /api/admin/fasilitas/{id_fasilitas}` yang mengembalikan `{ "data": { "id_fasilitas", "nama_fasilitas", "faskes_count" } }`.
+   - *(Catatan: Frontend saat ini memiliki fallback ke list master jika mendapat 404/405, namun endpoint GET detail ini dibutuhkan agar halaman Edit Master Data lebih efisien).*
+
+4. **Mode Ringkas Peta Interaktif (`GET /api/faskes/nearby?compact=1`)**
+   - Terima query opsional `compact` (`0` atau `1`).
+   - Ketika `compact=1`, lewati eager-loading relasi `fasilitas`, `images`, serta subquery agregat rating; tetap sertakan relasi `spesialisasi` dan tambahkan field boolean `has_igd` (apakah ada fasilitas terkait yang namanya mengandung `igd`, case-insensitive) agar muat awal peta (~500 titik faskes) jauh lebih ringan.
+

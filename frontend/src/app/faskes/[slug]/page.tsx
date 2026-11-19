@@ -24,6 +24,7 @@ import {
 import type { DataFaskesItem } from "@/data/data_faskes";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import ModalReportFaskes from "@/components/faskes/ModalReportFaskes";
+import FaskesImageCarousel from "@/components/faskes/FaskesImageCarousel";
 import {
   api,
   ApiFaskes,
@@ -43,8 +44,6 @@ export default function DetailFaskesPage({
 
   const [faskesItem, setFaskesItem] = useState<DataFaskesItem | null>(null);
   const [rawApiFaskes, setRawApiFaskes] = useState<ApiFaskes | null>(null);
-  const [tampilkanSemuaPoli, setTampilkanSemuaPoli] = useState(false);
-  const [tampilkanSemuaFasilitas, setTampilkanSemuaFasilitas] = useState(false);
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
 
@@ -181,6 +180,9 @@ export default function DetailFaskesPage({
       setDaftarKomentar([baru, ...daftarKomentar]);
       set_teks_ulasan_baru("");
       setPesanNotif({ tipe: "sukses", pesan: "Ulasan Anda berhasil dikirim." });
+      const refreshed = await api.getFaskesDetail(faskesItem.id_faskes);
+      setRawApiFaskes(refreshed);
+      setFaskesItem(mapApiFaskesToItem(refreshed));
     } catch (err) {
       setPesanNotif({
         tipe: "error",
@@ -241,6 +243,9 @@ export default function DetailFaskesPage({
         prev.filter((k) => k.id_komentar !== idKomentar)
       );
       setPesanNotif({ tipe: "sukses", pesan: "Ulasan berhasil dihapus." });
+      const refreshed = await api.getFaskesDetail(faskesItem.id_faskes);
+      setRawApiFaskes(refreshed);
+      setFaskesItem(mapApiFaskesToItem(refreshed));
     } catch (err) {
       setPesanNotif({
         tipe: "error",
@@ -400,29 +405,14 @@ export default function DetailFaskesPage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Kolom Kiri (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Kartu Galeri Foto, Deskripsi, dan Badge Poli */}
+          {/* Kartu Galeri Foto (Carousel maks 5 / Fallback Logo + Warna), Deskripsi */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-              <div className="sm:col-span-8">
-                <img
-                  src="/images/detail-photo-1.png"
-                  alt={faskesItem.nama_faskes}
-                  className="w-full h-[260px] sm:h-[290px] object-cover rounded-xl"
-                />
-              </div>
-              <div className="sm:col-span-4 flex flex-col gap-2.5">
-                <img
-                  src="/images/detail-photo-2.png"
-                  alt="Ruang Tunggu Faskes"
-                  className="w-full h-[140px] object-cover rounded-xl"
-                />
-                <img
-                  src="/images/detail-photo-3.png"
-                  alt="Fasilitas Medis"
-                  className="w-full h-[140px] object-cover rounded-xl"
-                />
-              </div>
-            </div>
+            <FaskesImageCarousel
+              images={rawApiFaskes?.images}
+              bannerUrl={rawApiFaskes?.banner_url}
+              namaFaskes={faskesItem.nama_faskes}
+              kategoriFaskes={faskesItem.kategori_faskes}
+            />
 
             <div className="space-y-2 pt-1">
               <h2 className="text-base font-extrabold text-slate-900">
@@ -440,21 +430,51 @@ export default function DetailFaskesPage({
           {/* Kartu Ringkasan Skor & Input Ulasan */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5">
             <div className="bg-[#F3F6F9] rounded-xl p-4 flex items-center gap-5">
-              <div className="bg-white rounded-xl border border-slate-200/80 px-5 py-3 text-center shrink-0">
-                <div className="text-2xl font-extrabold text-[#007E7A]">
-                  {faskesItem.rating_faskes}
-                </div>
-                <div className="flex items-center justify-center gap-0.5 my-1">
-                  {[...Array(5)].map((_, idx) => (
-                    <Star
-                      key={idx}
-                      className="w-3 h-3 fill-amber-400 text-amber-400"
-                    />
-                  ))}
-                </div>
-                <div className="text-[10px] text-slate-500">
-                  {daftarKomentar.length > 0 ? `${daftarKomentar.length} Ulasan` : "Ulasan Terverifikasi"}
-                </div>
+              <div className="bg-white rounded-xl border border-slate-200/80 px-5 py-3 text-center shrink-0 min-w-[130px]">
+                {faskesItem.jumlah_ulasan > 0 ? (
+                  <>
+                    <div className="text-2xl font-extrabold text-[#007E7A]">
+                      {faskesItem.rating_faskes}
+                    </div>
+                    <div className="flex items-center justify-center gap-0.5 my-1">
+                      {[...Array(5)].map((_, idx) => {
+                        const terisi = idx < Math.round(Number(faskesItem.rating_faskes) || 0);
+                        return (
+                          <Star
+                            key={idx}
+                            className={`w-3 h-3 ${
+                              terisi
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-slate-300"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="text-[10px] text-slate-500">
+                      {faskesItem.jumlah_ulasan} Ulasan
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xs font-extrabold text-slate-600">
+                      Belum Dirating
+                    </div>
+                    <div className="flex items-center justify-center gap-0.5 my-1.5">
+                      {[...Array(5)].map((_, idx) => (
+                        <Star
+                          key={idx}
+                          className="w-3 h-3 text-slate-300"
+                        />
+                      ))}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      {daftarKomentar.length > 0
+                        ? `${daftarKomentar.length} Komentar`
+                        : "Belum ada ulasan"}
+                    </div>
+                  </>
+                )}
               </div>
               <div className="text-xs font-extrabold text-slate-800">
                 Ulasan &amp; Pengalaman Warga/Pasien di {faskesItem.nama_faskes}
@@ -741,21 +761,25 @@ export default function DetailFaskesPage({
             </a>
           </div>
 
-          {/* Kartu Daftar Poliklinik */}
+          {/* Kartu Daftar Poliklinik (Scrollable) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-3.5">
-            <h3 className="text-sm font-extrabold text-slate-900">
-              Poliklinik
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-extrabold text-slate-900">
+                Poliklinik &amp; Spesialisasi
+              </h3>
+              {faskesItem.daftar_poli.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-[#E6F4F3] text-[#007E7A] text-[10px] font-extrabold shrink-0">
+                  {faskesItem.daftar_poli.length}
+                </span>
+              )}
+            </div>
             {faskesItem.daftar_poli.length === 0 ? (
               <p className="text-xs text-slate-400 italic">
                 Belum ada data poliklinik &amp; spesialisasi tercatat.
               </p>
             ) : (
-              <div className="space-y-2">
-                {(tampilkanSemuaPoli
-                  ? faskesItem.daftar_poli
-                  : faskesItem.daftar_poli.slice(0, 7)
-                ).map((namaPoli) => (
+              <div className="max-h-[280px] overflow-y-auto pr-1.5 space-y-2">
+                {faskesItem.daftar_poli.map((namaPoli) => (
                   <div
                     key={namaPoli}
                     className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50/80 border border-slate-100"
@@ -775,37 +799,29 @@ export default function DetailFaskesPage({
                     </div>
                   </div>
                 ))}
-
-                {faskesItem.daftar_poli.length > 7 && (
-                  <button
-                    type="button"
-                    onClick={() => setTampilkanSemuaPoli((prev) => !prev)}
-                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
-                  >
-                    {tampilkanSemuaPoli
-                      ? "Tampilkan lebih sedikit"
-                      : `+${faskesItem.daftar_poli.length - 7} Poliklinik lainnya`}
-                  </button>
-                )}
               </div>
             )}
           </div>
 
-          {/* Kartu Sarana & Fasilitas Penunjang Medis */}
+          {/* Kartu Sarana & Fasilitas Penunjang Medis (Scrollable) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-3.5">
-            <h3 className="text-sm font-extrabold text-slate-900">
-              Sarana &amp; Fasilitas Penunjang Medis
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-extrabold text-slate-900">
+                Sarana &amp; Fasilitas Penunjang Medis
+              </h3>
+              {rawApiFaskes?.fasilitas && rawApiFaskes.fasilitas.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-[#E6F4F3] text-[#007E7A] text-[10px] font-extrabold shrink-0">
+                  {rawApiFaskes.fasilitas.length}
+                </span>
+              )}
+            </div>
             {!rawApiFaskes?.fasilitas || rawApiFaskes.fasilitas.length === 0 ? (
               <p className="text-xs text-slate-400 italic">
                 Belum ada data sarana &amp; fasilitas penunjang medis tercatat.
               </p>
             ) : (
-              <div className="space-y-2.5">
-                {(tampilkanSemuaFasilitas
-                  ? rawApiFaskes.fasilitas
-                  : rawApiFaskes.fasilitas.slice(0, 8)
-                ).map((fas) => (
+              <div className="max-h-[280px] overflow-y-auto pr-1.5 space-y-2.5">
+                {rawApiFaskes.fasilitas.map((fas) => (
                   <div
                     key={fas.id_fasilitas}
                     className="flex items-start gap-2 text-xs font-semibold text-slate-700"
@@ -814,18 +830,6 @@ export default function DetailFaskesPage({
                     <span className="leading-snug">{fas.nama_fasilitas}</span>
                   </div>
                 ))}
-
-                {rawApiFaskes.fasilitas.length > 8 && (
-                  <button
-                    type="button"
-                    onClick={() => setTampilkanSemuaFasilitas((prev) => !prev)}
-                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition mt-1"
-                  >
-                    {tampilkanSemuaFasilitas
-                      ? "Tampilkan lebih sedikit"
-                      : `+${rawApiFaskes.fasilitas.length - 8} Fasilitas lainnya`}
-                  </button>
-                )}
               </div>
             )}
           </div>

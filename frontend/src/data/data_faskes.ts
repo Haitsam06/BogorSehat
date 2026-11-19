@@ -13,6 +13,7 @@ export interface DataFaskesItem {
   waktu_tempuh: string;
   rating_faskes: string;
   jumlah_ulasan: number;
+  sudah_dirating?: boolean;
   status_bpjs: boolean;
   status_igd_24jam: boolean;
   telepon_darurat: boolean;
@@ -20,6 +21,12 @@ export interface DataFaskesItem {
   longitude: number;
   koordinat_teks: string;
   gambar_faskes: string;
+  banner_faskes?: string;
+  galeri_gambar?: Array<{
+    url: string;
+    is_banner: boolean;
+    is_thumbnail: boolean;
+  }>;
   daftar_poli: string[];
 }
 

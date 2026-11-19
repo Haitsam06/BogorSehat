@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Building2,
+  FlaskConical,
   HeartPulse,
   Hospital,
   Pill,
@@ -102,6 +103,19 @@ export function getFaskesVisual(kategori?: string | null): FaskesVisualConfig {
     };
   }
 
+  if (jenis.includes("LABORATORIUM") || jenis.includes("LAB")) {
+    return {
+      bgClass: "bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100/80",
+      iconBgClass: "bg-amber-600 shadow-amber-200",
+      iconColorClass: "text-white",
+      labelColorClass: "text-amber-700",
+      hexColor: "#D97706",
+      svgInner:
+        '<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
+      Icon: FlaskConical,
+    };
+  }
+
   return {
     bgClass: "bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200/70",
     iconBgClass: "bg-slate-600 shadow-slate-200",
@@ -128,6 +142,11 @@ export function FaskesThumbnail({
   className = "w-full h-full",
 }: FaskesThumbnailProps) {
   const [gagalMuat, setGagalMuat] = useState(false);
+
+  useEffect(() => {
+    setGagalMuat(false);
+  }, [gambar_faskes]);
+
   const punyaGambar = Boolean(gambar_faskes && gambar_faskes.trim() !== "") && !gagalMuat;
 
   if (punyaGambar) {

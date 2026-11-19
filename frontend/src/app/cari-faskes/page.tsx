@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import type { DataFaskesItem } from "@/data/data_faskes";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
+import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import DropdownPencarian from "@/components/ui/dropdown_pencarian";
 import {
   api,
+  ApiFasilitas,
   ApiSpesialisasi,
   mapApiFaskesToItem,
   ApiPaginationMeta,
@@ -77,17 +79,22 @@ const daftar_pilihan_kategori = [
 function CariFaskesKonten() {
   const searchParams = useSearchParams();
   const poliDariUrl = searchParams.get("poli");
+  const fasilitasDariUrl = searchParams.get("fasilitas");
 
   const [kata_kunci_pencarian, set_kata_kunci_pencarian] = useState("");
   const [filter_wilayah, set_filter_wilayah] = useState("ALL");
   const [filter_kecamatan, set_filter_kecamatan] = useState("ALL");
   const [filter_kategori, set_filter_kategori] = useState("ALL");
   const [filter_poli_aktif, set_filter_poli_aktif] = useState(poliDariUrl || "ALL");
+  const [filter_fasilitas_aktif, set_filter_fasilitas_aktif] = useState(
+    fasilitasDariUrl || "ALL"
+  );
   const [filter_bpjs, set_filter_bpjs] = useState("ALL");
   const [filter_igd, set_filter_igd] = useState("ALL");
 
   const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
   const [daftarPoli, setDaftarPoli] = useState<ApiSpesialisasi[]>([]);
+  const [daftarFasilitas, setDaftarFasilitas] = useState<ApiFasilitas[]>([]);
   const [metaPaginasi, setMetaPaginasi] = useState<ApiPaginationMeta | null>(null);
   const [halamanAktif, setHalamanAktif] = useState(1);
   const [sedangMemuat, setSedangMemuat] = useState(true);
@@ -99,6 +106,7 @@ function CariFaskesKonten() {
     set_filter_kecamatan("ALL");
     set_filter_kategori("ALL");
     set_filter_poli_aktif("ALL");
+    set_filter_fasilitas_aktif("ALL");
     set_filter_bpjs("ALL");
     set_filter_igd("ALL");
     setHalamanAktif(1);
@@ -110,8 +118,27 @@ function CariFaskesKonten() {
     filter_kecamatan !== "ALL" ||
     filter_kategori !== "ALL" ||
     filter_poli_aktif !== "ALL" ||
+    filter_fasilitas_aktif !== "ALL" ||
     filter_bpjs !== "ALL" ||
     filter_igd !== "ALL";
+
+  const opsiFasilitas = useMemo(() => {
+    const nameCounts = new Map<string, number>();
+    daftarFasilitas.forEach((item) => {
+      nameCounts.set(
+        item.nama_fasilitas,
+        (nameCounts.get(item.nama_fasilitas) ?? 0) + 1
+      );
+    });
+
+    return daftarFasilitas.map((item) => ({
+      value: String(item.id_fasilitas),
+      label:
+        (nameCounts.get(item.nama_fasilitas) ?? 0) > 1
+          ? `${item.nama_fasilitas} (#${item.id_fasilitas})`
+          : item.nama_fasilitas,
+    }));
+  }, [daftarFasilitas]);
 
   const muatDataFaskes = useCallback(async () => {
     setSedangMemuat(true);
@@ -137,6 +164,9 @@ function CariFaskesKonten() {
         ? "Rumah Sakit"
         : undefined;
 
+    const idFasilitasNum =
+      filter_fasilitas_aktif !== "ALL" ? Number(filter_fasilitas_aktif) : NaN;
+
     try {
       const res = await api.getFaskes({
         search: kata_kunci_pencarian.trim() || undefined,
@@ -144,6 +174,7 @@ function CariFaskesKonten() {
         kecamatan: filter_kecamatan !== "ALL" ? filter_kecamatan : undefined,
         jenis_faskes: jenisParam,
         id_spesialisasi: poliTerpilih?.id_spesialisasi,
+        id_fasilitas: !Number.isNaN(idFasilitasNum) ? idFasilitasNum : undefined,
         is_support_bpjs: bpjsParam,
         page: halamanAktif,
         per_page: 12,
@@ -166,6 +197,7 @@ function CariFaskesKonten() {
     filter_kecamatan,
     filter_kategori,
     filter_poli_aktif,
+    filter_fasilitas_aktif,
     filter_bpjs,
     filter_igd,
     halamanAktif,
@@ -187,14 +219,14 @@ function CariFaskesKonten() {
   useEffect(() => {
     let aktif = true;
 
-    api
-      .getAllSpesialisasi()
-      .then((items) => {
-        if (aktif) setDaftarPoli(items);
-      })
-      .catch(() => {
-        if (aktif) setDaftarPoli([]);
-      });
+    Promise.all([
+      api.getAllSpesialisasi().catch(() => []),
+      api.getAllFasilitas().catch(() => []),
+    ]).then(([poliItems, fasilitasItems]) => {
+      if (!aktif) return;
+      setDaftarPoli(poliItems);
+      setDaftarFasilitas(fasilitasItems);
+    });
 
     return () => {
       aktif = false;
@@ -208,6 +240,7 @@ function CariFaskesKonten() {
     filter_kecamatan,
     filter_kategori,
     filter_poli_aktif,
+    filter_fasilitas_aktif,
     filter_bpjs,
     filter_igd,
   ]);
@@ -219,6 +252,14 @@ function CariFaskesKonten() {
     );
     if (!valid) set_filter_poli_aktif("ALL");
   }, [daftarPoli, filter_poli_aktif]);
+
+  useEffect(() => {
+    if (filter_fasilitas_aktif === "ALL" || daftarFasilitas.length === 0) return;
+    const valid = daftarFasilitas.some(
+      (item) => String(item.id_fasilitas) === filter_fasilitas_aktif
+    );
+    if (!valid) set_filter_fasilitas_aktif("ALL");
+  }, [daftarFasilitas, filter_fasilitas_aktif]);
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 w-full space-y-6">
@@ -350,6 +391,16 @@ function CariFaskesKonten() {
             teks_default="Semua Poliklinik"
           />
 
+          {/* Filter Fasilitas Penunjang */}
+          <DropdownPencarian
+            label="Fasilitas Penunjang"
+            daftar_pilihan={opsiFasilitas}
+            nilai_terpilih={filter_fasilitas_aktif}
+            saat_memilih={(nilai) => set_filter_fasilitas_aktif(nilai)}
+            placeholder_pencarian="Cari sarana & fasilitas..."
+            teks_default="Semua Fasilitas Penunjang"
+          />
+
           {/* Filter BPJS */}
           <div className="space-y-1.5 pt-2 border-t border-slate-100">
             <label className="block text-xs font-bold text-slate-800">
@@ -476,10 +527,25 @@ function CariFaskesKonten() {
               {daftarFaskes.map((faskes_item) => (
                 <div
                   key={faskes_item.id_faskes}
-                  className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-4 hover:border-slate-300 transition"
+                  className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between hover:border-slate-300 transition"
                 >
-                  <div className="space-y-2.5">
-                    <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <Link
+                      href={`/faskes/${faskes_item.slug_faskes}`}
+                      className="group block relative h-[160px] bg-slate-100 overflow-hidden"
+                    >
+                      <FaskesThumbnail
+                        gambar_faskes={faskes_item.gambar_faskes}
+                        nama_faskes={faskes_item.nama_faskes}
+                        kategori_faskes={faskes_item.kategori_faskes}
+                        className="w-full h-full"
+                      />
+                      <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[10px] font-extrabold shadow-xs">
+                        {faskes_item.jarak_km}
+                      </span>
+                    </Link>
+
+                    <div className="p-4 sm:p-5 pb-3 space-y-2.5">
                       <div>
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#007E7A] block">
                           {faskes_item.kategori_faskes}
@@ -491,46 +557,57 @@ function CariFaskesKonten() {
                           {faskes_item.nama_faskes}
                         </Link>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full bg-[#D9F2F0] text-[#007E7A] text-[10px] font-extrabold shrink-0">
-                        {faskes_item.jarak_km}
-                      </span>
-                    </div>
 
-                    <p className="text-xs text-slate-500 line-clamp-1">
-                      {faskes_item.alamat_lengkap}
-                    </p>
+                      <p className="text-xs text-slate-500 line-clamp-1">
+                        {faskes_item.alamat_lengkap}
+                      </p>
 
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span className="text-xs font-extrabold text-slate-900">
-                          {faskes_item.rating_faskes}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {faskes_item.status_bpjs && (
-                          <span className="px-1.5 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200">
-                            BPJS
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              faskes_item.jumlah_ulasan > 0
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-slate-300"
+                            }`}
+                          />
+                          <span
+                            className={
+                              faskes_item.jumlah_ulasan > 0
+                                ? "text-xs font-extrabold text-slate-900"
+                                : "text-[11px] font-semibold text-slate-500"
+                            }
+                          >
+                            {faskes_item.jumlah_ulasan > 0
+                              ? faskes_item.rating_faskes
+                              : "Belum Dirating"}
                           </span>
-                        )}
-                        {faskes_item.status_igd_24jam && (
-                          <span className="px-1.5 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200">
-                            UGD 24 Jam
-                          </span>
-                        )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {faskes_item.status_bpjs && (
+                            <span className="px-1.5 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200">
+                              BPJS
+                            </span>
+                          )}
+                          {faskes_item.status_igd_24jam && (
+                            <span className="px-1.5 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200">
+                              UGD 24 Jam
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="pt-0.5">
-                      <DaftarBadgePoli
-                        daftar_poli={faskes_item.daftar_poli}
-                        maksimal_tampil={3}
-                        ukuran_badge="mikro"
-                      />
+                      <div className="pt-0.5">
+                        <DaftarBadgePoli
+                          daftar_poli={faskes_item.daftar_poli}
+                          maksimal_tampil={3}
+                          ukuran_badge="mikro"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 pt-1">
+                  <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-1 flex items-center gap-1.5">
                     <Link
                       href={`/faskes/${faskes_item.slug_faskes}`}
                       className="flex-1 h-[38px] rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center justify-center transition shadow-xs"

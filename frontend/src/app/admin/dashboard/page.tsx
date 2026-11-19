@@ -256,9 +256,9 @@ export default function AdminDashboardPage() {
 
                         <td className="py-5 pl-4 pr-8 text-center">
                           <Link
-                            href="/admin/faskes"
+                            href={`/admin/faskes/${faskes.id_faskes}/edit`}
                             className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-200/80 hover:bg-slate-300 text-slate-700 transition"
-                            title="Kelola Data Faskes"
+                            title="Edit Data Faskes"
                           >
                             <FileEdit className="w-3.5 h-3.5" />
                           </Link>

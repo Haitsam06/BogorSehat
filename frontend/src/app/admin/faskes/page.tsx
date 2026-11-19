@@ -18,34 +18,6 @@ import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
 import { DaftarBadgePoli } from "@/components/ui/badge_poli";
 import { api, ApiFaskes, ApiPaginationMeta, messageFromError } from "@/lib/api";
 
-interface FormFaskesState {
-  nama_faskes: string;
-  alamat_faskes: string;
-  kota_kabupaten: string;
-  kecamatan: string;
-  latitude: string;
-  longitude: string;
-  kdppk: string;
-  jenis_faskes: string;
-  kelas_faskes: string;
-  telp_faskes: string;
-  is_support_bpjs: boolean;
-}
-
-const formAwal: FormFaskesState = {
-  nama_faskes: "",
-  alamat_faskes: "",
-  kota_kabupaten: "KOTA BOGOR",
-  kecamatan: "",
-  latitude: "-6.5950",
-  longitude: "106.7990",
-  kdppk: "",
-  jenis_faskes: "Rumah Sakit",
-  kelas_faskes: "C",
-  telp_faskes: "",
-  is_support_bpjs: true,
-};
-
 export default function AdminFaskesPage() {
   const [kata_kunci_admin, set_kata_kunci_admin] = useState("");
   const [daftarFaskes, setDaftarFaskes] = useState<ApiFaskes[]>([]);
@@ -54,11 +26,6 @@ export default function AdminFaskesPage() {
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [pesanStatus, setPesanStatus] = useState<{ tipe: "sukses" | "error"; pesan: string } | null>(null);
 
-  // Modal State
-  const [modalBuka, setModalBuka] = useState(false);
-  const [modeEdit, setModeEdit] = useState<number | null>(null); // null = tambah, number = id_faskes
-  const [formData, setFormData] = useState<FormFaskesState>(formAwal);
-  const [sedangSimpan, setSedangSimpan] = useState(false);
   const [idHapus, setIdHapus] = useState<number | null>(null);
   const [sedangHapus, setSedangHapus] = useState(false);
 
@@ -93,69 +60,6 @@ export default function AdminFaskesPage() {
     }, 400);
     return () => clearTimeout(timer);
   }, [kata_kunci_admin]);
-
-  const bukaModalTambah = () => {
-    setModeEdit(null);
-    setFormData(formAwal);
-    setModalBuka(true);
-  };
-
-  const bukaModalEdit = (faskes: ApiFaskes) => {
-    setModeEdit(faskes.id_faskes);
-    setFormData({
-      nama_faskes: faskes.nama_faskes,
-      alamat_faskes: faskes.alamat_faskes,
-      kota_kabupaten: faskes.kota_kabupaten,
-      kecamatan: faskes.kecamatan || "",
-      latitude: String(faskes.latitude),
-      longitude: String(faskes.longitude),
-      kdppk: faskes.kdppk || "",
-      jenis_faskes: faskes.jenis_faskes || "Rumah Sakit",
-      kelas_faskes: faskes.kelas_faskes || "",
-      telp_faskes: faskes.telp_faskes || "",
-      is_support_bpjs: Boolean(faskes.is_support_bpjs),
-    });
-    setModalBuka(true);
-  };
-
-  const tanganiSimpan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSedangSimpan(true);
-    setPesanStatus(null);
-
-    const payload = {
-      nama_faskes: formData.nama_faskes.trim(),
-      alamat_faskes: formData.alamat_faskes.trim(),
-      kota_kabupaten: formData.kota_kabupaten,
-      kecamatan: formData.kecamatan.trim() || undefined,
-      latitude: parseFloat(formData.latitude) || -6.595,
-      longitude: parseFloat(formData.longitude) || 106.799,
-      kdppk: formData.kdppk.trim() || undefined,
-      jenis_faskes: formData.jenis_faskes.trim() || undefined,
-      kelas_faskes: formData.kelas_faskes.trim() || undefined,
-      telp_faskes: formData.telp_faskes.trim() || undefined,
-      is_support_bpjs: formData.is_support_bpjs,
-    };
-
-    try {
-      if (modeEdit !== null) {
-        await api.updateFaskes(modeEdit, payload);
-        setPesanStatus({ tipe: "sukses", pesan: "Data faskes berhasil diperbarui." });
-      } else {
-        await api.createFaskes(payload);
-        setPesanStatus({ tipe: "sukses", pesan: "Faskes baru berhasil ditambahkan." });
-      }
-      setModalBuka(false);
-      muatData();
-    } catch (err) {
-      setPesanStatus({
-        tipe: "error",
-        pesan: messageFromError(err, "Gagal menyimpan data faskes."),
-      });
-    } finally {
-      setSedangSimpan(false);
-    }
-  };
 
   const konfirmasiHapus = async () => {
     if (idHapus === null) return;
@@ -366,14 +270,13 @@ export default function AdminFaskesPage() {
                         {/* Kolom 4 */}
                         <td className="py-4 pl-4 pr-8 text-center whitespace-nowrap">
                           <div className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => bukaModalEdit(item)}
+                            <Link
+                              href={`/admin/faskes/${item.id_faskes}/edit`}
                               className="px-3 py-1.5 rounded-lg bg-[#EBEEF2] hover:bg-slate-200 text-slate-800 font-bold text-[11px] flex items-center gap-1.5 transition"
                             >
                               <Pencil className="w-3 h-3" />
                               <span>Edit</span>
-                            </button>
+                            </Link>
 
                             <button
                               type="button"
@@ -433,178 +336,6 @@ export default function AdminFaskesPage() {
           </div>
         </div>
       </div>
-
-      {/* Modal Tambah / Edit Faskes */}
-      {modalBuka && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-base font-extrabold text-slate-900">
-                {modeEdit ? "Edit Data Fasilitas Kesehatan" : "Tambah Faskes Baru"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalBuka(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={tanganiSimpan} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2 space-y-1">
-                  <label className="font-bold text-slate-700">Nama Faskes *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nama_faskes}
-                    onChange={(e) => setFormData({ ...formData, nama_faskes: e.target.value })}
-                    placeholder="Contoh: RSUD Kota Bogor"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 space-y-1">
-                  <label className="font-bold text-slate-700">Alamat Lengkap *</label>
-                  <textarea
-                    required
-                    rows={2}
-                    value={formData.alamat_faskes}
-                    onChange={(e) => setFormData({ ...formData, alamat_faskes: e.target.value })}
-                    placeholder="Jl. DR. Sumeru No.120"
-                    className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Kota / Kabupaten *</label>
-                  <select
-                    value={formData.kota_kabupaten}
-                    onChange={(e) => setFormData({ ...formData, kota_kabupaten: e.target.value })}
-                    className="w-full h-10 px-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  >
-                    <option value="KOTA BOGOR">KOTA BOGOR</option>
-                    <option value="KAB. BOGOR">KAB. BOGOR</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Kecamatan</label>
-                  <input
-                    type="text"
-                    value={formData.kecamatan}
-                    onChange={(e) => setFormData({ ...formData, kecamatan: e.target.value })}
-                    placeholder="Bogor Barat"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Jenis Faskes</label>
-                  <select
-                    value={formData.jenis_faskes}
-                    onChange={(e) => setFormData({ ...formData, jenis_faskes: e.target.value })}
-                    className="w-full h-10 px-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  >
-                    <option value="Rumah Sakit">Rumah Sakit</option>
-                    <option value="Puskesmas">Puskesmas</option>
-                    <option value="Klinik Pratama">Klinik Pratama</option>
-                    <option value="Klinik Utama">Klinik Utama</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Kelas Faskes</label>
-                  <input
-                    type="text"
-                    value={formData.kelas_faskes}
-                    onChange={(e) => setFormData({ ...formData, kelas_faskes: e.target.value })}
-                    placeholder="A, B, C, D"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Latitude *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.latitude}
-                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                    placeholder="-6.5950"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Longitude *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.longitude}
-                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                    placeholder="106.7990"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Kode Kemenkes / KDPPK</label>
-                  <input
-                    type="text"
-                    value={formData.kdppk}
-                    onChange={(e) => setFormData({ ...formData, kdppk: e.target.value })}
-                    placeholder="3271012"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Nomor Telepon</label>
-                  <input
-                    type="text"
-                    value={formData.telp_faskes}
-                    onChange={(e) => setFormData({ ...formData, telp_faskes: e.target.value })}
-                    placeholder="0251-8321000"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_support_bpjs}
-                    onChange={(e) => setFormData({ ...formData, is_support_bpjs: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#007E7A] focus:ring-[#007E7A] accent-[#007E7A]"
-                  />
-                  <span className="font-bold text-slate-800">Mendukung Pelayanan BPJS Kesehatan</span>
-                </label>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setModalBuka(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={sedangSimpan}
-                  className="px-5 py-2 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white font-bold flex items-center gap-2 disabled:opacity-50"
-                >
-                  {sedangSimpan && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{modeEdit ? "Simpan Perubahan" : "Tambahkan Faskes"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Modal Dialog Konfirmasi Hapus */}
       {idHapus !== null && (

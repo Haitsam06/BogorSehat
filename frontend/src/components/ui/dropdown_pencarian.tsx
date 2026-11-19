@@ -3,14 +3,21 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronDown, Search, X, Check } from "lucide-react";
 
+export interface DropdownOptionItem {
+  value: string;
+  label: string;
+}
+
 interface DropdownPencarianProps {
   label: string;
-  daftar_pilihan: string[];
+  daftar_pilihan: Array<string | DropdownOptionItem>;
   nilai_terpilih: string;
   saat_memilih: (nilai: string) => void;
   placeholder_pencarian?: string;
   teks_default?: string;
 }
+
+const DROPDOWN_BATCH_SIZE = 100;
 
 export default function DropdownPencarian({
   label,
@@ -22,8 +29,17 @@ export default function DropdownPencarian({
 }: DropdownPencarianProps) {
   const [apakah_terbuka, set_apakah_terbuka] = useState(false);
   const [kata_kunci, set_kata_kunci] = useState("");
+  const [jumlah_tampil, set_jumlah_tampil] = useState(DROPDOWN_BATCH_SIZE);
   const kontainer_ref = useRef<HTMLDivElement | null>(null);
   const input_ref = useRef<HTMLInputElement | null>(null);
+
+  const opsi_ternormalisasi = useMemo<DropdownOptionItem[]>(
+    () =>
+      daftar_pilihan.map((item) =>
+        typeof item === "string" ? { value: item, label: item } : item
+      ),
+    [daftar_pilihan]
+  );
 
   // Tutup dropdown saat klik di luar
   useEffect(() => {
@@ -42,6 +58,7 @@ export default function DropdownPencarian({
   // Fokuskan input saat dropdown dibuka
   useEffect(() => {
     if (apakah_terbuka) {
+      set_jumlah_tampil(DROPDOWN_BATCH_SIZE);
       setTimeout(() => input_ref.current?.focus(), 50);
     } else {
       set_kata_kunci("");
@@ -51,11 +68,37 @@ export default function DropdownPencarian({
   // Saring opsi berdasarkan kata kunci
   const opsi_tersaring = useMemo(() => {
     const q = kata_kunci.trim().toLowerCase();
-    if (!q) return daftar_pilihan;
-    return daftar_pilihan.filter((item) => item.toLowerCase().includes(q));
-  }, [daftar_pilihan, kata_kunci]);
+    if (!q) return opsi_ternormalisasi;
+    return opsi_ternormalisasi.filter((item) =>
+      item.label.toLowerCase().includes(q)
+    );
+  }, [opsi_ternormalisasi, kata_kunci]);
+
+  useEffect(() => {
+    set_jumlah_tampil(DROPDOWN_BATCH_SIZE);
+  }, [kata_kunci]);
+
+  const opsi_tampil = useMemo(
+    () => opsi_tersaring.slice(0, jumlah_tampil),
+    [opsi_tersaring, jumlah_tampil]
+  );
+
+  const opsi_aktif = useMemo(
+    () => opsi_ternormalisasi.find((item) => item.value === nilai_terpilih),
+    [opsi_ternormalisasi, nilai_terpilih]
+  );
 
   const apakah_aktif = nilai_terpilih !== "ALL" && nilai_terpilih !== "";
+
+  const tangani_scroll_opsi = (e: React.UIEvent<HTMLDivElement>) => {
+    if (jumlah_tampil >= opsi_tersaring.length) return;
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+      set_jumlah_tampil((prev) =>
+        Math.min(prev + DROPDOWN_BATCH_SIZE, opsi_tersaring.length)
+      );
+    }
+  };
 
   return (
     <div className="space-y-1.5 relative" ref={kontainer_ref}>
@@ -72,7 +115,7 @@ export default function DropdownPencarian({
         } ${apakah_terbuka ? "ring-2 ring-[#007E7A]/20 border-[#007E7A]" : ""}`}
       >
         <span className="truncate">
-          {apakah_aktif ? nilai_terpilih : teks_default}
+          {apakah_aktif ? opsi_aktif?.label || nilai_terpilih : teks_default}
         </span>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -122,7 +165,10 @@ export default function DropdownPencarian({
           </div>
 
           {/* Daftar Opsi dengan Scroll */}
-          <div className="max-h-44 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
+          <div
+            onScroll={tangani_scroll_opsi}
+            className="max-h-44 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5"
+          >
             {/* Opsi Semua / Reset */}
             <button
               type="button"
@@ -140,34 +186,49 @@ export default function DropdownPencarian({
               {!apakah_aktif && <Check className="w-3.5 h-3.5 text-[#007E7A]" />}
             </button>
 
-            {opsi_tersaring.length === 0 ? (
+            {opsi_tampil.length === 0 ? (
               <div className="p-3 text-center text-[11px] text-slate-400">
                 Tidak ada hasil ditemukan
               </div>
             ) : (
-              opsi_tersaring.map((opsi) => {
-                const terpilih = nilai_terpilih === opsi;
-                return (
+              <>
+                {opsi_tampil.map((opsi) => {
+                  const terpilih = nilai_terpilih === opsi.value;
+                  return (
+                    <button
+                      key={opsi.value}
+                      type="button"
+                      onClick={() => {
+                        saat_memilih(opsi.value);
+                        set_apakah_terbuka(false);
+                      }}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between text-left transition ${
+                        terpilih
+                          ? "bg-[#E6F4F3] text-[#007E7A] font-bold"
+                          : "text-slate-700 hover:bg-slate-50 font-medium"
+                      }`}
+                    >
+                      <span className="truncate pr-2">{opsi.label}</span>
+                      {terpilih && (
+                        <Check className="w-3.5 h-3.5 text-[#007E7A] shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+                {jumlah_tampil < opsi_tersaring.length && (
                   <button
-                    key={opsi}
                     type="button"
-                    onClick={() => {
-                      saat_memilih(opsi);
-                      set_apakah_terbuka(false);
-                    }}
-                    className={`w-full px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between text-left transition ${
-                      terpilih
-                        ? "bg-[#E6F4F3] text-[#007E7A] font-bold"
-                        : "text-slate-700 hover:bg-slate-50 font-medium"
-                    }`}
+                    onClick={() =>
+                      set_jumlah_tampil((prev) =>
+                        Math.min(prev + DROPDOWN_BATCH_SIZE, opsi_tersaring.length)
+                      )
+                    }
+                    className="w-full py-1.5 text-center text-[10px] font-semibold text-[#007E7A] hover:underline"
                   >
-                    <span className="truncate pr-2">{opsi}</span>
-                    {terpilih && (
-                      <Check className="w-3.5 h-3.5 text-[#007E7A] shrink-0" />
-                    )}
+                    Muat lagi ({opsi_tampil.length}/{opsi_tersaring.length})
                   </button>
-                );
-              })
+                )}
+              </>
             )}
           </div>
         </div>
@@ -175,4 +236,3 @@ export default function DropdownPencarian({
     </div>
   );
 }
-

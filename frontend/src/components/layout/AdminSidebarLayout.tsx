@@ -44,10 +44,10 @@ export default function AdminSidebarLayout({
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F8FAFB]">
+    <div className="h-screen overflow-hidden flex bg-[#F8FAFB]">
       {/* Sidebar Kiri */}
-      <aside className="w-[270px] bg-[#FAFBFB] border-r border-slate-200/80 flex flex-col justify-between shrink-0 select-none">
-        <div className="p-5 space-y-8">
+      <aside className="w-[270px] bg-[#FAFBFB] border-r border-slate-200/80 flex flex-col justify-between shrink-0 h-full overflow-hidden select-none">
+        <div className="flex-1 overflow-y-auto p-5 space-y-8">
           <Link href="/" className="block pt-1">
             <img
               src="/images/logo-bogorsehat.png"
@@ -138,7 +138,7 @@ export default function AdminSidebarLayout({
         </div>
 
         {/* Tombol Logout Admin */}
-        <div className="bg-[#F2F4F7] px-6 py-5 border-t border-slate-200/70">
+        <div className="shrink-0 bg-[#F2F4F7] px-6 py-5 border-t border-slate-200/70">
           <button
             type="button"
             onClick={tanganiLogout}
@@ -151,8 +151,8 @@ export default function AdminSidebarLayout({
       </aside>
 
       {/* Area Konten Utama */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-[68px] bg-white border-b border-slate-200/80 px-8 flex items-center justify-between">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <header className="h-[68px] shrink-0 bg-white border-b border-slate-200/80 px-8 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[13px]">
             <Link
               href="/"
@@ -186,7 +186,7 @@ export default function AdminSidebarLayout({
           </div>
         </header>
 
-        <div className="flex-1 p-8">{children}</div>
+        <main className="flex-1 overflow-y-auto p-8">{children}</main>
       </div>
     </div>
   );

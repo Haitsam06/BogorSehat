@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   CheckCircle2,
@@ -31,11 +32,6 @@ export default function AdminFasilitasPenunjangPage() {
     pesan: string;
   } | null>(null);
 
-  const [modalBuka, setModalBuka] = useState(false);
-  const [modeEdit, setModeEdit] = useState<number | null>(null);
-  const [formId, setFormId] = useState("");
-  const [formNama, setFormNama] = useState("");
-  const [sedangSimpan, setSedangSimpan] = useState(false);
   const [konfirmasi, setKonfirmasi] = useState<ApiMasterItem | null>(null);
   const [sedangHapus, setSedangHapus] = useState(false);
 
@@ -62,49 +58,6 @@ export default function AdminFasilitasPenunjangPage() {
   useEffect(() => {
     muatData();
   }, [muatData]);
-
-  const bukaTambah = () => {
-    setModeEdit(null);
-    setFormId("");
-    setFormNama("");
-    setModalBuka(true);
-  };
-
-  const bukaEdit = (item: ApiMasterItem) => {
-    setModeEdit(item.id_fasilitas ?? null);
-    setFormId(String(item.id_fasilitas ?? ""));
-    setFormNama(item.nama_fasilitas || "");
-    setModalBuka(true);
-  };
-
-  const tanganiSimpan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSedangSimpan(true);
-    setPesan(null);
-    try {
-      if (modeEdit !== null) {
-        await api.updateAdminFasilitas(modeEdit, {
-          nama_fasilitas: formNama.trim(),
-        });
-        setPesan({ tipe: "sukses", pesan: "Fasilitas berhasil diperbarui." });
-      } else {
-        await api.createAdminFasilitas({
-          nama_fasilitas: formNama.trim(),
-          id_fasilitas: formId.trim() ? Number(formId.trim()) : undefined,
-        });
-        setPesan({ tipe: "sukses", pesan: "Fasilitas berhasil ditambahkan." });
-      }
-      setModalBuka(false);
-      await muatData();
-    } catch (err) {
-      setPesan({
-        tipe: "error",
-        pesan: messageFromError(err, "Gagal menyimpan fasilitas."),
-      });
-    } finally {
-      setSedangSimpan(false);
-    }
-  };
 
   const tanganiHapus = async (item: ApiMasterItem, force = false) => {
     setSedangHapus(true);
@@ -165,14 +118,13 @@ export default function AdminFasilitasPenunjangPage() {
           </div>
 
           <div className="flex items-center gap-3 self-start lg:self-center">
-            <button
-              type="button"
-              onClick={bukaTambah}
+            <Link
+              href="/admin/fasilitas-penunjang/tambah"
               className="h-11 px-5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-extrabold flex items-center gap-2 shadow-sm transition"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Tambah Fasilitas</span>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -264,14 +216,13 @@ export default function AdminFasilitasPenunjangPage() {
                         </td>
                         <td className="py-4 pl-4 pr-8">
                           <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => bukaEdit(item)}
+                            <Link
+                              href={`/admin/fasilitas-penunjang/${item.id_fasilitas}/edit`}
                               className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center gap-1.5 transition"
                             >
                               <Pencil className="w-3 h-3" />
                               Edit
-                            </button>
+                            </Link>
                             <button
                               type="button"
                               onClick={() => setKonfirmasi(item)}
@@ -326,73 +277,6 @@ export default function AdminFasilitasPenunjangPage() {
           </div>
         </div>
       </div>
-
-      {modalBuka && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-base font-extrabold text-slate-900">
-                {modeEdit !== null ? "Edit Fasilitas Penunjang" : "Tambah Fasilitas Penunjang"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalBuka(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={tanganiSimpan} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">ID Fasilitas</label>
-                <input
-                  type="number"
-                  min={1}
-                  disabled={modeEdit !== null}
-                  value={formId}
-                  onChange={(e) => setFormId(e.target.value)}
-                  placeholder="Kosongkan untuk ID otomatis"
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A] disabled:bg-slate-100 disabled:text-slate-500"
-                />
-                <p className="text-[11px] text-slate-500">
-                  ID tidak dapat diubah setelah dibuat.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Nama Fasilitas *</label>
-                <input
-                  type="text"
-                  required
-                  value={formNama}
-                  onChange={(e) => setFormNama(e.target.value)}
-                  placeholder="Contoh: Ruang Laktasi"
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalBuka(false)}
-                  className="h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={sedangSimpan}
-                  className="h-10 px-5 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-extrabold flex items-center gap-2 transition disabled:opacity-50"
-                >
-                  {sedangSimpan && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Simpan</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {konfirmasi && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
