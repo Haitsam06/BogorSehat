@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Faskes;
+use App\Support\KecamatanNormalizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +14,7 @@ class BogorSehatDataSeeder extends Seeder
         $specializations = $this->readCsv(base_path('../master_spesialisasi_final.csv'));
         $facilities = $this->readCsv(base_path('../master_sarana_penunjang_final.csv'));
         $faskesData = $this->readCsv(base_path('../faskes_final.csv'));
+        $districtSources = $this->readDistrictSources();
 
         $specializationRows = array_map(static fn (array $row): array => [
             'id_spesialisasi' => trim($row['id']),
@@ -45,7 +47,7 @@ class BogorSehatDataSeeder extends Seeder
                 'kelas_faskes' => trim($row['kelas_faskes']) ?: null,
                 'alamat_faskes' => preg_replace('/\s+/', ' ', trim($row['alamat_faskes'])),
                 'provinsi' => 'JAWA BARAT',
-                'kecamatan' => $this->extractKecamatan($row['alamat_faskes']),
+                'kecamatan' => $this->resolveKecamatan($latitude, $longitude, $districtSources, $row['alamat_faskes']),
                 'kota_kabupaten' => trim($row['kota_kabupaten']),
                 'longitude' => $longitude,
                 'latitude' => $latitude,
@@ -129,6 +131,48 @@ class BogorSehatDataSeeder extends Seeder
         return array_values(array_filter(array_map('trim', explode(',', (string) $value)), static fn (string $item): bool => $item !== ''));
     }
 
+    /** @return list<array{lat: float, lng: float, kecamatan: string}> */
+    private function readDistrictSources(): array
+    {
+        $path = database_path('seeders/data/kecamatan_sources.json');
+        if (! is_file($path)) {
+            return [];
+        }
+
+        $rows = json_decode((string) file_get_contents($path), true);
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
+     * @param  list<array{lat: float, lng: float, kecamatan: string}>  $sources
+     */
+    private function resolveKecamatan(float $latitude, float $longitude, array $sources, string $address): ?string
+    {
+        $fromAddress = $this->extractKecamatan($address);
+        if ($fromAddress !== null) {
+            return $fromAddress;
+        }
+
+        $best = null;
+        $bestDistance = 300.0;
+
+        foreach ($sources as $source) {
+            $latDelta = deg2rad($source['lat'] - $latitude);
+            $lngDelta = deg2rad($source['lng'] - $longitude);
+            $a = sin($latDelta / 2) ** 2
+                + cos(deg2rad($latitude)) * cos(deg2rad($source['lat'])) * sin($lngDelta / 2) ** 2;
+            $distance = 6371000 * 2 * asin(sqrt(min($a, 1.0)));
+
+            if ($distance <= $bestDistance) {
+                $bestDistance = $distance;
+                $best = $source['kecamatan'];
+            }
+        }
+
+        return KecamatanNormalizer::normalize($best);
+    }
+
     private function extractKecamatan(string $address): ?string
     {
         $normalized = preg_replace('/\s+/', ' ', trim($address));
@@ -136,6 +180,6 @@ class BogorSehatDataSeeder extends Seeder
             return null;
         }
 
-        return trim($matches[1]);
+        return KecamatanNormalizer::normalize($matches[1]);
     }
 }

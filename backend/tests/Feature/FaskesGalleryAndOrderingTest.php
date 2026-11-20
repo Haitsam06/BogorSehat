@@ -68,7 +68,7 @@ class FaskesGalleryAndOrderingTest extends TestCase
         $district = $this->getJson('/api/faskes?kecamatan=CIJERUK&per_page=50')->assertOk()->json();
         $this->assertGreaterThan(0, $district['meta']['total']);
         foreach ($district['data'] as $row) {
-            $this->assertSame('CIJERUK', $row['kecamatan']);
+            $this->assertSame('Cijeruk', $row['kecamatan']);
         }
     }
 

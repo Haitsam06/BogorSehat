@@ -20,7 +20,7 @@ class FaskesController extends Controller
         $query = Faskes::query()->withRating()->with(['spesialisasi', 'fasilitas', 'images']);
         $query->when($request->filled('search'), fn ($q) => $q->where('nama_faskes', 'like', '%'.$request->string('search').'%'));
         $query->when($request->filled('provinsi'), fn ($q) => $q->where('provinsi', $request->string('provinsi')));
-        $query->when($request->filled('kecamatan'), fn ($q) => $q->where('kecamatan', 'like', '%'.$request->string('kecamatan').'%'));
+        $query->when($request->filled('kecamatan'), fn ($q) => $q->whereRaw('lower(kecamatan) = ?', [mb_strtolower(trim($request->string('kecamatan')->toString()))]));
         $query->when($request->filled('kota_kabupaten'), fn ($q) => $q->where('kota_kabupaten', $request->string('kota_kabupaten')));
         $query->when($request->filled('jenis_faskes'), fn ($q) => $q->where('jenis_faskes', $request->string('jenis_faskes')));
         $query->when($request->has('is_support_bpjs'), fn ($q) => $q->where('is_support_bpjs', $request->boolean('is_support_bpjs')));
