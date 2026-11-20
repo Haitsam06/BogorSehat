@@ -131,12 +131,17 @@ class ImportFaskesImages extends Command
                 'compact' => $this->compact((string) ($place['title'] ?? '')),
                 'lat' => (float) $location['lat'],
                 'lng' => (float) $location['lng'],
-                'image' => $image,
+                'image' => $this->upgradeResolution($image),
                 'category' => (string) ($place['categoryName'] ?? ''),
             ];
         }
 
         return $candidates;
+    }
+
+    private function upgradeResolution(string $url): string
+    {
+        return (string) preg_replace('/=w\d+-h\d+-[^\/]+$/', '=w1200-h900-k-no', $url);
     }
 
     /**
