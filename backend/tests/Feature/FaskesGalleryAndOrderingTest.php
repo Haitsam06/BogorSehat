@@ -93,8 +93,8 @@ class FaskesGalleryAndOrderingTest extends TestCase
         $this->assertTrue($response['images'][0]['is_banner']);
         $this->assertTrue($response['images'][0]['is_thumbnail']);
         $this->assertFalse($response['images'][1]['is_banner']);
-        $this->assertSame('http://x/a.webp', $response['banner_url']);
-        $this->assertSame('http://x/a.webp', $response['thumbnail_url']);
+        $this->assertStringEndsWith('/storage/uploads/faskes/a.webp', $response['banner_url']);
+        $this->assertStringEndsWith('/storage/uploads/faskes/a.webp', $response['thumbnail_url']);
 
         $detail = $this->getJson('/api/faskes/'.$response['id_faskes'])->assertOk()->json('data');
         $this->assertCount(2, $detail['images']);
@@ -116,8 +116,8 @@ class FaskesGalleryAndOrderingTest extends TestCase
 
         $this->assertFalse($updated['images'][0]['is_banner']);
         $this->assertTrue($updated['images'][1]['is_banner']);
-        $this->assertSame('http://x/b.webp', $updated['banner_url']);
-        $this->assertSame('http://x/b.webp', $updated['thumbnail_url']);
+        $this->assertStringEndsWith('/storage/uploads/faskes/b.webp', $updated['banner_url']);
+        $this->assertStringEndsWith('/storage/uploads/faskes/b.webp', $updated['thumbnail_url']);
 
         $bothFlagged = $this->withHeaders($headers)->putJson('/api/admin/faskes/'.$id, [
             'images' => [
@@ -170,7 +170,7 @@ class FaskesGalleryAndOrderingTest extends TestCase
         $six = array_map(static fn (int $i): array => ['path' => "uploads/faskes/$i.webp", 'url' => "http://x/$i.webp"], range(1, 6));
         $this->withHeaders($headers)->putJson('/api/admin/faskes/'.$id, ['images' => $six])->assertStatus(422)->assertJsonValidationErrors('images');
 
-        $this->withHeaders($headers)->putJson('/api/admin/faskes/'.$id, ['images' => [['path' => 'x.webp']]])->assertStatus(422);
+        $this->withHeaders($headers)->putJson('/api/admin/faskes/'.$id, ['images' => [['url' => 'http://x/a.webp']]])->assertStatus(422)->assertJsonValidationErrors('images.0.path');
     }
 
     public function test_uploaded_images_are_converted_to_webp(): void
@@ -220,7 +220,7 @@ class FaskesGalleryAndOrderingTest extends TestCase
 
         $target = Faskes::query()->where('kdppk', '0117R007')->firstOrFail();
         $target->fasilitas()->attach($igd->id_fasilitas);
-        $target->images()->create(['path' => 'uploads/faskes/x.webp', 'url' => 'http://x/x.webp', 'is_banner' => true, 'is_thumbnail' => true]);
+        $target->images()->create(['path' => 'uploads/faskes/x.webp', 'is_banner' => true, 'is_thumbnail' => true]);
 
         $compact = collect($this->getJson('/api/faskes/nearby?latitude=-6.57451&longitude=106.628&radius=1&compact=1')->assertOk()->json('data'))
             ->firstWhere('id_faskes', $target->id_faskes);

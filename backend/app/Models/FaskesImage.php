@@ -11,7 +11,7 @@ class FaskesImage extends Model
 
     protected $primaryKey = 'id_faskes_image';
 
-    protected $fillable = ['id_faskes', 'path', 'url', 'is_banner', 'is_thumbnail', 'sort_order'];
+    protected $fillable = ['id_faskes', 'path', 'is_banner', 'is_thumbnail', 'sort_order'];
 
     protected function casts(): array
     {

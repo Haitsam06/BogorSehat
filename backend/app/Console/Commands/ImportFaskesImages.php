@@ -304,7 +304,6 @@ class ImportFaskesImages extends Command
         FaskesImage::query()->create([
             'id_faskes' => $faskes->id_faskes,
             'path' => $path,
-            'url' => Storage::disk('public')->url($path),
             'is_banner' => true,
             'is_thumbnail' => true,
             'sort_order' => 0,

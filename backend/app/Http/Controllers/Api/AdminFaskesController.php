@@ -90,7 +90,6 @@ class AdminFaskesController extends Controller
         foreach (array_values($images) as $index => $image) {
             $normalized[] = [
                 'path' => (string) $image['path'],
-                'url' => (string) $image['url'],
                 'is_banner' => (bool) ($image['is_banner'] ?? false),
                 'is_thumbnail' => (bool) ($image['is_thumbnail'] ?? false),
                 'sort_order' => (int) ($image['sort_order'] ?? $index),
@@ -157,7 +156,7 @@ class AdminFaskesController extends Controller
             'id_fasilitas.*' => ['integer', 'exists:fasilitas,id_fasilitas'],
             'images' => ['sometimes', 'array', 'max:5'],
             'images.*.path' => ['required', 'string', 'max:255'],
-            'images.*.url' => ['required', 'string', 'max:2048'],
+            'images.*.url' => ['sometimes', 'string', 'max:2048'],
             'images.*.is_banner' => ['sometimes', 'boolean'],
             'images.*.is_thumbnail' => ['sometimes', 'boolean'],
             'images.*.sort_order' => ['sometimes', 'integer', 'between:0,4'],
