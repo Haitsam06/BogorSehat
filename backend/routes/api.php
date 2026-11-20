@@ -71,10 +71,12 @@ Route::middleware(ApiTokenAuth::class)->group(function (): void {
         Route::put('users/{user}', [AdminUserController::class, 'update']);
         Route::delete('users/{user}', [AdminUserController::class, 'destroy']);
         Route::get('spesialisasi', [AdminSpesialisasiController::class, 'index']);
+        Route::get('spesialisasi/{spesialisasi}', [AdminSpesialisasiController::class, 'show']);
         Route::post('spesialisasi', [AdminSpesialisasiController::class, 'store']);
         Route::put('spesialisasi/{spesialisasi}', [AdminSpesialisasiController::class, 'update']);
         Route::delete('spesialisasi/{spesialisasi}', [AdminSpesialisasiController::class, 'destroy']);
         Route::get('fasilitas', [AdminFasilitasController::class, 'index']);
+        Route::get('fasilitas/{fasilitas}', [AdminFasilitasController::class, 'show']);
         Route::post('fasilitas', [AdminFasilitasController::class, 'store']);
         Route::put('fasilitas/{fasilitas}', [AdminFasilitasController::class, 'update']);
         Route::delete('fasilitas/{fasilitas}', [AdminFasilitasController::class, 'destroy']);
