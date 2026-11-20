@@ -38,4 +38,18 @@ class KecamatanNormalizer
 
         return self::ALIASES[$key] ?? $name;
     }
+
+    /**
+     * Districts offered by the search UI, matched against address parts.
+     *
+     * @return list<string>
+     */
+    public static function known(): array
+    {
+        return [
+            'Bogor Barat', 'Bogor Tengah', 'Bogor Timur', 'Bogor Selatan', 'Bogor Utara',
+            'Tanah Sareal', 'Cibinong', 'Ciawi', 'Sukaraja', 'Babakan Madang',
+            'Gunung Putri', 'Bojonggede', 'Cijeruk', 'Ciampea', 'Citeureup', 'Parung',
+        ];
+    }
 }

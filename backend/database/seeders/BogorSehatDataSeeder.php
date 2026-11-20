@@ -6,6 +6,7 @@ use App\Models\Faskes;
 use App\Support\KecamatanNormalizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class BogorSehatDataSeeder extends Seeder
 {
@@ -95,6 +96,11 @@ class BogorSehatDataSeeder extends Seeder
             DB::table('fasilitas_faskes')->upsert($chunk, ['id_faskes', 'id_fasilitas'], ['updated_at']);
         }
 
+        $restored = $this->restoreGalleryImages();
+        if ($restored > 0) {
+            $this->command?->info(sprintf('Restored %d gallery images from disk.', $restored));
+        }
+
         $this->command?->info(sprintf(
             'Seeded %d faskes, %d spesialisasi, %d fasilitas, %d specialization links, %d facility links.',
             count($faskesRows), count($specializationRows), count($facilityRows),
@@ -176,10 +182,66 @@ class BogorSehatDataSeeder extends Seeder
     private function extractKecamatan(string $address): ?string
     {
         $normalized = preg_replace('/\s+/', ' ', trim($address));
-        if (preg_match('/\bKEC(?:AMATAN)?\.?\s+([A-Z][A-Z ]{2,}?)(?=,|\bKAB(?:UPATEN)?\.?\b|\bKOTA\b|$)/i', $normalized, $matches) !== 1) {
-            return null;
+        if (preg_match('/\bKEC(?:AMATAN)?\.?\s+([A-Z][A-Z ]{2,}?)(?=,|\bKAB(?:UPATEN)?\.?\b|\bKOTA\b|$)/i', $normalized, $matches) === 1) {
+            $name = KecamatanNormalizer::normalize($matches[1]);
+            if ($name !== null) {
+                return $name;
+            }
         }
 
-        return KecamatanNormalizer::normalize($matches[1]);
+        $haystack = Str::lower($normalized);
+        $districts = KecamatanNormalizer::known();
+        usort($districts, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        foreach ($districts as $district) {
+            if (preg_match('/\b'.preg_quote(Str::lower($district), '/').'\b/', $haystack) === 1) {
+                return $district;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gallery files live outside the database, so a fresh seed would drop the
+     * rows while the WebP files stay on disk. Rebuild the rows from filenames.
+     */
+    private function restoreGalleryImages(): int
+    {
+        $files = glob(storage_path('app/public/uploads/faskes/*.webp')) ?: [];
+        if ($files === []) {
+            return 0;
+        }
+
+        $rows = [];
+        foreach ($files as $file) {
+            if (preg_match('/-(\d+)\.webp$/', basename($file), $matches) !== 1) {
+                continue;
+            }
+
+            $idFaskes = (int) $matches[1];
+            $rows[$idFaskes] = [
+                'id_faskes' => $idFaskes,
+                'path' => 'uploads/faskes/'.basename($file),
+                'is_banner' => true,
+                'is_thumbnail' => true,
+                'sort_order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if ($rows === []) {
+            return 0;
+        }
+
+        $existing = DB::table('faskes')->whereIn('id_faskes', array_keys($rows))->pluck('id_faskes')->all();
+        $rows = array_values(array_intersect_key($rows, array_flip($existing)));
+
+        if ($rows !== []) {
+            DB::table('faskes_images')->insert($rows);
+        }
+
+        return count($rows);
     }
 }

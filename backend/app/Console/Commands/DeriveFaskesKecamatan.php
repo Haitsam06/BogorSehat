@@ -127,20 +127,33 @@ class DeriveFaskesKecamatan extends Command
             return null;
         }
 
-        if (preg_match('/\bKec(?:amatan)?\.?\s+([A-Za-z][A-Za-z .]*)/i', $value, $matches) !== 1) {
-            return null;
+        if (preg_match('/\bKec(?:amatan)?\.?\s+([A-Za-z][A-Za-z .]*)/i', $value, $matches) === 1) {
+            $name = KecamatanNormalizer::normalize($matches[1]);
+            if ($name !== null && strlen($name) >= 3 && preg_match('/^[A-Za-z ]+$/', $name) === 1) {
+                return $name;
+            }
         }
 
-        $name = KecamatanNormalizer::normalize($matches[1]);
-        if ($name === null) {
-            return null;
+        return $this->knownDistrictIn($value);
+    }
+
+    /**
+     * Most addresses list the district as a plain comma-separated part
+     * ("Mekarwangi, Tanah Sareal, Kota Bogor") without a "Kec." prefix.
+     */
+    private function knownDistrictIn(string $value): ?string
+    {
+        $haystack = Str::lower($value);
+        $districts = KecamatanNormalizer::known();
+        usort($districts, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        foreach ($districts as $district) {
+            if (preg_match('/\b'.preg_quote(Str::lower($district), '/').'\b/', $haystack) === 1) {
+                return $district;
+            }
         }
 
-        if (strlen($name) < 3 || ! preg_match('/^[A-Za-z ]+$/', $name)) {
-            return null;
-        }
-
-        return $name;
+        return null;
     }
 
     /**
