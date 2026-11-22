@@ -201,9 +201,6 @@ export default function Navbar() {
                 >
                   <Home className="w-4 h-4" />
                   <span>Beranda</span>
-                  {adalah_beranda && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
-                  )}
                 </Link>
 
                 <Link
@@ -216,9 +213,6 @@ export default function Navbar() {
                 >
                   <MapPin className="w-4 h-4" />
                   <span>Peta Interaktif</span>
-                  {adalah_peta && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
-                  )}
                 </Link>
 
                 <Link
@@ -231,9 +225,6 @@ export default function Navbar() {
                 >
                   <Search className="w-4 h-4" />
                   <span>Cari Faskes</span>
-                  {adalah_cari_faskes && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
-                  )}
                 </Link>
 
                 <Link
@@ -246,9 +237,6 @@ export default function Navbar() {
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>Forum Komunitas</span>
-                  {adalah_forum && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#007A78] ml-0.5" />
-                  )}
                 </Link>
               </nav>
 

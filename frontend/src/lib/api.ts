@@ -435,16 +435,26 @@ export const api = {
   },
 
   async getAllSpesialisasi(): Promise<ApiSpesialisasi[]> {
-    const first = await this.getSpesialisasi(1);
-    const items = [...first.data];
-    const lastPage = first.meta?.last_page ?? 1;
-    if (lastPage > 1) {
-      const rest = await Promise.all(
-        Array.from({ length: lastPage - 1 }, (_, idx) =>
-          this.getSpesialisasi(idx + 2)
-        )
-      );
-      rest.forEach((res) => items.push(...res.data));
+    if (typeof window !== "undefined") {
+      const cached = sessionStorage.getItem("bogorsehat_spesialisasi_all");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    const res = await request<ApiCollectionResponse<ApiSpesialisasi>>(
+      "/spesialisasi?all=1"
+    );
+    const items = res.data || [];
+    if (typeof window !== "undefined" && items.length > 0) {
+      try {
+        sessionStorage.setItem(
+          "bogorsehat_spesialisasi_all",
+          JSON.stringify(items)
+        );
+      } catch {}
     }
     return items;
   },
@@ -458,16 +468,23 @@ export const api = {
   },
 
   async getAllFasilitas(): Promise<ApiFasilitas[]> {
-    const first = await this.getFasilitas(1);
-    const items = [...first.data];
-    const lastPage = first.meta?.last_page ?? 1;
-    if (lastPage > 1) {
-      const rest = await Promise.all(
-        Array.from({ length: lastPage - 1 }, (_, idx) =>
-          this.getFasilitas(idx + 2)
-        )
-      );
-      rest.forEach((res) => items.push(...res.data));
+    if (typeof window !== "undefined") {
+      const cached = sessionStorage.getItem("bogorsehat_fasilitas_all");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    const res = await request<ApiCollectionResponse<ApiFasilitas>>(
+      "/fasilitas?all=1"
+    );
+    const items = res.data || [];
+    if (typeof window !== "undefined" && items.length > 0) {
+      try {
+        sessionStorage.setItem("bogorsehat_fasilitas_all", JSON.stringify(items));
+      } catch {}
     }
     return items;
   },
@@ -483,6 +500,8 @@ export const api = {
     is_support_bpjs?: number | boolean;
     id_spesialisasi?: string;
     id_fasilitas?: number;
+    latitude?: number;
+    longitude?: number;
     per_page?: number;
     page?: number;
   } = {}): Promise<ApiCollectionResponse<ApiFaskes>> {
@@ -516,10 +535,11 @@ export const api = {
     latitude: number,
     longitude: number,
     radius = 10,
-    options: { compact?: boolean } = {}
+    options: { compact?: boolean; limit?: number } = {}
   ): Promise<ApiFaskes[]> {
     const compactParam = options.compact ? "&compact=1" : "";
-    const endpoint = `/faskes/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}${compactParam}`;
+    const limitParam = options.limit ? `&limit=${options.limit}` : "";
+    const endpoint = `/faskes/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}${compactParam}${limitParam}`;
     const res = await request<ApiSingleResponse<ApiFaskes[]>>(endpoint);
     return res.data;
   },

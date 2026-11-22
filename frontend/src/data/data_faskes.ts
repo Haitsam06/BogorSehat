@@ -33,6 +33,7 @@ export interface DataFaskesItem {
 export interface KategoriLayananItem {
   id_kategori: number;
   nama_kategori: string;
+  jenis_query: string;
   jumlah_unit: string;
   deskripsi_kategori: string;
   label_status?: string;
@@ -75,6 +76,7 @@ export const daftar_kategori_layanan: KategoriLayananItem[] = [
   {
     id_kategori: 1,
     nama_kategori: "Rumah Sakit Umum & Khusus",
+    jenis_query: "Rumah Sakit",
     jumlah_unit: "28 Unit RS",
     deskripsi_kategori:
       "Fasilitas rujukan tingkat lanjutan (FKRTL) Kelas A, B, C, dan D dengan layanan dokter spesialis lengkap.",
@@ -83,6 +85,7 @@ export const daftar_kategori_layanan: KategoriLayananItem[] = [
   {
     id_kategori: 2,
     nama_kategori: "Puskesmas & Pustu",
+    jenis_query: "Puskesmas",
     jumlah_unit: "54 Puskesmas",
     deskripsi_kategori:
       "Pelayanan kesehatan dasar tingkat pertama (FKTP) milik pemerintah di seluruh kecamatan Kota & Kab. Bogor.",
@@ -91,6 +94,7 @@ export const daftar_kategori_layanan: KategoriLayananItem[] = [
   {
     id_kategori: 3,
     nama_kategori: "Klinik Pratama & Utama",
+    jenis_query: "Klinik",
     jumlah_unit: "42 Klinik",
     deskripsi_kategori:
       "Layanan rawat jalan terpadu, pemeriksaan medis umum, gigi, serta klinik bersalin terakreditasi resmi.",
@@ -99,6 +103,7 @@ export const daftar_kategori_layanan: KategoriLayananItem[] = [
   {
     id_kategori: 4,
     nama_kategori: "Apotek & Farmasi",
+    jenis_query: "Apotek",
     jumlah_unit: "18 Apotek",
     deskripsi_kategori:
       "Penyedia obat resep rujukan balik (PRB) BPJS Kesehatan dan kebutuhan farmasi klinis masyarakat.",

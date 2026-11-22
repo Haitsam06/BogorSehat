@@ -6,7 +6,6 @@ import {
   Search,
   SlidersHorizontal,
   ChevronRight,
-  Info,
   MapPin,
   Navigation,
   X,
@@ -48,7 +47,7 @@ export default function PetaInteraktifPage() {
   const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
   const [kata_kunci_lokasi, set_kata_kunci_lokasi] = useState("");
   const [radiusKm, setRadiusKm] = useState<number>(5);
-  const [hanyaDalamRadius, setHanyaDalamRadius] = useState<boolean>(false);
+  const [hanyaDalamRadius, setHanyaDalamRadius] = useState<boolean>(true);
   const [faskes_terpilih, set_faskes_terpilih] = useState<DataFaskesItem | null>(null);
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [jumlahTampilSidebar, setJumlahTampilSidebar] = useState(SIDEBAR_BATCH_SIZE);
@@ -275,7 +274,14 @@ export default function PetaInteraktifPage() {
             onScroll={tanganiScrollSidebar}
             className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0"
           >
-            {daftar_faskes_terfilter.length === 0 ? (
+            {sedangMemuat ? (
+              <div className="py-12 px-4 text-center text-slate-400 space-y-2.5">
+                <Loader2 className="w-6 h-6 mx-auto animate-spin text-[#007E7A]" />
+                <p className="text-xs font-semibold text-slate-600">
+                  Memuat data faskes...
+                </p>
+              </div>
+            ) : daftar_faskes_terfilter.length === 0 ? (
               <div className="p-5 text-center text-slate-400 space-y-1.5">
                 <Building2 className="w-6 h-6 mx-auto text-slate-300" />
                 <p className="text-xs font-medium">
@@ -371,12 +377,6 @@ export default function PetaInteraktifPage() {
                 )}
               </>
             )}
-          </div>
-
-          {/* Info Pembaruan Lokasi */}
-          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2 text-[10px] text-slate-500 shrink-0">
-            <Info className="w-3 h-3 text-[#007E7A] shrink-0" />
-            <span>Data koordinat resmi GIS Pemkot &amp; Pemkab Bogor.</span>
           </div>
         </div>
       </aside>

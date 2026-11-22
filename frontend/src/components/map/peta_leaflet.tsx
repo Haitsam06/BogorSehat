@@ -34,38 +34,58 @@ function createMarkerIcon(
   faskes_item: DataFaskesItem,
   sedang_dipilih: boolean
 ): LType.DivIcon {
-  const adalah_rumah_sakit = faskes_item.kategori_faskes
-    .toUpperCase()
-    .includes("RUMAH SAKIT");
   const { hexColor, svgInner } = getFaskesVisual(faskes_item.kategori_faskes);
   const ukuran_pin = sedang_dipilih ? 40 : 34;
-  const ukuran_ikon = sedang_dipilih ? 19 : 16;
+  const ukuran_ikon = sedang_dipilih ? 18 : 16;
+  const size = 36;
 
   return L.divIcon({
-    className: "pin_faskes_leaflet",
+    className: "pin_faskes_leaflet_wrapper",
     html: `
-      <div style="
-        width:${ukuran_pin}px;
-        height:${ukuran_pin}px;
-        border-radius:${adalah_rumah_sakit ? "9999px" : "12px"};
-        background:${hexColor};
-        color:#ffffff;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        border:${sedang_dipilih ? "3px solid #0f172a" : "2.5px solid #ffffff"};
-        box-shadow:${
-          sedang_dipilih
-            ? "0 6px 18px rgba(0,0,0,0.35)"
-            : "0 3px 10px rgba(0,0,0,0.22)"
-        };
-        cursor:pointer;
+      <div class="faskes-marker-box ${sedang_dipilih ? "is-selected" : ""}" style="
+        width: ${size}px;
+        height: ${size}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
       ">
-        <svg xmlns="http://www.w3.org/2000/svg" width="${ukuran_ikon}" height="${ukuran_ikon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
+        <!-- Titik Warna Lingkaran (Default: Ringan, Cepat, Tanpa Beban SVG) -->
+        <div class="faskes-dot" style="
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          background: ${hexColor};
+          border: 2px solid #ffffff;
+          box-shadow: 0 1.5px 5px rgba(0,0,0,0.3);
+          pointer-events: none;
+        "></div>
+
+        <!-- Ikon Pin Lingkaran (Hanya Ditampilkan Saat Hover atau Sedang Dipilih) -->
+        <div class="faskes-hover-bubble" style="
+          width: ${ukuran_pin}px;
+          height: ${ukuran_pin}px;
+          border-radius: 9999px;
+          background: ${hexColor};
+          color: #ffffff;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          border: ${sedang_dipilih ? "3px solid #0f172a" : "2.5px solid #ffffff"};
+          box-shadow: ${
+            sedang_dipilih
+              ? "0 6px 20px rgba(0,0,0,0.4)"
+              : "0 4px 14px rgba(0,0,0,0.28)"
+          };
+          pointer-events: none;
+        ">
+          <svg xmlns="http://www.w3.org/2000/svg" width="${ukuran_ikon}" height="${ukuran_ikon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
+        </div>
       </div>
     `,
-    iconSize: [ukuran_pin, ukuran_pin],
-    iconAnchor: [ukuran_pin / 2, ukuran_pin / 2],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -273,7 +293,7 @@ export default function PetaLeaflet({
             if (!marker_item.getTooltip()) {
               marker_item.bindTooltip(buildTooltipHtml(faskes_item), {
                 direction: "top",
-                offset: [0, -18],
+                offset: [0, -20],
                 opacity: 1,
                 className: "tooltip_faskes_custom",
               });
@@ -458,6 +478,51 @@ export default function PetaLeaflet({
 
   return (
     <div className="relative w-full h-full">
+      {/* CSS Khusus Penanda Faskes: Titik Ringan Default & Bubble Lingkaran Animasi Saat Hover */}
+      <style>{`
+        .pin_faskes_leaflet_wrapper {
+          background: transparent !important;
+          border: none !important;
+        }
+        .faskes-marker-box .faskes-dot {
+          display: block;
+        }
+        .faskes-marker-box .faskes-hover-bubble {
+          display: none;
+        }
+        /* Saat kursor diarahkan ke marker (hover): sembunyikan titik, tampilkan ikon lingkaran */
+        .faskes-marker-box:hover .faskes-dot {
+          display: none !important;
+        }
+        .faskes-marker-box:hover .faskes-hover-bubble {
+          display: flex !important;
+          animation: faskesPopAnim 0.16s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .pin_faskes_leaflet_wrapper:hover {
+          z-index: 1000 !important;
+        }
+        /* Saat pin sedang dipilih di peta / sidebar */
+        .faskes-marker-box.is-selected .faskes-dot {
+          display: none !important;
+        }
+        .faskes-marker-box.is-selected .faskes-hover-bubble {
+          display: flex !important;
+        }
+        .pin_faskes_leaflet_wrapper:has(.is-selected) {
+          z-index: 850 !important;
+        }
+        @keyframes faskesPopAnim {
+          0% {
+            transform: scale(0.65);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
       <div ref={kontainer_peta_ref} className="w-full h-full z-0" />
 
       {/* Kontrol Zoom & Pusatkan Lokasi (Kanan Atas - Sesuai Beranda.png) */}
@@ -529,15 +594,19 @@ export default function PetaLeaflet({
             <span>Legenda Peta Spasial</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
-            <span className="w-3 h-3 rounded-full bg-[#DC2626] inline-block shrink-0" />
+            <span className="w-3 h-3 rounded-full bg-[#DC2626] inline-block shrink-0 shadow-xs" />
             <span>Rumah Sakit / IGD 24 Jam (H)</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
-            <span className="w-3 h-3 rounded-md bg-[#007E7A] inline-block shrink-0" />
+            <span className="w-3 h-3 rounded-full bg-[#007E7A] inline-block shrink-0 shadow-xs" />
             <span>Puskesmas / Klinik Pratama (+)</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
-            <span className="w-3 h-3 rounded-full bg-[#007E7A] border-2 border-white shadow-sm inline-block shrink-0" />
+            <span className="w-3 h-3 rounded-full bg-[#D97706] inline-block shrink-0 shadow-xs" />
+            <span>Apotek &amp; Lainnya</span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-600">
+            <span className="w-3 h-3 rounded-full bg-[#007E7A] border-2 border-white shadow-xs inline-block shrink-0" />
             <span>Posisi Anda ({lokasiPengguna.nama_jalan})</span>
           </div>
         </div>

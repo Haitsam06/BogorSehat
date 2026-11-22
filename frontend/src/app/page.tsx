@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   MapPin,
-  ShieldCheck,
   Map,
   CornerUpRight,
   Phone,
@@ -46,12 +45,11 @@ export default function BerandaPage() {
   const [sedangMemuatNearby, setSedangMemuatNearby] = useState(false);
   const [id_faq_terbuka, set_id_faq_terbuka] = useState<number | null>(1);
 
-  // Muat data statistik /home dan rekomendasi terdekat
+  // 1. Muat ringkasan data /home (hanya sekali saat mount, tidak terpengaruh GPS)
   useEffect(() => {
     let aktif = true;
 
-    async function muatData() {
-      // 1. Ambil data ringkasan home
+    async function muatHome() {
       try {
         const homeRes = await api.getHome();
         if (aktif && homeRes) {
@@ -64,14 +62,27 @@ export default function BerandaPage() {
           );
         }
       }
+    }
 
-      // 2. Ambil faskes terdekat berdasarkan koordinat pengguna
+    muatHome();
+
+    return () => {
+      aktif = false;
+    };
+  }, []);
+
+  // 2. Muat rekomendasi faskes terdekat berdasarkan koordinat pengguna
+  useEffect(() => {
+    let aktif = true;
+
+    async function muatNearby() {
       setSedangMemuatNearby(true);
       try {
         const nearbyRes = await api.getNearbyFaskes(
           lokasiPengguna.latitude,
           lokasiPengguna.longitude,
-          15
+          15,
+          { compact: true, limit: 12 }
         );
         if (aktif && nearbyRes && nearbyRes.length > 0) {
           const mapped = nearbyRes.map((f, i) => mapApiFaskesToItem(f, i));
@@ -89,7 +100,7 @@ export default function BerandaPage() {
       }
     }
 
-    muatData();
+    muatNearby();
 
     return () => {
       aktif = false;
@@ -174,9 +185,6 @@ export default function BerandaPage() {
                 <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#007E7A] uppercase tracking-wider mb-1">
                   <Activity className="w-3.5 h-3.5" />
                   <span>Rekomendasi Terdekat</span>
-                  {sedangMemuatNearby && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#007E7A] ml-1" />
-                  )}
                 </div>
                 <h2 className="text-lg sm:text-[20px] font-extrabold text-slate-900">
                   Top 3 Rekomendasi Faskes dari Lokasi Anda
@@ -185,11 +193,6 @@ export default function BerandaPage() {
                   Diurutkan secara otomatis berdasarkan kalkulasi jarak radial
                   koordinat GPS Anda saat ini.
                 </p>
-              </div>
-
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 shrink-0">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#007E7A]" />
-                <span>Data Sinkronisasi Kemenkes RI &amp; BPJS</span>
               </div>
             </div>
 
@@ -200,91 +203,117 @@ export default function BerandaPage() {
             )}
 
             {/* Grid 3 Kartu Rekomendasi dengan Stagger Animation */}
-            {daftarRekomendasi.length === 0 && !sedangMemuatNearby && (
+            {sedangMemuatNearby && daftarRekomendasi.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col justify-between h-[360px] animate-pulse"
+                  >
+                    <div className="h-[180px] bg-slate-100 flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#007E7A]" />
+                      <span className="text-[11px] text-slate-400 font-medium">Memuat rekomendasi...</span>
+                    </div>
+                    <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="h-3 bg-slate-100 rounded w-1/3" />
+                        <div className="h-5 bg-slate-100 rounded w-3/4" />
+                        <div className="h-3 bg-slate-100 rounded w-full" />
+                      </div>
+                      <div className="pt-3 border-t border-slate-100 flex justify-between">
+                        <div className="h-4 bg-slate-100 rounded w-1/4" />
+                        <div className="h-4 bg-slate-100 rounded w-1/4" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : daftarRekomendasi.length === 0 ? (
               <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
                 Belum ada faskes dalam radius 15 km dari lokasi Anda.
               </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {daftarRekomendasi.map((faskes_item, indeks) => (
-                <AnimasiScroll
-                  key={faskes_item.id_faskes}
-                  jeda_ms={indeks * 140}
-                  durasi_ms={700}
-                  className="h-full"
-                >
-                  <div className="group bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-[#007E7A]/40 hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col justify-between h-full">
-                    <div>
-                      {/* Gambar Thumbnail Faskes (atau Icon + Warna per Jenis Faskes) */}
-                      <Link
-                        href={`/faskes/${faskes_item.slug_faskes}`}
-                        className="block relative overflow-hidden h-[180px] bg-slate-100"
-                      >
-                        <FaskesThumbnail
-                          gambar_faskes={faskes_item.gambar_faskes}
-                          nama_faskes={faskes_item.nama_faskes}
-                          kategori_faskes={faskes_item.kategori_faskes}
-                          className="w-full h-full"
-                        />
-                        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[11px] font-extrabold shadow-sm">
-                          {faskes_item.jarak_km}
-                        </div>
-                      </Link>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {daftarRekomendasi.map((faskes_item, indeks) => (
+                  <AnimasiScroll
+                    key={faskes_item.id_faskes}
+                    jeda_ms={indeks * 140}
+                    durasi_ms={700}
+                    className="h-full"
+                  >
+                    <div className="group bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-[#007E7A]/40 hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col justify-between h-full">
+                      <div>
+                        {/* Gambar Thumbnail Faskes (atau Icon + Warna per Jenis Faskes) */}
+                        <Link
+                          href={`/faskes/${faskes_item.slug_faskes}`}
+                          className="block relative overflow-hidden h-[180px] bg-slate-100"
+                        >
+                          <FaskesThumbnail
+                            gambar_faskes={faskes_item.gambar_faskes}
+                            nama_faskes={faskes_item.nama_faskes}
+                            kategori_faskes={faskes_item.kategori_faskes}
+                            className="w-full h-full"
+                          />
+                          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[11px] font-extrabold shadow-sm">
+                            {faskes_item.jarak_km}
+                          </div>
+                        </Link>
 
-                      <div className="p-5 pb-4 space-y-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#007E7A]">
-                            {faskes_item.kategori_faskes}
-                          </span>
-                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
-                            {faskes_item.kelas_faskes}
-                          </span>
+                        <div className="p-5 pb-4 space-y-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#007E7A]">
+                              {faskes_item.kategori_faskes}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
+                              {faskes_item.kelas_faskes}
+                            </span>
+                          </div>
+
+                          <Link
+                            href={`/faskes/${faskes_item.slug_faskes}`}
+                            className="block text-base font-extrabold text-slate-900 group-hover:text-[#007E7A] transition line-clamp-1"
+                          >
+                            {faskes_item.nama_faskes}
+                          </Link>
+
+                          <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed line-clamp-1">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <span>{faskes_item.alamat_lengkap}</span>
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Tombol Aksi Kartu */}
+                      <div className="px-5 pb-5 pt-1 flex items-center gap-2">
+                        <Link
+                          href="/peta"
+                          className="flex-1 h-9 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
+                        >
+                          <Map className="w-3.5 h-3.5" />
+                          <span>Buka di Peta</span>
+                        </Link>
 
                         <Link
                           href={`/faskes/${faskes_item.slug_faskes}`}
-                          className="block text-base font-extrabold text-slate-900 group-hover:text-[#007E7A] transition line-clamp-1"
+                          className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition"
+                          title="Lihat Detail & Petunjuk Arah"
                         >
-                          {faskes_item.nama_faskes}
+                          <CornerUpRight className="w-4 h-4" />
                         </Link>
 
-                        <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed line-clamp-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                          <span>{faskes_item.alamat_lengkap}</span>
-                        </div>
+                        <a
+                          href="#darurat-igd"
+                          className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-[#B91C1C] hover:bg-red-800 text-white shadow-xs"
+                          title="Hubungi Faskes Darurat"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </a>
                       </div>
                     </div>
-
-                    {/* Tombol Aksi Kartu */}
-                    <div className="px-5 pb-5 pt-1 flex items-center gap-2">
-                      <Link
-                        href="/peta"
-                        className="flex-1 h-9 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
-                      >
-                        <Map className="w-3.5 h-3.5" />
-                        <span>Buka di Peta</span>
-                      </Link>
-
-                      <Link
-                        href={`/faskes/${faskes_item.slug_faskes}`}
-                        className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition"
-                        title="Lihat Detail & Petunjuk Arah"
-                      >
-                        <CornerUpRight className="w-4 h-4" />
-                      </Link>
-
-                      <a
-                        href="#darurat-igd"
-                        className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-[#B91C1C] hover:bg-red-800 text-white shadow-xs"
-                        title="Hubungi Faskes Darurat"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                </AnimasiScroll>
-              ))}
-            </div>
+                  </AnimasiScroll>
+                ))}
+              </div>
+            )}
           </section>
         </AnimasiScroll>
 
@@ -403,7 +432,7 @@ export default function BerandaPage() {
                 className="h-full"
               >
                 <Link
-                  href="/cari-faskes"
+                  href={`/cari-faskes?kategori=${encodeURIComponent(item_kategori.jenis_query)}`}
                   className="group rounded-2xl border border-slate-200/80 bg-[#FAFDFD] hover:bg-white hover:border-[#007E7A] p-5 transition-all duration-300 flex flex-col justify-between space-y-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-md hover:-translate-y-1 h-full"
                 >
                   <div className="space-y-3">

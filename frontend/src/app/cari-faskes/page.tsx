@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ChevronRight,
   ChevronLeft,
@@ -27,6 +27,7 @@ import {
   ApiPaginationMeta,
   messageFromError,
 } from "@/lib/api";
+import { useFaskes } from "@/context/FaskesContext";
 
 function labelPoli(nama: string): string {
   const rapi = nama
@@ -72,20 +73,25 @@ const daftar_pilihan_kecamatan = [
 const daftar_pilihan_kategori = [
   "Rumah Sakit",
   "Puskesmas",
-  "Klinik Pratama",
-  "Klinik Utama",
+  "Klinik",
+  "Apotek",
 ];
 
 function CariFaskesKonten() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const wadahKartuRef = useRef<HTMLDivElement | null>(null);
   const cariDariUrl = searchParams.get("search") || searchParams.get("q") || "";
   const poliDariUrl = searchParams.get("poli");
   const fasilitasDariUrl = searchParams.get("fasilitas");
+  const kategoriDariUrl = searchParams.get("kategori") || searchParams.get("jenis") || "";
+
+  const { lokasiPengguna } = useFaskes();
 
   const [kata_kunci_pencarian, set_kata_kunci_pencarian] = useState(cariDariUrl);
   const [filter_wilayah, set_filter_wilayah] = useState("ALL");
   const [filter_kecamatan, set_filter_kecamatan] = useState("ALL");
-  const [filter_kategori, set_filter_kategori] = useState("ALL");
+  const [filter_kategori, set_filter_kategori] = useState(kategoriDariUrl || "ALL");
   const [filter_poli_aktif, set_filter_poli_aktif] = useState(poliDariUrl || "ALL");
   const [filter_fasilitas_aktif, set_filter_fasilitas_aktif] = useState(
     fasilitasDariUrl || "ALL"
@@ -101,6 +107,39 @@ function CariFaskesKonten() {
   const [halamanAktif, setHalamanAktif] = useState(1);
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [pesanKesalahan, setPesanKesalahan] = useState<string | null>(null);
+
+  // Sinkronkan filter jika URL query berubah
+  useEffect(() => {
+    if (kategoriDariUrl) {
+      set_filter_kategori(kategoriDariUrl);
+    }
+  }, [kategoriDariUrl]);
+
+  useEffect(() => {
+    if (cariDariUrl !== kata_kunci_pencarian) {
+      set_kata_kunci_pencarian(cariDariUrl);
+    }
+  }, [cariDariUrl]);
+
+  useEffect(() => {
+    if (poliDariUrl) {
+      set_filter_poli_aktif(poliDariUrl);
+    }
+  }, [poliDariUrl]);
+
+  useEffect(() => {
+    if (fasilitasDariUrl) {
+      set_filter_fasilitas_aktif(fasilitasDariUrl);
+    }
+  }, [fasilitasDariUrl]);
+
+  // Gulir ke atas kontainer kartu saat berganti halaman
+  useEffect(() => {
+    if (wadahKartuRef.current) {
+      wadahKartuRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [halamanAktif]);
+
   // Reset semua filter
   const reset_semua_filter = () => {
     set_kata_kunci_pencarian("");
@@ -112,6 +151,7 @@ function CariFaskesKonten() {
     set_filter_bpjs("ALL");
     set_filter_igd("ALL");
     setHalamanAktif(1);
+    router.replace("/cari-faskes");
   };
 
   const ada_filter_aktif =
@@ -178,6 +218,8 @@ function CariFaskesKonten() {
         id_spesialisasi: poliTerpilih?.id_spesialisasi,
         id_fasilitas: !Number.isNaN(idFasilitasNum) ? idFasilitasNum : undefined,
         is_support_bpjs: bpjsParam,
+        latitude: lokasiPengguna?.latitude,
+        longitude: lokasiPengguna?.longitude,
         page: halamanAktif,
         per_page: 12,
       });
@@ -204,6 +246,8 @@ function CariFaskesKonten() {
     filter_igd,
     halamanAktif,
     daftarPoli,
+    lokasiPengguna.latitude,
+    lokasiPengguna.longitude,
   ]);
 
   useEffect(() => {
@@ -340,9 +384,9 @@ function CariFaskesKonten() {
 
       {/* Grid Utama: Filter + Daftar Faskes */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Kolom Sidebar Filter (Dapat dibuka/tutup di mobile) */}
+        {/* Kolom Sidebar Filter (Dapat dibuka/tutup di mobile & scrollable) */}
         <aside
-          className={`lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4 ${
+          className={`lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4 lg:sticky lg:top-[92px] max-h-[75vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar ${
             bukaFilterMobile ? "block" : "hidden lg:block"
           }`}
         >
@@ -516,8 +560,11 @@ function CariFaskesKonten() {
           </div>
         </aside>
 
-        {/* Kolom Kanan: Hasil Pencarian */}
-        <div className="lg:col-span-9 space-y-5">
+        {/* Kolom Kanan: Hasil Pencarian (Scrollable mandiri) */}
+        <div
+          ref={wadahKartuRef}
+          className="lg:col-span-9 space-y-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2 custom-scrollbar"
+        >
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>
               Menampilkan{" "}
