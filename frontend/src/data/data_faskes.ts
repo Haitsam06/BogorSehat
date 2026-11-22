@@ -35,7 +35,7 @@ export interface KategoriLayananItem {
   nama_kategori: string;
   jumlah_unit: string;
   deskripsi_kategori: string;
-  label_status: string;
+  label_status?: string;
 }
 
 export interface LangkahRujukanItem {

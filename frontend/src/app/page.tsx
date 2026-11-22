@@ -25,7 +25,7 @@ import {
   daftar_pertanyaan_umum,
   DataFaskesItem,
 } from "@/data/data_faskes";
-import { BadgePoli, DaftarBadgePoli } from "@/components/ui/badge_poli";
+import { BadgePoli } from "@/components/ui/badge_poli";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import AnimasiScroll from "@/components/ui/animasi_scroll";
@@ -106,18 +106,14 @@ export default function BerandaPage() {
           1. HERO SECTION (Persis Sesuai Beranda.png + Animasi Scroll & Radar)
          ===================================================================== */}
       <section className="max-w-[1140px] mx-auto px-4 sm:px-6 pt-10 pb-12 text-center relative">
-        {/* Badge Lokasi GPS Pengguna dengan Animasi Radar Ping */}
+        {/* Badge Lokasi GPS Pengguna */}
         <AnimasiScroll arah="atas" durasi_ms={600}>
           <button
             type="button"
             onClick={deteksiLokasiGPS}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-6 hover:border-[#007E7A] transition select-none cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-6 hover:border-[#007E7A] transition select-none cursor-pointer"
             title="Klik untuk mendeteksi koordinat GPS perangkat Anda"
           >
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#007E7A]"></span>
-            </span>
             <MapPin className="w-3.5 h-3.5 text-[#007E7A]" />
             <span>
               {memuatGPS ? "Mendeteksi posisi GPS..." : `Anda berada di ${lokasiPengguna.nama_jalan}`}
@@ -255,15 +251,6 @@ export default function BerandaPage() {
                         <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed line-clamp-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                           <span>{faskes_item.alamat_lengkap}</span>
-                        </div>
-
-                        {/* Badge Poli */}
-                        <div className="pt-1">
-                          <DaftarBadgePoli
-                            daftar_poli={faskes_item.daftar_poli}
-                            maksimal_tampil={3}
-                            ukuran_badge="mikro"
-                          />
                         </div>
                       </div>
                     </div>
@@ -424,9 +411,6 @@ export default function BerandaPage() {
                       <span className="px-2.5 py-1 rounded-lg bg-[#007E7A] text-white text-[11px] font-extrabold whitespace-nowrap shrink-0">
                         {item_kategori.jumlah_unit}
                       </span>
-                      <span className="text-[10px] font-bold text-[#007E7A] bg-[#E6F4F3] border border-[#CBE8E6] px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
-                        {item_kategori.label_status}
-                      </span>
                     </div>
 
                     <h3 className="text-[15px] font-extrabold text-slate-900 group-hover:text-[#007E7A] transition leading-snug">
@@ -532,7 +516,6 @@ export default function BerandaPage() {
               <div className="h-full rounded-3xl bg-gradient-to-br from-[#005B5C] via-[#006E6D] to-[#00837B] text-white p-7 sm:p-8 flex flex-col justify-between space-y-6 shadow-[0_8px_30px_rgba(0,126,122,0.18)]">
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/30 border border-red-400/40 text-red-200 text-[11px] font-bold">
-                    <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
                     <span>Siaga 24 Jam Nonstop</span>
                   </div>
 

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('kelas_faskes', 20)->nullable();
             $table->string('alamat_faskes');
             $table->string('kota_kabupaten', 20);
-            $table->decimal('longitude', 10, 8);
+            $table->decimal('longitude', 11, 8);
             $table->decimal('latitude', 10, 8);
             $table->string('telp_faskes', 50)->nullable();
             $table->boolean('is_support_bpjs')->nullable();

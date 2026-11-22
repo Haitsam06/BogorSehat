@@ -206,7 +206,7 @@ export default function AdminFaskesPage() {
                 ) : (
                   daftarFaskes.map((item, index) => {
                     const noUrut = (metaPaginasi ? (metaPaginasi.current_page - 1) * metaPaginasi.per_page : 0) + index + 1;
-                    const badgePoli = item.spesialisasi?.map((s) => s.nama_spesialisasi) || ["Poli Umum"];
+                    const badgePoli = item.spesialisasi?.map((s) => s.nama_spesialisasi) || [];
 
                     return (
                       <tr key={item.id_faskes} className="hover:bg-slate-50/70 transition">
@@ -245,11 +245,17 @@ export default function AdminFaskesPage() {
                               {item.alamat_faskes}
                             </span>
                           </div>
-                          <DaftarBadgePoli
-                            daftar_poli={badgePoli}
-                            maksimal_tampil={3}
-                            ukuran_badge="kecil"
-                          />
+                          {badgePoli.length > 0 ? (
+                            <DaftarBadgePoli
+                              daftar_poli={badgePoli}
+                              maksimal_tampil={3}
+                              ukuran_badge="kecil"
+                            />
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">
+                              Tidak ada data spesialisasi
+                            </span>
+                          )}
                         </td>
 
                         {/* Kolom 3 */}

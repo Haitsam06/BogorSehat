@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import type { DataFaskesItem } from "@/data/data_faskes";
 import { lokasi_default_pengguna } from "@/data/data_faskes";
-import { DaftarBadgePoli } from "@/components/ui/badge_poli";
 import { getFaskesVisual } from "@/components/ui/faskes_thumbnail";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import { api, mapApiFaskesToItem, messageFromError } from "@/lib/api";
@@ -349,13 +348,6 @@ export default function PetaInteraktifPage() {
                           </span>
                         )}
                       </div>
-
-                      {/* Badge Poli di Kartu Lokasi Terdekat */}
-                      <DaftarBadgePoli
-                        daftar_poli={faskes_item.daftar_poli}
-                        maksimal_tampil={2}
-                        ukuran_badge="mikro"
-                      />
                     </div>
                   );
                 })}
@@ -391,7 +383,7 @@ export default function PetaInteraktifPage() {
 
       {/* Kartu Faskes Terpilih Mengambang di Bawah */}
       {faskes_terpilih && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-[540px]">
+        <div className="absolute bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-[540px]">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-200/80 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-all">
             {/* Kiri: Ikon & Detail Faskes */}
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -436,14 +428,6 @@ export default function PetaInteraktifPage() {
                   <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                   <span className="truncate">{faskes_terpilih.alamat_lengkap}</span>
                 </p>
-
-                <div className="mt-1">
-                  <DaftarBadgePoli
-                    daftar_poli={faskes_terpilih.daftar_poli}
-                    maksimal_tampil={2}
-                    ukuran_badge="mikro"
-                  />
-                </div>
               </div>
             </div>
 

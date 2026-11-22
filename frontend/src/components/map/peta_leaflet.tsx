@@ -70,29 +70,6 @@ function createMarkerIcon(
 }
 
 function buildTooltipHtml(faskes_item: DataFaskesItem): string {
-  const html_badge_poli = faskes_item.daftar_poli
-    .slice(0, 4)
-    .map(
-      (nama_poli) =>
-        `<span style="display:inline-block;padding:2px 7px;margin:2px 3px 2px 0;border-radius:9999px;background:#E6F4F3;color:#007E7A;border:1px solid #BCE3E0;font-size:10px;font-weight:700;">${escapeHtml(nama_poli)}</span>`
-    )
-    .join("");
-
-  const html_sisa_poli =
-    faskes_item.daftar_poli.length > 4
-      ? `<span style="display:inline-block;padding:2px 6px;margin:2px 0;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;">+${
-          faskes_item.daftar_poli.length - 4
-        } Poli</span>`
-      : "";
-
-  const html_poli_section =
-    faskes_item.daftar_poli.length > 0
-      ? `<div style="border-top:1px solid #f1f5f9;padding-top:6px;">
-          <div style="font-size:9px;font-weight:700;color:#94a3b8;margin-bottom:3px;">LAYANAN POLI:</div>
-          <div>${html_badge_poli}${html_sisa_poli}</div>
-        </div>`
-      : "";
-
   return `
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
@@ -109,7 +86,7 @@ function buildTooltipHtml(faskes_item: DataFaskesItem): string {
       <div style="font-size:10px;color:#64748b;margin-bottom:6px;line-height:1.3;">
         ${escapeHtml(faskes_item.alamat_lengkap)}
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">
         ${
           faskes_item.status_bpjs
             ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
@@ -121,7 +98,6 @@ function buildTooltipHtml(faskes_item: DataFaskesItem): string {
             : ""
         }
       </div>
-      ${html_poli_section}
     </div>
   `;
 }

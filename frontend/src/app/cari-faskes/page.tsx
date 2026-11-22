@@ -14,9 +14,9 @@ import {
   Navigation,
   Loader2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import type { DataFaskesItem } from "@/data/data_faskes";
-import { DaftarBadgePoli } from "@/components/ui/badge_poli";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import DropdownPencarian from "@/components/ui/dropdown_pencarian";
 import {
@@ -78,10 +78,11 @@ const daftar_pilihan_kategori = [
 
 function CariFaskesKonten() {
   const searchParams = useSearchParams();
+  const cariDariUrl = searchParams.get("search") || searchParams.get("q") || "";
   const poliDariUrl = searchParams.get("poli");
   const fasilitasDariUrl = searchParams.get("fasilitas");
 
-  const [kata_kunci_pencarian, set_kata_kunci_pencarian] = useState("");
+  const [kata_kunci_pencarian, set_kata_kunci_pencarian] = useState(cariDariUrl);
   const [filter_wilayah, set_filter_wilayah] = useState("ALL");
   const [filter_kecamatan, set_filter_kecamatan] = useState("ALL");
   const [filter_kategori, set_filter_kategori] = useState("ALL");
@@ -91,6 +92,7 @@ function CariFaskesKonten() {
   );
   const [filter_bpjs, set_filter_bpjs] = useState("ALL");
   const [filter_igd, set_filter_igd] = useState("ALL");
+  const [bukaFilterMobile, setBukaFilterMobile] = useState(false);
 
   const [daftarFaskes, setDaftarFaskes] = useState<DataFaskesItem[]>([]);
   const [daftarPoli, setDaftarPoli] = useState<ApiSpesialisasi[]>([]);
@@ -246,6 +248,13 @@ function CariFaskesKonten() {
   ]);
 
   useEffect(() => {
+    const q = searchParams.get("search") || searchParams.get("q");
+    if (q !== null) {
+      set_kata_kunci_pencarian(q);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (filter_poli_aktif === "ALL" || daftarPoli.length === 0) return;
     const valid = daftarPoli.some((item) =>
       cocokPoli(item.nama_spesialisasi, filter_poli_aktif)
@@ -285,24 +294,58 @@ function CariFaskesKonten() {
         </p>
       </div>
 
-      {/* Kotak Pencarian Cepat */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-sm">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
-          <input
-            type="text"
-            value={kata_kunci_pencarian}
-            onChange={(e) => set_kata_kunci_pencarian(e.target.value)}
-            placeholder="Cari nama faskes, alamat, atau poli..."
-            className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#F4F6F8] text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A] transition"
-          />
+      {/* Kotak Pencarian Cepat & Tombol Filter */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
+            <input
+              type="text"
+              value={kata_kunci_pencarian}
+              onChange={(e) => set_kata_kunci_pencarian(e.target.value)}
+              placeholder="Cari nama faskes, alamat, atau poli..."
+              className="w-full h-11 pl-11 pr-9 rounded-xl bg-[#F4F6F8] text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A] transition"
+            />
+            {kata_kunci_pencarian && (
+              <button
+                type="button"
+                onClick={() => set_kata_kunci_pencarian("")}
+                className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 p-0.5"
+                title="Hapus kata kunci"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Tombol Filter di sebelah input pencarian */}
+          <button
+            type="button"
+            onClick={() => setBukaFilterMobile((prev) => !prev)}
+            className={`h-11 px-3 sm:px-4 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
+              bukaFilterMobile || ada_filter_aktif
+                ? "bg-[#007E7A] text-white border-[#007E7A] shadow-xs"
+                : "bg-[#F4F6F8] text-slate-700 border-slate-200 hover:bg-slate-200/80"
+            }`}
+            title={bukaFilterMobile ? "Sembunyikan Filter" : "Buka Filter"}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Filter</span>
+            {ada_filter_aktif && (
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+            )}
+          </button>
         </div>
       </div>
 
       {/* Grid Utama: Filter + Daftar Faskes */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Kolom Sidebar Filter */}
-        <aside className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4">
+        {/* Kolom Sidebar Filter (Dapat dibuka/tutup di mobile) */}
+        <aside
+          className={`lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4 ${
+            bukaFilterMobile ? "block" : "hidden lg:block"
+          }`}
+        >
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
               <SlidersHorizontal className="w-4 h-4 text-[#007E7A]" />
@@ -595,14 +638,6 @@ function CariFaskesKonten() {
                             </span>
                           )}
                         </div>
-                      </div>
-
-                      <div className="pt-0.5">
-                        <DaftarBadgePoli
-                          daftar_poli={faskes_item.daftar_poli}
-                          maksimal_tampil={3}
-                          ukuran_badge="mikro"
-                        />
                       </div>
                     </div>
                   </div>

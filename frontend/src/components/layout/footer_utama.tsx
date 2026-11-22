@@ -30,7 +30,7 @@ export default function FooterUtama() {
 
   return (
     <footer className="bg-white border-t border-slate-200/90 mt-auto">
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6 pt-14 pb-10">
+      <div className="max-w-[1140px] mx-auto px-4 sm:px-6 pt-14 pb-24 md:pb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-10 border-b border-slate-100">
           {/* Kolom 1: Identitas Bogor Sehat (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
