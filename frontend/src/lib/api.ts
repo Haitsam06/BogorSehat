@@ -144,7 +144,20 @@ export interface ApiUser {
   email_user: string;
   role_user: "admin" | "user";
   foto_profil?: string | null;
+  nomor_telepon?: string | null;
+  jenis_kelamin?: string | null;
+  tanggal_lahir?: string | null;
   created_at?: string;
+}
+
+export function resolveStorageUrl(path?: string | null): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) {
+    return path;
+  }
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/api\/?$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl}${cleanPath.startsWith("/storage") ? cleanPath : `/storage/${cleanPath.replace(/^\/+/, "")}`}`;
 }
 
 export interface ApiLoginResponse {
@@ -223,6 +236,7 @@ export interface ApiTanggapan {
   user?: ApiUser;
   replies?: ApiTanggapan[];
   jumlah_suka?: number;
+  diskusi?: ApiDiskusi;
 }
 
 // -------------------------------------------------------------
@@ -521,8 +535,20 @@ export const api = {
     return request<ApiCollectionResponse<ApiFaskes>>(endpoint);
   },
 
-  async getFaskesDetail(id: number | string): Promise<ApiFaskes> {
-    const res = await request<ApiSingleResponse<ApiFaskes>>(`/faskes/${id}`);
+  async getFaskesDetail(
+    id: number | string,
+    coords?: { latitude?: number; longitude?: number }
+  ): Promise<ApiFaskes> {
+    const searchParams = new URLSearchParams();
+    if (coords?.latitude !== undefined && coords?.latitude !== null) {
+      searchParams.append("latitude", String(coords.latitude));
+    }
+    if (coords?.longitude !== undefined && coords?.longitude !== null) {
+      searchParams.append("longitude", String(coords.longitude));
+    }
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/faskes/${id}?${queryString}` : `/faskes/${id}`;
+    const res = await request<ApiSingleResponse<ApiFaskes>>(endpoint);
     return res.data;
   },
 
@@ -629,6 +655,7 @@ export const api = {
     judul_diskusi: string;
     kategori_diskusi?: string;
     body: string;
+    id_faskes?: number | null;
     image_path?: string[];
   }): Promise<ApiDiskusi> {
     const res = await request<ApiSingleResponse<ApiDiskusi>>("/diskusi", {
@@ -767,9 +794,13 @@ export const api = {
   async updateProfile(data: {
     nama_user?: string;
     email_user?: string;
+    nomor_telepon?: string | null;
+    jenis_kelamin?: string | null;
+    tanggal_lahir?: string | null;
+    foto_profil?: string | null;
+    current_password?: string;
     password_user?: string;
     password_user_confirmation?: string;
-    foto_profil?: string | null;
   }): Promise<ApiUser> {
     const res = await request<ApiSingleResponse<ApiUser>>("/profile", {
       method: "PUT",
@@ -784,6 +815,14 @@ export const api = {
   ): Promise<ApiCollectionResponse<ApiKomentar>> {
     return request<ApiCollectionResponse<ApiKomentar>>(
       `/me/komentar?page=${page}`
+    );
+  },
+
+  async getMyReplies(
+    page = 1
+  ): Promise<ApiCollectionResponse<ApiTanggapan>> {
+    return request<ApiCollectionResponse<ApiTanggapan>>(
+      `/me/tanggapan?page=${page}`
     );
   },
 
@@ -1052,7 +1091,7 @@ export const api = {
 
   async uploadFile(
     file: File,
-    context: "diskusi" | "tanggapan" | "komentar" | "faskes" = "faskes"
+    context: "diskusi" | "tanggapan" | "komentar" | "faskes" | "profile" = "profile"
   ): Promise<ApiUploadedFile> {
     const formData = new FormData();
     formData.append("file", file);

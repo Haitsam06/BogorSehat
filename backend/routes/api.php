@@ -59,6 +59,7 @@ Route::middleware(ApiTokenAuth::class)->group(function (): void {
     Route::post('faskes/{faskes}/feedback', [ModerationController::class, 'feedback']);
     Route::get('me/komentar', [KomentarController::class, 'mine']);
     Route::get('me/diskusi', [ForumController::class, 'mine']);
+    Route::get('me/tanggapan', [ForumController::class, 'myReplies']);
     Route::post('uploads', [UploadController::class, 'store']);
     Route::prefix('admin')->middleware(AdminOnly::class)->group(function (): void {
         Route::get('dashboard', [DashboardController::class, 'admin']);

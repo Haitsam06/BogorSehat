@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 8);
             $table->string('telp_faskes', 50)->nullable();
             $table->boolean('is_support_bpjs')->nullable();
-            $table->string('link_maps')->nullable();
+            $table->text('link_maps')->nullable();
             $table->timestamps();
 
             $table->index(['kota_kabupaten', 'jenis_faskes']);

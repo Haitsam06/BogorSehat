@@ -18,13 +18,15 @@ class DashboardController extends Controller
 {
     public function home(): JsonResponse
     {
+        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_home_stats', 3600, fn () => [
+            'faskes_count' => Faskes::query()->count(),
+            'kota_kabupaten' => Faskes::query()->select('kota_kabupaten')->distinct()->orderBy('kota_kabupaten')->pluck('kota_kabupaten'),
+            'spesialisasi_count' => Spesialisasi::query()->count(),
+            'fasilitas_count' => Fasilitas::query()->count(),
+        ]);
+
         return response()->json([
-            'data' => [
-                'faskes_count' => Faskes::query()->count(),
-                'kota_kabupaten' => Faskes::query()->select('kota_kabupaten')->distinct()->orderBy('kota_kabupaten')->pluck('kota_kabupaten'),
-                'spesialisasi_count' => Spesialisasi::query()->count(),
-                'fasilitas_count' => Fasilitas::query()->count(),
-            ],
+            'data' => $data,
         ]);
     }
 

@@ -30,6 +30,8 @@ import {
   messageFromError,
 } from "@/lib/api";
 import ModalReportKonten from "@/components/forum/ModalReportKonten";
+import DiskusiCard from "@/components/forum/DiskusiCard";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function ForumDiskusiPage() {
   const [tabAktif, setTabAktif] = useState<"semua" | "saya">("semua");
@@ -38,6 +40,8 @@ export default function ForumDiskusiPage() {
   const [metaPaginasi, setMetaPaginasi] = useState<ApiPaginationMeta | null>(null);
   const [halaman, setHalaman] = useState(1);
   const [sedangMemuat, setSedangMemuat] = useState(true);
+  const [totalSemua, setTotalSemua] = useState(0);
+  const [totalSaya, setTotalSaya] = useState(0);
 
   // Modal states
   const [modalReportBuka, setModalReportBuka] = useState(false);
@@ -61,6 +65,8 @@ export default function ForumDiskusiPage() {
     async function muatData() {
       if (tabAktif === "saya" && !token) {
         setDaftarDiskusi([]);
+        setMetaPaginasi(null);
+        setTotalSaya(0);
         setSedangMemuat(false);
         return;
       }
@@ -76,6 +82,12 @@ export default function ForumDiskusiPage() {
             halaman === 1 ? res.data || [] : [...prev, ...(res.data || [])]
           );
           setMetaPaginasi(res.meta ?? null);
+          const totalCount = res.meta?.total ?? res.data?.length ?? 0;
+          if (tabAktif === "semua") {
+            setTotalSemua(totalCount);
+          } else {
+            setTotalSaya(totalCount);
+          }
         }
       } catch (err) {
         if (aktif) {
@@ -95,6 +107,29 @@ export default function ForumDiskusiPage() {
     };
   }, [tabAktif, token, halaman]);
 
+  // Muat jumlah diskusi pribadi secara independen di awal
+  useEffect(() => {
+    let aktif = true;
+    async function muatCountSaya() {
+      if (!token) {
+        setTotalSaya(0);
+        return;
+      }
+      try {
+        const res = await api.getMyDiscussions(1);
+        if (aktif) {
+          setTotalSaya(res.meta?.total ?? res.data?.length ?? 0);
+        }
+      } catch {
+        if (aktif) setTotalSaya(0);
+      }
+    }
+    muatCountSaya();
+    return () => {
+      aktif = false;
+    };
+  }, [token]);
+
   // Filter berdasarkan pencarian & tab
   const diskusiTerfilter = daftarDiskusi.filter((item) => {
     if (!kataKunci.trim()) return true;
@@ -109,15 +144,16 @@ export default function ForumDiskusiPage() {
     return matchJudul || matchBody || matchAuthor || matchFaskes;
   });
 
-  const jumlahSemua = metaPaginasi?.total ?? daftarDiskusi.length;
-  const jumlahSaya = metaPaginasi?.total ?? daftarDiskusi.length;
-
+  const jumlahSemua = totalSemua || (metaPaginasi?.total ?? daftarDiskusi.length);
+  const jumlahSaya = totalSaya;
 
   const handleHapusDiskusi = async (id: number) => {
     if (!confirm("Apakah Anda yakin ingin menghapus diskusi ini?")) return;
     try {
       await api.deleteDiscussion(id);
       setDaftarDiskusi((prev) => prev.filter((d) => d.id_diskusi !== id));
+      setTotalSemua((prev) => Math.max(0, prev - 1));
+      setTotalSaya((prev) => Math.max(0, prev - 1));
       setPesanNotif({
         tipe: "sukses",
         pesan: "Diskusi berhasil dihapus.",
@@ -297,174 +333,30 @@ export default function ForumDiskusiPage() {
             </p>
           </div>
         ) : diskusiTerfilter.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center space-y-3">
-            <MessageSquare className="w-8 h-8 text-slate-300 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-800">
-              Belum Ada Diskusi Ditemukan
-            </h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              {tabAktif === "saya" && !token
+          <EmptyState
+            icon={MessageSquare}
+            judul="Belum Ada Diskusi Ditemukan"
+            deskripsi={
+              tabAktif === "saya" && !token
                 ? "Masuk sebagai warga untuk melihat diskusi yang Anda buat."
-                : "Tidak ada diskusi yang sesuai dengan kriteria filter atau pencarian Anda."}
-            </p>
-          </div>
+                : "Tidak ada diskusi yang sesuai dengan kriteria filter atau pencarian Anda."
+            }
+          />
         ) : (
-          diskusiTerfilter.map((item) => {
-            const isOwner =
-              currentUser !== null && item.id_user === currentUser.id_user;
-            const authorName = item.user?.nama_user || "Warga Bogor";
-            const initials = authorName
-              .split(" ")
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join("")
-              .toUpperCase();
-            const totalTanggapan =
-              item.jumlah_tanggapan ?? item.tanggapan?.length ?? 0;
-            const likesCount = item.jumlah_suka ?? 0;
-            const viewsCount = item.jumlah_dilihat ?? 0;
-            const faskesName = item.faskes_terkait?.nama_faskes;
-
-            return (
-              <div
-                key={item.id_diskusi}
-                className="bg-white rounded-2xl border border-slate-200/90 border-l-4 border-l-[#007E7A] p-5 sm:p-6 shadow-xs hover:shadow-md transition space-y-4 relative"
-              >
-                {/* Header Row: Badges & Three dots */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {isOwner && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#007E7A] border border-teal-200">
-                        Diskusi Saya
-                      </span>
-                    )}
-                    {faskesName && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#E6F4F3] text-[#007E7A] flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{faskesName}</span>
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Dropdown Menu Tiga Titik */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMenuAktifId(
-                          menuAktifId === item.id_diskusi ? null : item.id_diskusi
-                        )
-                      }
-                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-                      aria-label="Opsi diskusi"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {menuAktifId === item.id_diskusi && (
-                      <div className="absolute right-0 top-7 z-20 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1.5 text-xs animate-in fade-in duration-100">
-                        {isOwner ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMenuAktifId(null);
-                              handleHapusDiskusi(item.id_diskusi);
-                            }}
-                            className="w-full px-3.5 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Hapus Diskusi</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMenuAktifId(null);
-                              setTargetReportId(item.id_diskusi);
-                              setTargetReportTitle(item.judul_diskusi);
-                              setModalReportBuka(true);
-                            }}
-                            className="w-full px-3.5 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
-                          >
-                            <Flag className="w-3.5 h-3.5 text-rose-500" />
-                            <span>Laporkan Konten</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Author Info */}
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#007E7A] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                    {initials}
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight">
-                      {authorName}
-                    </h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      2 jam yang lalu • {item.sublokasi_penulis || "Bogor"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Judul & Cuplikan Konten */}
-                <div className="space-y-1.5">
-                  <Link
-                    href={`/diskusi/${item.id_diskusi}`}
-                    className="block group"
-                  >
-                    <h2 className="text-base sm:text-[17px] font-bold text-slate-900 group-hover:text-[#007E7A] transition leading-snug">
-                      {item.judul_diskusi}
-                    </h2>
-                  </Link>
-                  <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed line-clamp-3">
-                    {item.body}
-                  </p>
-                </div>
-
-                {/* Footer Interaksi */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
-                  <div className="flex items-center gap-4 text-slate-500 font-medium">
-                    <span className="flex items-center gap-1.5 hover:text-[#007E7A] cursor-pointer">
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                      <span>{likesCount} Suka</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>{totalTanggapan} Balasan</span>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-slate-400">
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>{viewsCount} Dilihat</span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleBagikan(item.id_diskusi, item.judul_diskusi)
-                      }
-                      className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-                      title="Bagikan tautan"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                    <Link
-                      href={`/diskusi/${item.id_diskusi}`}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
-                    >
-                      <span>Buka Diskusi ({totalTanggapan})</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          diskusiTerfilter.map((item) => (
+            <DiskusiCard
+              key={item.id_diskusi}
+              item={item}
+              currentUser={currentUser}
+              onHapus={handleHapusDiskusi}
+              onLapor={(id, judul) => {
+                setTargetReportId(id);
+                setTargetReportTitle(judul);
+                setModalReportBuka(true);
+              }}
+              onBagikan={handleBagikan}
+            />
+          ))
         )}
 
         {metaPaginasi && metaPaginasi.current_page < metaPaginasi.last_page && (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,8 +17,17 @@ import {
   ChevronsUpDown,
   X,
   FileText,
+  Search,
+  MapPin,
+  Building2,
 } from "lucide-react";
-import { api, getAuthToken, getAuthUser, messageFromError } from "@/lib/api";
+import {
+  api,
+  ApiFaskes,
+  getAuthToken,
+  getAuthUser,
+  messageFromError,
+} from "@/lib/api";
 
 const KATEGORI_DISKUSI_OPTIONS = [
   { nilai: "kesehatan", label: "Tips & Informasi Kesehatan Umum" },
@@ -43,8 +52,52 @@ export default function BuatDiskusiBaruPage() {
   const [suksesSimpan, setSuksesSimpan] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Faskes selection states (Opsional)
+  const [daftarFaskes, setDaftarFaskes] = useState<ApiFaskes[]>([]);
+  const [faskesTerpilih, setFaskesTerpilih] = useState<ApiFaskes | null>(null);
+  const [faskesSearchText, setFaskesSearchText] = useState("");
+  const [dropdownFaskesBuka, setDropdownFaskesBuka] = useState(false);
+  const [sedangMemuatFaskes, setSedangMemuatFaskes] = useState(false);
+  const dropdownFaskesRef = useRef<HTMLDivElement>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let aktif = true;
+    async function muatFaskes() {
+      try {
+        setSedangMemuatFaskes(true);
+        const data = await api.getFaskesMap();
+        if (aktif && Array.isArray(data)) {
+          setDaftarFaskes(data);
+        }
+      } catch (err) {
+        console.error("Gagal memuat faskes:", err);
+      } finally {
+        if (aktif) setSedangMemuatFaskes(false);
+      }
+    }
+    muatFaskes();
+    return () => {
+      aktif = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownFaskesRef.current &&
+        !dropdownFaskesRef.current.contains(event.target as Node)
+      ) {
+        setDropdownFaskesBuka(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Formatting helper for rich text toolbar
   const insertFormatting = (prefix: string, suffix: string = "") => {
@@ -123,6 +176,7 @@ export default function BuatDiskusiBaruPage() {
         judul_diskusi: judul.trim(),
         kategori_diskusi: kategori,
         body: isiDiskusi.trim(),
+        id_faskes: faskesTerpilih ? faskesTerpilih.id_faskes : null,
       };
 
       const res = await api.createDiscussion(payload);
@@ -149,6 +203,19 @@ export default function BuatDiskusiBaruPage() {
     }
   };
 
+  const faskesTerfilter = daftarFaskes
+    .filter((f) => {
+      if (!faskesSearchText.trim()) return true;
+      const q = faskesSearchText.toLowerCase();
+      return (
+        f.nama_faskes.toLowerCase().includes(q) ||
+        (f.jenis_faskes && f.jenis_faskes.toLowerCase().includes(q)) ||
+        (f.kecamatan && f.kecamatan.toLowerCase().includes(q)) ||
+        (f.kota_kabupaten && f.kota_kabupaten.toLowerCase().includes(q))
+      );
+    })
+    .slice(0, 20);
+
   return (
     <div className="max-w-[1040px] mx-auto px-4 sm:px-6 py-7 w-full space-y-6">
       {/* Breadcrumb */}
@@ -166,15 +233,6 @@ export default function BuatDiskusiBaruPage() {
 
       {/* Header Info Banner */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#007E7A] text-white shadow-xs">
-            Warga Peduli Sehat Bogor
-          </span>
-          <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
-            Kota & Kab. Bogor
-          </span>
-        </div>
-
         <h1 className="text-2xl sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
           Buat Diskusi Baru
         </h1>
@@ -261,6 +319,138 @@ export default function BuatDiskusiBaruPage() {
                 <ChevronsUpDown className="w-4 h-4 text-slate-400" />
               </div>
             </div>
+          </div>
+
+          {/* Fasilitas Kesehatan Terkait (Opsional Searchable Dropdown) */}
+          <div className="space-y-2" ref={dropdownFaskesRef}>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-bold text-slate-900">
+                Fasilitas Kesehatan Terkait{" "}
+                <span className="text-slate-400 font-normal text-xs">(Opsional)</span>
+              </label>
+              {faskesTerpilih && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFaskesTerpilih(null);
+                    setFaskesSearchText("");
+                  }}
+                  className="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Hapus Pilihan</span>
+                </button>
+              )}
+            </div>
+
+            {faskesTerpilih ? (
+              <div className="p-3.5 rounded-xl border border-teal-200 bg-teal-50/60 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-[#007E7A] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {faskesTerpilih.nama_faskes}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                      {faskesTerpilih.jenis_faskes || "Faskes"}
+                      {faskesTerpilih.kecamatan ? ` • Kec. ${faskesTerpilih.kecamatan}` : ""}
+                      {faskesTerpilih.kota_kabupaten ? ` • ${faskesTerpilih.kota_kabupaten}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFaskesTerpilih(null);
+                    setFaskesSearchText("");
+                    setDropdownFaskesBuka(true);
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-teal-300 bg-white text-[#007E7A] hover:bg-teal-50 text-xs font-semibold shrink-0 transition"
+                >
+                  Ganti
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={faskesSearchText}
+                    onFocus={() => setDropdownFaskesBuka(true)}
+                    onChange={(e) => {
+                      setFaskesSearchText(e.target.value);
+                      setDropdownFaskesBuka(true);
+                    }}
+                    placeholder="Cari nama rumah sakit, puskesmas, klinik (mis: RSUD, Siloam, Kimia Farma)..."
+                    className="w-full h-11 pl-10 pr-10 rounded-lg border border-slate-300 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
+                  />
+                  <div className="absolute right-3.5 pointer-events-none text-slate-400">
+                    <ChevronsUpDown className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {dropdownFaskesBuka && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl border border-slate-200 shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-100 z-30">
+                    {sedangMemuatFaskes ? (
+                      <div className="p-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#007E7A]" />
+                        <span>Memuat data faskes Bogor...</span>
+                      </div>
+                    ) : faskesTerfilter.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-500">
+                        Tidak ada faskes yang cocok dengan pencarian &quot;{faskesSearchText}&quot;
+                      </div>
+                    ) : (
+                      <>
+                        <div className="px-3.5 py-2 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                          <span>Daftar Faskes Bogor ({faskesTerfilter.length})</span>
+                          {faskesSearchText && (
+                            <button
+                              type="button"
+                              onClick={() => setFaskesSearchText("")}
+                              className="text-teal-600 hover:underline capitalize font-semibold text-xs"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                        {faskesTerfilter.map((item) => (
+                          <button
+                            key={item.id_faskes}
+                            type="button"
+                            onClick={() => {
+                              setFaskesTerpilih(item);
+                              setDropdownFaskesBuka(false);
+                              setFaskesSearchText("");
+                            }}
+                            className="w-full text-left p-3 hover:bg-teal-50/70 transition flex items-center justify-between gap-3 group"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-[13px] font-semibold text-slate-800 group-hover:text-[#007E7A] truncate">
+                                {item.nama_faskes}
+                              </p>
+                              <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                {item.kecamatan ? `Kec. ${item.kecamatan}, ` : ""}
+                                {item.kota_kabupaten ?? "Bogor"}
+                              </p>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 group-hover:bg-[#007E7A] group-hover:text-white shrink-0 transition whitespace-nowrap">
+                              {item.jenis_faskes || "Faskes"}
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-[11.5px] text-slate-500">
+              Cantumkan faskes jika diskusi berhubungan dengan layanan atau fasilitas kesehatan tertentu.
+            </p>
           </div>
 
           {/* Isi Diskusi with Formatting Toolbar */}

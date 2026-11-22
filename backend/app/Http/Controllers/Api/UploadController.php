@@ -22,7 +22,7 @@ class UploadController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'context' => ['sometimes', 'string', 'in:diskusi,tanggapan,komentar,faskes'],
+            'context' => ['sometimes', 'string', 'in:diskusi,tanggapan,komentar,faskes,profile'],
         ]);
 
         $context = $request->string('context', 'diskusi')->toString();
@@ -32,7 +32,7 @@ class UploadController extends Controller
             return response()->json(['message' => 'Hanya admin yang dapat mengunggah gambar faskes.'], 403);
         }
 
-        $allowedMimes = $isFaskes ? self::IMAGE_MIMES : self::DOCUMENT_MIMES;
+        $allowedMimes = ($isFaskes || $context === 'profile') ? self::IMAGE_MIMES : self::DOCUMENT_MIMES;
 
         $request->validate([
             'file' => ['required', 'file', 'max:'.self::MAX_KILOBYTES, 'mimetypes:'.implode(',', $allowedMimes)],

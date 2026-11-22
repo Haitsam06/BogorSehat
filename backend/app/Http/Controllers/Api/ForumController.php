@@ -114,6 +114,18 @@ class ForumController extends Controller
         );
     }
 
+    public function myReplies(Request $request): mixed
+    {
+        return TanggapanDiskusiResource::collection(
+            TanggapanDiskusi::query()
+                ->with(['user', 'diskusi'])
+                ->withCount('suka')
+                ->where('id_user', $request->user()->id_user)
+                ->latest()
+                ->paginate(15),
+        );
+    }
+
     public function like(Request $request, Diskusi $diskusi): JsonResponse
     {
         DiskusiSuka::query()->firstOrCreate([

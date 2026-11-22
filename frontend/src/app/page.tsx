@@ -26,6 +26,7 @@ import {
 } from "@/data/data_faskes";
 import { BadgePoli } from "@/components/ui/badge_poli";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
+import FaskesCard from "@/components/faskes/FaskesCard";
 import PetaLeaflet from "@/components/map/peta_leaflet";
 import AnimasiScroll from "@/components/ui/animasi_scroll";
 import {
@@ -241,75 +242,11 @@ export default function BerandaPage() {
                     durasi_ms={700}
                     className="h-full"
                   >
-                    <div className="group bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-[#007E7A]/40 hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col justify-between h-full">
-                      <div>
-                        {/* Gambar Thumbnail Faskes (atau Icon + Warna per Jenis Faskes) */}
-                        <Link
-                          href={`/faskes/${faskes_item.slug_faskes}`}
-                          className="block relative overflow-hidden h-[180px] bg-slate-100"
-                        >
-                          <FaskesThumbnail
-                            gambar_faskes={faskes_item.gambar_faskes}
-                            nama_faskes={faskes_item.nama_faskes}
-                            kategori_faskes={faskes_item.kategori_faskes}
-                            className="w-full h-full"
-                          />
-                          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[11px] font-extrabold shadow-sm">
-                            {faskes_item.jarak_km}
-                          </div>
-                        </Link>
-
-                        <div className="p-5 pb-4 space-y-2.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#007E7A]">
-                              {faskes_item.kategori_faskes}
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
-                              {faskes_item.kelas_faskes}
-                            </span>
-                          </div>
-
-                          <Link
-                            href={`/faskes/${faskes_item.slug_faskes}`}
-                            className="block text-base font-extrabold text-slate-900 group-hover:text-[#007E7A] transition line-clamp-1"
-                          >
-                            {faskes_item.nama_faskes}
-                          </Link>
-
-                          <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed line-clamp-1">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                            <span>{faskes_item.alamat_lengkap}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tombol Aksi Kartu */}
-                      <div className="px-5 pb-5 pt-1 flex items-center gap-2">
-                        <Link
-                          href="/peta"
-                          className="flex-1 h-9 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
-                        >
-                          <Map className="w-3.5 h-3.5" />
-                          <span>Buka di Peta</span>
-                        </Link>
-
-                        <Link
-                          href={`/faskes/${faskes_item.slug_faskes}`}
-                          className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition"
-                          title="Lihat Detail & Petunjuk Arah"
-                        >
-                          <CornerUpRight className="w-4 h-4" />
-                        </Link>
-
-                        <a
-                          href="#darurat-igd"
-                          className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-[#B91C1C] hover:bg-red-800 text-white shadow-xs"
-                          title="Hubungi Faskes Darurat"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    </div>
+                    <FaskesCard
+                      faskes={faskes_item}
+                      variant="home"
+                      className="h-full hover:-translate-y-1.5 transition-all duration-300"
+                    />
                   </AnimasiScroll>
                 ))}
               </div>

@@ -10,12 +10,19 @@ import {
   MessageSquare,
   User,
   ShieldCheck,
-  LogOut,
   ArrowLeft,
   X,
   SlidersHorizontal,
 } from "lucide-react";
 import { useFaskes } from "@/context/FaskesContext";
+import { resolveStorageUrl } from "@/lib/api";
+
+function getInitials(name?: string | null): string {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 export default function Navbar() {
   const path_aktif = usePathname();
@@ -70,10 +77,12 @@ export default function Navbar() {
         }
       : sudahLogin
       ? {
-          label: "Akun",
-          href: "/diskusi",
+          label: "Profil",
+          href: "/profil",
           icon: User,
-          aktif: false,
+          avatar: pengguna?.foto_profil ? resolveStorageUrl(pengguna.foto_profil) : undefined,
+          inisial: getInitials(pengguna?.nama_user),
+          aktif: path_aktif.startsWith("/profil"),
         }
       : {
           label: "Masuk",
@@ -265,21 +274,27 @@ export default function Navbar() {
                       <span>Portal Admin</span>
                     </Link>
                   ) : sudahLogin && pengguna ? (
-                    <>
-                      <span className="text-xs font-bold text-slate-700">
-                        {pengguna.nama_user}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void keluar();
-                        }}
-                        className="p-2.5 rounded-full text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition"
-                        title="Keluar akun"
-                      >
-                        <LogOut className="w-5 h-5" />
-                      </button>
-                    </>
+                    <Link
+                      href="/profil"
+                      className={`p-1 rounded-full transition flex items-center justify-center ${
+                        path_aktif.startsWith("/profil")
+                          ? "ring-2 ring-[#007E7A] ring-offset-2"
+                          : "hover:ring-2 hover:ring-slate-300 ring-offset-1"
+                      }`}
+                      title={`Profil: ${pengguna.nama_user}`}
+                    >
+                      {pengguna.foto_profil ? (
+                        <img
+                          src={resolveStorageUrl(pengguna.foto_profil)}
+                          alt={pengguna.nama_user}
+                          className="w-9 h-9 rounded-full object-cover border border-[#007E7A]/40"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#007E7A] text-white flex items-center justify-center font-extrabold text-xs">
+                          {getInitials(pengguna.nama_user)}
+                        </div>
+                      )}
+                    </Link>
                   ) : (
                     <Link
                       href="/masuk"
@@ -327,7 +342,19 @@ export default function Navbar() {
                         : "group-hover:bg-slate-100"
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    {"avatar" in item && item.avatar ? (
+                      <img
+                        src={item.avatar as string}
+                        alt={item.label}
+                        className="w-5 h-5 rounded-full object-cover border border-[#007E7A]"
+                      />
+                    ) : "inisial" in item && item.inisial ? (
+                      <div className="w-5 h-5 rounded-full bg-[#007E7A] text-white flex items-center justify-center text-[9px] font-extrabold leading-none">
+                        {item.inisial as string}
+                      </div>
+                    ) : (
+                      <Icon className="w-5 h-5" />
+                    )}
                   </div>
                   <span className="text-[10px] leading-tight mt-0.5 tracking-tight truncate max-w-[68px]">
                     {item.label}

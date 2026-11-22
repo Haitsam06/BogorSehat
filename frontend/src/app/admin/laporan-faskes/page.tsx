@@ -5,7 +5,6 @@ import {
   Calendar,
   Printer,
   Search,
-  SlidersHorizontal,
   ChevronDown,
   LayoutList,
   ArrowDown,
@@ -225,9 +224,9 @@ export default function LaporanDataFaskesPage() {
 
         {/* Baris Filter & Pencarian */}
         <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
             {/* Input Pencarian */}
-            <div className="sm:col-span-5 relative">
+            <div className="flex-1 w-full relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -238,9 +237,8 @@ export default function LaporanDataFaskesPage() {
               />
             </div>
 
-
             {/* Dropdown Status */}
-            <div className="sm:col-span-3">
+            <div className="w-full sm:w-48">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -251,17 +249,6 @@ export default function LaporanDataFaskesPage() {
                 <option value="Selesai">Selesai</option>
                 <option value="Ditolak">Ditolak</option>
               </select>
-            </div>
-
-            {/* Tombol Filter Tambahan */}
-            <div className="sm:col-span-1 flex justify-end">
-              <button
-                type="button"
-                className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition"
-                title="Filter lanjutan"
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>

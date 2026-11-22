@@ -27,6 +27,7 @@ interface FaskesContextType {
   sudahLogin: boolean;
   masuk: (email: string, sandi: string) => Promise<ApiUser>;
   keluar: () => Promise<void>;
+  perbaruiPengguna: (user: ApiUser) => void;
 }
 
 const FaskesContext = createContext<FaskesContextType | undefined>(undefined);
@@ -81,6 +82,11 @@ export function FaskesProvider({ children }: { children: React.ReactNode }) {
     setPengguna(null);
   };
 
+  const perbaruiPengguna = useCallback((user: ApiUser) => {
+    setPengguna(user);
+    setAuthUser(user);
+  }, []);
+
   return (
     <FaskesContext.Provider
       value={{
@@ -92,6 +98,7 @@ export function FaskesProvider({ children }: { children: React.ReactNode }) {
         sudahLogin: Boolean(pengguna && getAuthToken()),
         masuk,
         keluar,
+        perbaruiPengguna,
       }}
     >
       {children}
@@ -114,6 +121,7 @@ export function useFaskes() {
         throw new Error("FaskesProvider tidak tersedia.");
       },
       keluar: async () => {},
+      perbaruiPengguna: () => {},
     };
   }
   return context;

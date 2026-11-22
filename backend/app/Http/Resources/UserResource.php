@@ -15,6 +15,9 @@ class UserResource extends JsonResource
             'email_user' => $this->email_user,
             'role_user' => $this->role_user,
             'foto_profil' => $this->foto_profil,
+            'nomor_telepon' => $this->nomor_telepon,
+            'jenis_kelamin' => $this->jenis_kelamin,
+            'tanggal_lahir' => $this->tanggal_lahir ? (is_string($this->tanggal_lahir) ? $this->tanggal_lahir : $this->tanggal_lahir->format('Y-m-d')) : null,
             'created_at' => $this->created_at,
         ];
     }

@@ -17,12 +17,8 @@ import { BadgePoli } from "@/components/ui/badge_poli";
 export default function FooterUtama() {
   const path_aktif = usePathname();
 
-  // Sembunyikan footer pada halaman Peta Interaktif layar penuh, halaman Admin, dan halaman Masuk
-  if (
-    path_aktif.startsWith("/peta") ||
-    path_aktif.startsWith("/admin") ||
-    path_aktif.startsWith("/masuk")
-  ) {
+  // Hanya tampilkan footer di halaman beranda (/)
+  if (path_aktif !== "/") {
     return null;
   }
 

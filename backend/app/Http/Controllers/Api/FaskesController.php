@@ -22,14 +22,22 @@ class FaskesController extends Controller
         $query->when($request->filled('provinsi'), fn ($q) => $q->where('provinsi', $request->string('provinsi')));
         $query->when($request->filled('kecamatan'), fn ($q) => $q->whereRaw('lower(kecamatan) = ?', [mb_strtolower(trim($request->string('kecamatan')->toString()))]));
         $query->when($request->filled('kota_kabupaten'), fn ($q) => $q->where('kota_kabupaten', $request->string('kota_kabupaten')));
-        $query->when($request->filled('jenis_faskes'), fn ($q) => $q->where('jenis_faskes', $request->string('jenis_faskes')));
+        $query->when($request->filled('jenis_faskes'), fn ($q) => $q->where('jenis_faskes', 'like', '%'.$request->string('jenis_faskes').'%'));
         $query->when($request->has('is_support_bpjs'), fn ($q) => $q->where('is_support_bpjs', $request->boolean('is_support_bpjs')));
         $query->when($request->filled('id_spesialisasi'), fn ($q) => $q->whereHas('spesialisasi', fn ($r) => $r->whereKey($request->string('id_spesialisasi'))));
 
         $facilityIds = $this->requestedFacilityIds($request);
         $query->when($facilityIds !== [], fn ($q) => $q->whereHas('fasilitas', fn ($r) => $r->whereIn('fasilitas.id_fasilitas', $facilityIds)));
 
-        $faskes = $this->applyTypeOrdering($query)->paginate(min($request->integer('per_page', 15), 100));
+        if ($request->has(['latitude', 'longitude'])) {
+            $lat = $coordinates[0];
+            $lng = $coordinates[1];
+            $query->orderByRaw('((latitude - ?) * (latitude - ?) + (longitude - ?) * (longitude - ?))', [$lat, $lat, $lng, $lng]);
+        } else {
+            $query = $this->applyTypeOrdering($query);
+        }
+
+        $faskes = $query->paginate(min($request->integer('per_page', 15), 100));
         $this->attachDistance($faskes->getCollection(), $coordinates);
 
         return FaskesResource::collection($faskes);
@@ -62,6 +70,7 @@ class FaskesController extends Controller
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'radius' => ['sometimes', 'numeric', 'min:0.1', 'max:100'],
             'compact' => ['sometimes', 'boolean'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:500'],
         ]);
         $radius = (float) ($data['radius'] ?? 10);
         $latitude = (float) $data['latitude'];
@@ -70,7 +79,8 @@ class FaskesController extends Controller
         $latitudeDelta = $radius / 111;
         $longitudeDelta = $radius / max(cos(deg2rad($latitude)) * 111, 0.01);
 
-        $query = Faskes::query()->whereBetween('latitude', [$latitude - $latitudeDelta, $latitude + $latitudeDelta])
+        $query = Faskes::query()
+            ->whereBetween('latitude', [$latitude - $latitudeDelta, $latitude + $latitudeDelta])
             ->whereBetween('longitude', [$longitude - $longitudeDelta, $longitude + $longitudeDelta]);
 
         if ($compact) {
@@ -86,6 +96,10 @@ class FaskesController extends Controller
             ->filter(fn (Faskes $item): bool => $item->distance_km <= $radius)
             ->sortBy('distance_km')
             ->values();
+
+        if ($request->filled('limit')) {
+            $faskes = $faskes->take($request->integer('limit'))->values();
+        }
 
         return response()->json(['data' => FaskesResource::collection($faskes)]);
     }

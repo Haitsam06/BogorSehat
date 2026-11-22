@@ -13,7 +13,6 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  Sparkles,
   ArrowLeft,
 } from "lucide-react";
 import { api, messageFromError } from "@/lib/api";
@@ -55,12 +54,6 @@ export default function AdminLoginPage() {
     }
   };
 
-  const isiAkunDemo = () => {
-    set_email_petugas("admin@bogorsehat.test");
-    set_kata_sandi_petugas("password");
-    set_pesan_error(null);
-  };
-
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-[1180px] bg-[#F4F7FA] rounded-[32px] px-6 sm:px-14 py-8 sm:py-11 space-y-8">
@@ -82,12 +75,13 @@ export default function AdminLoginPage() {
             <div className="relative z-10 space-y-7">
               <Link
                 href="/"
-                className="bg-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-sm inline-block"
+                className="inline-flex items-center gap-2.5 transition hover:opacity-90 py-1"
               >
                 <img
                   src="/images/logo-bogorsehat.png"
                   alt="Bogor Sehat"
-                  className="h-8 w-auto object-contain"
+                  className="h-8 sm:h-9 w-auto object-contain brightness-0 invert"
+                  style={{ filter: "brightness(0) invert(1)" }}
                 />
               </Link>
 
@@ -166,24 +160,6 @@ export default function AdminLoginPage() {
                   <span>{pesan_error}</span>
                 </div>
               )}
-
-              {/* Tombol Isi Otomatis Akun Admin Demo */}
-              <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200/70 flex items-center justify-between gap-3 text-xs">
-                <div className="text-slate-700">
-                  <span className="font-bold text-[#007E7A]">Akun Seeder Default:</span>{" "}
-                  <code className="text-[11px] bg-white px-1.5 py-0.5 rounded border border-teal-200">
-                    admin@bogorsehat.test
-                  </code>
-                </div>
-                <button
-                  type="button"
-                  onClick={isiAkunDemo}
-                  className="px-2.5 py-1 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-[11px] font-bold flex items-center gap-1 shrink-0 transition"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>Gunakan Akun</span>
-                </button>
-              </div>
 
               <form onSubmit={tangani_submit_login} className="space-y-5 pt-1">
                 <div className="space-y-2">
