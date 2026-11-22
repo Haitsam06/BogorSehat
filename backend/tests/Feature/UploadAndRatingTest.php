@@ -24,7 +24,7 @@ class UploadAndRatingTest extends TestCase
                 'context' => 'diskusi',
             ])
             ->assertCreated()
-            ->assertJsonPath('data.mime', 'image/jpeg');
+            ->assertJsonPath('data.mime', 'image/webp');
 
         Storage::disk('public')->assertExists($response->json('data.path'));
         $this->assertStringStartsWith('uploads/diskusi/', $response->json('data.path'));

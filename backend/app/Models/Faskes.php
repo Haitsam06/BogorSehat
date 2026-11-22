@@ -67,6 +67,11 @@ class Faskes extends Model
         return $this->hasMany(FeedbackFaskes::class, 'id_faskes', 'id_faskes');
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(FaskesImage::class, 'id_faskes', 'id_faskes')->orderBy('sort_order');
+    }
+
     /**
      * Build a Google Maps place link anchored on the facility coordinates.
      *

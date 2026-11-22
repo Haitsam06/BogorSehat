@@ -75,7 +75,7 @@ class ApiFoundationTest extends TestCase
         $this->seed();
 
         $this->getJson('/api/faskes?provinsi=JAWA%20BARAT')->assertOk()->assertJsonPath('meta.total', 506);
-        $this->getJson('/api/faskes?kecamatan=CIJERUK')->assertOk()->assertJsonPath('data.0.kecamatan', 'CIJERUK');
+        $this->getJson('/api/faskes?kecamatan=CIJERUK')->assertOk()->assertJsonPath('data.0.kecamatan', 'Cijeruk');
     }
 
     public function test_maps_link_targets_place_name_at_facility_coordinates(): void

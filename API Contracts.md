@@ -82,11 +82,13 @@ Login response includes `data` and a plain `token`. Store the token securely; it
 - `kelas_faskes`: exact class match.
 - `is_support_bpjs`: boolean (`0` or `1`).
 - `id_spesialisasi`: specialization ID.
-- `id_fasilitas`: facility ID.
+- `id_fasilitas`: one or more supporting-facility IDs. Accepts a single value, a comma-separated list, or repeated `id_fasilitas[]` parameters; a faskes matches when it has any of the requested facilities.
 - `latitude`: optional user latitude, `-90` to `90`.
 - `longitude`: optional user longitude, `-180` to `180`.
 - `per_page`: maximum `100`; default `15`.
 - `page`: pagination page.
+
+Results are ordered by service type: `Rumah Sakit` → `Klinik` → `Puskesmas` → `Dokter Praktik Perorangan` → `Dokter Gigi` → `Apotek` → `Optik`, then alphabetically by `nama_faskes`. Unknown or empty types come last. `GET /faskes/nearby` keeps distance ordering instead.
 
 Example:
 
@@ -441,29 +443,13 @@ vendor/bin/pint --dirty --format agent
 
 CSV files remain the seeder source of truth. Frontend files are not modified by the API implementation.
 
-## Catatan Perubahan Backend yang Dibutuhkan (Frontend Integration)
+## Catatan Implementasi Backend
 
-Bagian berikut merangkum penyesuaian backend yang dibutuhkan untuk mendukung pembaruan frontend terbaru (upload galeri faskes, banner/thumbnail, carousel, halaman edit master data, dan optimasi peta):
+Seluruh penyesuaian yang dibutuhkan frontend sudah diterapkan di backend:
 
-1. **Galeri Gambar Faskes (maks. 5 gambar, Banner & Thumbnail)**
-   - Tambahkan penyimpanan/relasi `faskes_images` per faskes (`id_faskes_image`, `id_faskes`, `path`, `url`, `is_banner`, `is_thumbnail`, `sort_order`).
-   - Pada `POST /api/admin/faskes` dan `PUT /api/admin/faskes/{id_faskes}`, terima field opsional `images` (`array`, `max:5`, masing-masing item: `path` required string, `url` required string, `is_banner` boolean, `is_thumbnail` boolean, `sort_order` integer `0..4`).
-   - Normalisasi flag di backend: maksimal 1 gambar bertanda `is_banner=true` dan 1 bertanda `is_thumbnail=true` (gambar yang sama boleh menjadi keduanya; jika belum ada yang ditandai saat `images` tidak kosong, jadikan gambar index `0` sebagai default keduanya).
-   - Pada `PUT /api/admin/faskes/{id_faskes}`: jika key `images` tidak dikirim, biarkan gambar lama tetap utuh; jika `images: []` dikirim, hapus seluruh gambar faskes terkait; hapus juga file yatim di disk `public` (`uploads/faskes/...`) saat gambar dihapus atau faskes dihapus.
-   - Sertakan `images`, `banner_url`, dan `thumbnail_url` pada response `GET /api/faskes`, `GET /api/faskes/{id_faskes}`, `GET /api/faskes/nearby` (mode non-compact), `POST /api/admin/faskes`, dan `PUT /api/admin/faskes/{id_faskes}`.
+1. **Galeri gambar faskes** — tabel `faskes_images` (`id_faskes_image`, `id_faskes`, `path`, `url`, `is_banner`, `is_thumbnail`, `sort_order`). `POST` dan `PUT /api/admin/faskes` menerima `images` (maks. `5`). Flag dinormalisasi menjadi tepat satu banner dan satu thumbnail; bila tidak ada yang ditandai, gambar indeks `0` menjadi keduanya. `PUT` tanpa key `images` mempertahankan gambar lama, sedangkan `images: []` menghapus semua gambar beserta file di disk. File juga dihapus saat faskes dihapus. `images`, `banner_url`, dan `thumbnail_url` dikembalikan pada `GET /faskes`, `GET /faskes/{id_faskes}`, `GET /faskes/nearby` (non-compact), serta response admin faskes.
+2. **Upload gambar faskes** — `context=faskes` diterima pada `POST /api/uploads`, khusus admin (`403` untuk non-admin), hanya berkas gambar (`422` untuk PDF). Semua gambar yang diunggah dikonversi ke WEBP (kualitas `82`) sebelum disimpan, termasuk pada context diskusi/tanggapan/komentar; PDF disimpan apa adanya.
+3. **Detail master data admin** — `GET /api/admin/spesialisasi/{id_spesialisasi}` dan `GET /api/admin/fasilitas/{id_fasilitas}` mengembalikan `{ data: { …, faskes_count } }`, `404` bila tidak ditemukan.
+4. **Mode ringkas peta** — `GET /api/faskes/nearby?compact=1` melewati `fasilitas`, `images`, dan agregat rating, tetap menyertakan `spesialisasi`, serta menambahkan `has_igd` (boolean, berdasarkan fasilitas yang namanya mengandung `igd`).
 
-2. **Upload Gambar Faskes (`POST /api/uploads`)**
-   - Tambahkan `faskes` sebagai nilai `context` yang valid (selain `diskusi`, `tanggapan`, `komentar`).
-   - Batasi `context=faskes` khusus user dengan `role_user=admin` (tolak user non-admin dengan HTTP `403`).
-   - Untuk `context=faskes`, izinkan hanya tipe file gambar (`image/jpeg`, `image/png`, `image/webp`, maks. `5120` KB; tolak PDF dengan `422`).
-   - Pastikan `php artisan storage:link` dijalankan agar URL `/storage/uploads/faskes/...` dapat diakses.
-
-3. **Endpoint Detail Master Data Admin**
-   - Tambahkan `GET /api/admin/spesialisasi/{id_spesialisasi}` yang mengembalikan `{ "data": { "id_spesialisasi", "nama_spesialisasi", "faskes_count" } }`.
-   - Tambahkan `GET /api/admin/fasilitas/{id_fasilitas}` yang mengembalikan `{ "data": { "id_fasilitas", "nama_fasilitas", "faskes_count" } }`.
-   - *(Catatan: Frontend saat ini memiliki fallback ke list master jika mendapat 404/405, namun endpoint GET detail ini dibutuhkan agar halaman Edit Master Data lebih efisien).*
-
-4. **Mode Ringkas Peta Interaktif (`GET /api/faskes/nearby?compact=1`)**
-   - Terima query opsional `compact` (`0` atau `1`).
-   - Ketika `compact=1`, lewati eager-loading relasi `fasilitas`, `images`, serta subquery agregat rating; tetap sertakan relasi `spesialisasi` dan tambahkan field boolean `has_igd` (apakah ada fasilitas terkait yang namanya mengandung `igd`, case-insensitive) agar muat awal peta (~500 titik faskes) jauh lebih ringan.
-
+Peringatan operasional: jalankan `php artisan storage:link` sekali per environment agar `/storage/uploads/...` dapat diakses.
