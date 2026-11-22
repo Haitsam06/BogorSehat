@@ -36,6 +36,19 @@ class AdminSpesialisasiController extends Controller
         ]);
     }
 
+    public function show(string $spesialisasi): JsonResponse
+    {
+        $model = Spesialisasi::query()->withCount('faskes')->findOrFail($spesialisasi);
+
+        return response()->json([
+            'data' => [
+                'id_spesialisasi' => $model->id_spesialisasi,
+                'nama_spesialisasi' => $model->nama_spesialisasi,
+                'faskes_count' => $model->faskes_count,
+            ],
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
