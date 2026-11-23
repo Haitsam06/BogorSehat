@@ -70,13 +70,13 @@ export default function Navbar() {
     },
     sudahLogin && pengguna?.role_user === "admin"
       ? {
-          label: "Admin",
-          href: "/admin/dashboard",
-          icon: ShieldCheck,
-          aktif: path_aktif.startsWith("/admin"),
-        }
+        label: "Admin",
+        href: "/admin/dashboard",
+        icon: ShieldCheck,
+        aktif: path_aktif.startsWith("/admin"),
+      }
       : sudahLogin
-      ? {
+        ? {
           label: "Profil",
           href: "/profil",
           icon: User,
@@ -84,7 +84,7 @@ export default function Navbar() {
           inisial: getInitials(pengguna?.nama_user),
           aktif: path_aktif.startsWith("/profil"),
         }
-      : {
+        : {
           label: "Masuk",
           href: "/masuk",
           icon: User,
@@ -202,11 +202,10 @@ export default function Navbar() {
               <nav className="hidden md:flex items-center gap-3">
                 <Link
                   href="/"
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${
-                    adalah_beranda
-                      ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${adalah_beranda
+                    ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
                 >
                   <Home className="w-4 h-4" />
                   <span>Beranda</span>
@@ -214,23 +213,21 @@ export default function Navbar() {
 
                 <Link
                   href="/peta"
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${
-                    adalah_peta
-                      ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${adalah_peta
+                    ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
                 >
                   <MapPin className="w-4 h-4" />
-                  <span>Peta Interaktif</span>
+                  <span>Peta Faskes</span>
                 </Link>
 
                 <Link
                   href="/cari-faskes"
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${
-                    adalah_cari_faskes
-                      ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${adalah_cari_faskes
+                    ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
                 >
                   <Search className="w-4 h-4" />
                   <span>Cari Faskes</span>
@@ -238,11 +235,10 @@ export default function Navbar() {
 
                 <Link
                   href="/diskusi"
-                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${
-                    adalah_forum
-                      ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
+                  className={`px-4 py-2.5 rounded-xl text-[13px] font-medium flex items-center gap-2 transition ${adalah_forum
+                    ? "bg-[#D9EFEF] text-[#007A78] font-semibold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>Forum Komunitas</span>
@@ -276,11 +272,10 @@ export default function Navbar() {
                   ) : sudahLogin && pengguna ? (
                     <Link
                       href="/profil"
-                      className={`p-1 rounded-full transition flex items-center justify-center ${
-                        path_aktif.startsWith("/profil")
-                          ? "ring-2 ring-[#007E7A] ring-offset-2"
-                          : "hover:ring-2 hover:ring-slate-300 ring-offset-1"
-                      }`}
+                      className={`p-1 rounded-full transition flex items-center justify-center ${path_aktif.startsWith("/profil")
+                        ? "ring-2 ring-[#007E7A] ring-offset-2"
+                        : "hover:ring-2 hover:ring-slate-300 ring-offset-1"
+                        }`}
                       title={`Profil: ${pengguna.nama_user}`}
                     >
                       {pengguna.foto_profil ? (
@@ -326,21 +321,19 @@ export default function Navbar() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`relative flex flex-col items-center justify-center py-1 transition group select-none ${
-                    aktif
-                      ? "text-[#007E7A] font-bold"
-                      : "text-slate-400 hover:text-slate-600 font-medium"
-                  }`}
+                  className={`relative flex flex-col items-center justify-center py-1 transition group select-none ${aktif
+                    ? "text-[#007E7A] font-bold"
+                    : "text-slate-400 hover:text-slate-600 font-medium"
+                    }`}
                 >
                   {aktif && (
                     <span className="absolute -top-1.5 w-7 h-1 rounded-full bg-[#007E7A] shadow-[0_1px_4px_rgba(0,126,122,0.4)]" />
                   )}
                   <div
-                    className={`p-1 rounded-xl transition-all ${
-                      aktif
-                        ? "bg-[#D9EFEF]/70 scale-105"
-                        : "group-hover:bg-slate-100"
-                    }`}
+                    className={`p-1 rounded-xl transition-all ${aktif
+                      ? "bg-[#D9EFEF]/70 scale-105"
+                      : "group-hover:bg-slate-100"
+                      }`}
                   >
                     {"avatar" in item && item.avatar ? (
                       <img

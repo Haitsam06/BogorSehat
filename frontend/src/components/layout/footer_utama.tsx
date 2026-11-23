@@ -43,11 +43,6 @@ export default function FooterUtama() {
               Rujukan Berbasis Spasial untuk masyarakat Kota Bogor dan Kabupaten
               Bogor.
             </p>
-
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#E6F4F3] text-[#007E7A] text-[11px] font-bold">
-              <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span>Terintegrasi Standar Kemenkes RI &amp; BPJS</span>
-            </div>
           </div>
 
           {/* Kolom 2: Navigasi Utama (2 cols) */}
@@ -69,7 +64,7 @@ export default function FooterUtama() {
                   href="/peta"
                   className="hover:text-[#007E7A] font-medium transition"
                 >
-                  Peta Interaktif WebGIS
+                  Peta Faskes
                 </Link>
               </li>
               <li>
@@ -88,36 +83,10 @@ export default function FooterUtama() {
                   Detail RS Rujukan
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/admin/login"
-                  className="hover:text-[#007E7A] font-semibold text-slate-800 inline-flex items-center gap-1 transition"
-                >
-                  <span>Portal Petugas Dinkes</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </Link>
-              </li>
             </ul>
           </div>
 
-          {/* Kolom 3: Pintasan Layanan Poliklinik (3 cols) */}
-          <div className="lg:col-span-3 space-y-3">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
-              Poliklinik Populer
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              Telusuri faskes berdasarkan ketersediaan layanan poli spesialis:
-            </p>
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              {poli_populer.map((nama_poli) => (
-                <Link key={nama_poli} href="/cari-faskes">
-                  <BadgePoli nama_poli={nama_poli} ukuran_badge="kecil" />
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Kolom 4: Kontak & Darurat Medis (3 cols) */}
+          {/* Kolom 3: Kontak & Darurat Medis (3 cols) */}
           <div className="lg:col-span-3 space-y-3">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
               Pusat Layanan &amp; Darurat
@@ -142,11 +111,6 @@ export default function FooterUtama() {
                 <Mail className="w-4 h-4 text-[#007E7A] shrink-0" />
                 <span>dinkes@kotabogor.go.id</span>
               </div>
-
-              <div className="flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-[#007E7A] shrink-0" />
-                <span>Pemantauan IGD &amp; WebGIS: 24 Jam</span>
-              </div>
             </div>
           </div>
         </div>
@@ -160,24 +124,6 @@ export default function FooterUtama() {
             </strong>
             . Seluruh Hak Cipta Dilindungi.
           </p>
-
-          <div className="flex items-center gap-5">
-            <Link href="/peta" className="hover:text-[#007E7A] transition">
-              Standar Geodetik EPSG:4326
-            </Link>
-            <Link
-              href="/cari-faskes"
-              className="hover:text-[#007E7A] transition"
-            >
-              Direktori Mitra BPJS
-            </Link>
-            <Link
-              href="/admin/login"
-              className="hover:text-[#007E7A] transition"
-            >
-              Akses Administrator
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

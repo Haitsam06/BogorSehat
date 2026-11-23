@@ -261,11 +261,6 @@ export default function BerandaPage() {
           <section className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.03)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 hover:shadow-lg transition-shadow duration-300">
             <div className="lg:col-span-6 p-6 sm:p-9 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#007E7A] text-white text-[11px] font-semibold shadow-xs">
-                  <Layers className="w-3 h-3" />
-                  <span>Peta Interaktif WebGIS</span>
-                </div>
-
                 <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug">
                   Pantau Sebaran &amp; Kapasitas Faskes
                   <br />
@@ -316,7 +311,7 @@ export default function BerandaPage() {
                   className="w-full py-3.5 px-5 rounded-2xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm hover:shadow transition"
                 >
                   <Map className="w-4 h-4" />
-                  <span>Buka WebGIS Layar Penuh</span>
+                  <span>Buka Peta Faskes</span>
                 </Link>
               </div>
             </div>
@@ -481,10 +476,6 @@ export default function BerandaPage() {
             <AnimasiScroll arah="kiri" durasi_ms={700} className="h-full">
               <div className="h-full rounded-3xl bg-gradient-to-br from-[#005B5C] via-[#006E6D] to-[#00837B] text-white p-7 sm:p-8 flex flex-col justify-between space-y-6 shadow-[0_8px_30px_rgba(0,126,122,0.18)]">
                 <div className="space-y-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/30 border border-red-400/40 text-red-200 text-[11px] font-bold">
-                    <span>Siaga 24 Jam Nonstop</span>
-                  </div>
-
                   <h2 className="text-xl sm:text-2xl font-extrabold leading-snug">
                     Butuh Penanganan Medis Darurat Segera?
                   </h2>
@@ -530,10 +521,6 @@ export default function BerandaPage() {
             <AnimasiScroll arah="kanan" durasi_ms={700} className="h-full">
               <div className="h-full bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-[0_4px_25px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-2 mb-1 text-[#007E7A] text-xs font-extrabold uppercase tracking-wider">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Bantuan &amp; Panduan</span>
-                  </div>
                   <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
                     Pertanyaan Umum Warga (FAQ)
                   </h2>
@@ -555,9 +542,8 @@ export default function BerandaPage() {
                         >
                           <span>{item_faq.pertanyaan_warga}</span>
                           <ChevronDown
-                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                              terbuka ? "rotate-180 text-[#007E7A]" : ""
-                            }`}
+                            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${terbuka ? "rotate-180 text-[#007E7A]" : ""
+                              }`}
                           />
                         </button>
                         {terbuka && (

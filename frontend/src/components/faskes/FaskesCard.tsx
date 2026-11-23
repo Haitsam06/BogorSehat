@@ -8,6 +8,8 @@ import {
   CornerUpRight,
   Phone,
   Navigation,
+  InfoIcon,
+  Info,
 } from "lucide-react";
 import type { DataFaskesItem } from "@/data/data_faskes";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
@@ -87,16 +89,8 @@ export default function FaskesCard({
             className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition"
             title="Lihat Detail & Petunjuk Arah"
           >
-            <CornerUpRight className="w-4 h-4" />
+            <Info className="w-4 h-4" />
           </Link>
-
-          <a
-            href="#darurat-igd"
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition bg-[#B91C1C] hover:bg-red-800 text-white shadow-xs"
-            title="Hubungi Faskes Darurat"
-          >
-            <Phone className="w-3.5 h-3.5" />
-          </a>
         </div>
       </div>
     );

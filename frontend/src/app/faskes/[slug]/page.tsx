@@ -50,9 +50,9 @@ function hitungJarakKm(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
@@ -392,11 +392,10 @@ export default function DetailFaskesPage({
       {/* Alert Notifikasi Status */}
       {pesanNotif && (
         <div
-          className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
-            pesanNotif.tipe === "sukses"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
+          className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${pesanNotif.tipe === "sukses"
+            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+            : "bg-red-50 text-red-800 border border-red-200"
+            }`}
         >
           <div className="flex items-center gap-2">
             {pesanNotif.tipe === "sukses" ? (
@@ -533,9 +532,8 @@ export default function DetailFaskesPage({
                         return (
                           <Star
                             key={idx}
-                            className={`w-3.5 h-3.5 ${
-                              terisi ? "fill-amber-400 text-amber-400" : "text-amber-200"
-                            }`}
+                            className={`w-3.5 h-3.5 ${terisi ? "fill-amber-400 text-amber-400" : "text-amber-200"
+                              }`}
                           />
                         );
                       })}
