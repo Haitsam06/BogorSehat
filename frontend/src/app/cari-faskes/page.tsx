@@ -432,11 +432,11 @@ function CariFaskesKonten() {
             )}
           </div>
 
-          {/* Tombol Filter di sebelah input pencarian */}
+          {/* Tombol Filter di sebelah input pencarian (Hanya di Mobile/Tablet, disembunyikan di Desktop) */}
           <button
             type="button"
             onClick={() => setBukaFilterMobile((prev) => !prev)}
-            className={`h-11 px-3 sm:px-4 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
+            className={`h-11 px-3 sm:px-4 rounded-xl border flex lg:hidden items-center gap-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
               bukaFilterMobile || ada_filter_aktif
                 ? "bg-[#007E7A] text-white border-[#007E7A] shadow-xs"
                 : "bg-[#F4F6F8] text-slate-700 border-slate-200 hover:bg-slate-200/80"

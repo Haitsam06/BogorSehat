@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   MapPin,
   Map,
@@ -115,63 +116,81 @@ export default function BerandaPage() {
   return (
     <div className="w-full pb-16 bg-white">
       {/* =====================================================================
-          1. HERO SECTION (Persis Sesuai Beranda.png + Animasi Scroll & Radar)
+          1. HERO SECTION (Teks di Depan Menimpa Background Gambar Siluet)
          ===================================================================== */}
-      <section className="max-w-[1140px] mx-auto px-4 sm:px-6 pt-10 pb-12 text-center relative">
-        {/* Badge Lokasi GPS Pengguna */}
-        <AnimasiScroll arah="atas" durasi_ms={600}>
-          <button
-            type="button"
-            onClick={deteksiLokasiGPS}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-6 hover:border-[#007E7A] transition select-none cursor-pointer"
-            title="Klik untuk mendeteksi koordinat GPS perangkat Anda"
-          >
-            <MapPin className="w-3.5 h-3.5 text-[#007E7A]" />
-            <span>
-              {memuatGPS ? "Mendeteksi posisi GPS..." : `Anda berada di ${lokasiPengguna.nama_jalan}`}
-            </span>
-          </button>
-        </AnimasiScroll>
+      <section className="relative w-full max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-14 sm:pb-16 min-h-[440px] sm:min-h-[480px] lg:min-h-[500px] flex items-center overflow-hidden">
+        {/* Gambar Background Siluet Bogor (Berada di Belakang Teks / Layer Dasar) */}
+        <div className="absolute right-[-12px] sm:right-0 -top-8 sm:top-0 bottom-0 w-[95%] sm:w-[70%] lg:w-[60%] flex items-center sm:items-end justify-end pointer-events-none select-none z-0">
+          <Image
+            src="/images/hero-siluet-bogor.png"
+            alt="Siluet Landmark Kota Bogor"
+            width={612}
+            height={408}
+            priority
+            className="h-full w-auto max-h-[400px] sm:max-h-[450px] lg:max-h-[500px] object-contain object-right-center sm:object-right-bottom drop-shadow-xs"
+          />
+        </div>
 
-        {/* Judul Utama dengan Animasi Scroll */}
-        <AnimasiScroll jeda_ms={100} durasi_ms={700}>
-          <h1 className="text-3xl sm:text-[44px] font-extrabold text-[#1E232A] tracking-tight leading-[1.2] max-w-4xl mx-auto">
-            Temukan Fasilitas Kesehatan Terdekat di Bogor
-            <br />
-            dengan{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#007E7A] via-[#009E98] to-[#10B981]">
-              Cepat &amp; Akurat
-            </span>
-          </h1>
-        </AnimasiScroll>
+        {/* Lapisan Gradasi Fade In Lembut (Dari Putih Halus ke Transparan Pekat di Kanan) */}
+        <div className="absolute inset-y-0 left-0 w-full sm:w-[70%] lg:w-[55%] bg-gradient-to-r from-white via-white/60 to-transparent pointer-events-none z-[1]" />
 
-        {/* Subjudul dengan Animasi Scroll */}
-        <AnimasiScroll jeda_ms={200} durasi_ms={700}>
-          <p className="mt-4 text-sm sm:text-[15px] text-slate-500 max-w-xl mx-auto leading-relaxed">
-            Layanan informasi resmi untuk menemukan lokasi IGD, Puskesmas, dan
-            Klinik terakreditasi BPJS di Kota &amp; Kabupaten Bogor berdasarkan
-            rute terbaik dari lokasimu.
-          </p>
-        </AnimasiScroll>
-
-        {/* Tombol Pintasan Cepat di Bawah Hero */}
-        <AnimasiScroll jeda_ms={300} durasi_ms={700}>
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/peta"
-              className="px-6 py-3 rounded-full bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition group"
+        {/* Konten Teks & Tombol Pintasan (Layer Terdepan: z-10 Rata Kiri) */}
+        <div className="relative z-10 max-w-2xl flex flex-col items-start text-left">
+          {/* Badge Lokasi GPS Pengguna */}
+          <AnimasiScroll arah="atas" durasi_ms={600}>
+            <button
+              type="button"
+              onClick={deteksiLokasiGPS}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-5 hover:border-[#007E7A] transition select-none cursor-pointer"
+              title="Klik untuk mendeteksi koordinat GPS perangkat Anda"
             >
-              <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
-              <span>Buka Peta Interaktif</span>
-            </Link>
-            <Link
-              href="/cari-faskes"
-              className="px-6 py-3 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-[#007E7A] text-xs sm:text-sm font-bold border border-slate-200/90 shadow-2xs hover:border-[#007E7A] transition"
-            >
-              <span>Telusuri Semua Faskes</span>
-            </Link>
-          </div>
-        </AnimasiScroll>
+              <MapPin className="w-3.5 h-3.5 text-[#007E7A]" />
+              <span>
+                {memuatGPS ? "Mendeteksi posisi GPS..." : `Anda berada di ${lokasiPengguna.nama_jalan}`}
+              </span>
+            </button>
+          </AnimasiScroll>
+
+          {/* Judul Utama dengan Animasi Scroll */}
+          <AnimasiScroll jeda_ms={100} durasi_ms={700}>
+            <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-[#1E232A] tracking-tight leading-[1.2] max-w-2xl drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+              Temukan Fasilitas Kesehatan Terdekat di Bogor
+              <br />
+              dengan{" "}
+              <span className="text-[#007E7A]">
+                Cepat &amp; Akurat
+              </span>
+            </h1>
+          </AnimasiScroll>
+
+          {/* Subjudul dengan Animasi Scroll */}
+          <AnimasiScroll jeda_ms={200} durasi_ms={700}>
+            <p className="mt-4 text-sm sm:text-[15px] text-slate-600 max-w-xl leading-relaxed drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+              Layanan informasi resmi untuk menemukan lokasi IGD, Puskesmas, dan
+              Klinik terakreditasi BPJS di Kota &amp; Kabupaten Bogor berdasarkan
+              rute terbaik dari lokasimu.
+            </p>
+          </AnimasiScroll>
+
+          {/* Tombol Pintasan Cepat di Bawah Hero */}
+          <AnimasiScroll jeda_ms={300} durasi_ms={700}>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link
+                href="/peta"
+                className="px-6 py-3 rounded-full bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition group"
+              >
+                <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+                <span>Buka Peta Interaktif</span>
+              </Link>
+              <Link
+                href="/cari-faskes"
+                className="px-6 py-3 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-[#007E7A] text-xs sm:text-sm font-bold border border-slate-200/90 shadow-2xs hover:border-[#007E7A] transition"
+              >
+                <span>Telusuri Semua Faskes</span>
+              </Link>
+            </div>
+          </AnimasiScroll>
+        </div>
       </section>
 
       {/* Kontainer Utama Landing Page */}
