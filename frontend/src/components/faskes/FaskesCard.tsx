@@ -153,6 +153,25 @@ export default function FaskesCard({
               )}
             </div>
           </div>
+
+          {/* Badge Poliklinik */}
+          {faskes.daftar_poli && faskes.daftar_poli.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+              {faskes.daftar_poli.slice(0, 3).map((poli) => (
+                <span
+                  key={poli}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#E6F4F3] text-[#007E7A] border border-[#B3DFDD]"
+                >
+                  {poli}
+                </span>
+              ))}
+              {faskes.daftar_poli.length > 3 && (
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600">
+                  +{faskes.daftar_poli.length - 3}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
