@@ -8,18 +8,15 @@ import {
   Shield,
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   XCircle,
-  AlertCircle,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
+import { FormInput, FormPassword, FormAlert } from "@/components/ui";
 import { api, messageFromError } from "@/lib/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [tampilkan_sandi, set_tampilkan_sandi] = useState(false);
   const [email_petugas, set_email_petugas] = useState("");
   const [kata_sandi_petugas, set_kata_sandi_petugas] = useState("");
   const [sedang_memuat, set_sedang_memuat] = useState(false);
@@ -155,59 +152,32 @@ export default function AdminLoginPage() {
 
               {/* Notifikasi Error */}
               {pesan_error && (
-                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{pesan_error}</span>
-                </div>
+                <FormAlert
+                  tipe="error"
+                  pesan={pesan_error}
+                  onClose={() => set_pesan_error(null)}
+                />
               )}
 
               <form onSubmit={tangani_submit_login} className="space-y-5 pt-1">
-                <div className="space-y-2">
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                    ALAMAT EMAIL DINAS / EMAIL TERDAFTAR
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
-                    <input
-                      type="email"
-                      required
-                      value={email_petugas}
-                      onChange={(e) => set_email_petugas(e.target.value)}
-                      placeholder="admin@bogorsehat.test"
-                      className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                  </div>
-                </div>
+                <FormInput
+                  label="ALAMAT EMAIL DINAS / EMAIL TERDAFTAR"
+                  type="email"
+                  required
+                  value={email_petugas}
+                  onChange={(e) => set_email_petugas(e.target.value)}
+                  placeholder="admin@bogorsehat.test"
+                  icon={Mail}
+                />
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                      KATA SANDI
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
-                    <input
-                      type={tampilkan_sandi ? "text" : "password"}
-                      required
-                      value={kata_sandi_petugas}
-                      onChange={(e) => set_kata_sandi_petugas(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full h-11 pl-11 pr-11 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => set_tampilkan_sandi(!tampilkan_sandi)}
-                      className="absolute right-3.5 top-3 text-slate-500 hover:text-slate-700"
-                    >
-                      {tampilkan_sandi ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <FormPassword
+                  label="KATA SANDI"
+                  required
+                  value={kata_sandi_petugas}
+                  onChange={(e) => set_kata_sandi_petugas(e.target.value)}
+                  placeholder="••••••••"
+                  icon={Lock}
+                />
 
                 <button
                   type="submit"

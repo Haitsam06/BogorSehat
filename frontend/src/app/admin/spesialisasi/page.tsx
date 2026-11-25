@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
+import { FormAlert, SearchInput } from "@/components/ui";
 import {
   api,
   ApiMasterItem,
@@ -85,29 +86,11 @@ export default function AdminSpesialisasiPage() {
     <AdminSidebarLayout>
       <div className="space-y-6 max-w-[1120px]">
         {pesan && (
-          <div
-            className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
-              pesan.tipe === "sukses"
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {pesan.tipe === "sukses" ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-600" />
-              )}
-              <span>{pesan.pesan}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPesan(null)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <FormAlert
+            tipe={pesan.tipe}
+            pesan={pesan.pesan}
+            onClose={() => setPesan(null)}
+          />
         )}
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -133,19 +116,15 @@ export default function AdminSpesialisasiPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-4 top-3.5" />
-            <input
-              type="text"
-              value={kataKunci}
-              onChange={(e) => {
-                setKataKunci(e.target.value);
-                setHalaman(1);
-              }}
-              placeholder="Cari nama atau kode spesialisasi..."
-              className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-            />
-          </div>
+          <SearchInput
+            value={kataKunci}
+            onChange={(val) => {
+              setKataKunci(val);
+              setHalaman(1);
+            }}
+            placeholder="Cari nama atau kode spesialisasi..."
+            className="!h-11"
+          />
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">

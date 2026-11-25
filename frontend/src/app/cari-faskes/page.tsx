@@ -22,6 +22,7 @@ import DropdownPencarian from "@/components/ui/dropdown_pencarian";
 import FaskesCard from "@/components/faskes/FaskesCard";
 import PaginasiNavigasi from "@/components/ui/PaginasiNavigasi";
 import EmptyState from "@/components/ui/EmptyState";
+import { SearchInput } from "@/components/ui";
 import {
   api,
   ApiFasilitas,
@@ -250,10 +251,10 @@ function CariFaskesKonten() {
     const idSpesialisasi =
       filter_poli_aktif !== "ALL"
         ? POLI_ID_MAP[filter_poli_aktif] ||
-          daftarPoli.find((item) =>
-            cocokPoli(item.nama_spesialisasi, filter_poli_aktif)
-          )?.id_spesialisasi ||
-          undefined
+        daftarPoli.find((item) =>
+          cocokPoli(item.nama_spesialisasi, filter_poli_aktif)
+        )?.id_spesialisasi ||
+        undefined
         : undefined;
 
     if (
@@ -275,15 +276,15 @@ function CariFaskesKonten() {
       filter_wilayah === "KOTA_BOGOR"
         ? "KOTA BOGOR"
         : filter_wilayah === "KABUPATEN_BOGOR"
-        ? "KAB. BOGOR"
-        : undefined;
+          ? "KAB. BOGOR"
+          : undefined;
 
     const jenisParam =
       filter_kategori !== "ALL"
         ? filter_kategori
         : filter_igd === "IGD_YA"
-        ? "Rumah Sakit"
-        : undefined;
+          ? "Rumah Sakit"
+          : undefined;
 
     const idFasilitasNum =
       filter_fasilitas_aktif !== "ALL" ? Number(filter_fasilitas_aktif) : NaN;
@@ -411,36 +412,20 @@ function CariFaskesKonten() {
       {/* Kotak Pencarian Cepat & Tombol Filter */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
-            <input
-              type="text"
-              value={kata_kunci_pencarian}
-              onChange={(e) => set_kata_kunci_pencarian(e.target.value)}
-              placeholder="Cari nama faskes, alamat, atau poli..."
-              className="w-full h-11 pl-11 pr-9 rounded-xl bg-[#F4F6F8] text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A] transition"
-            />
-            {kata_kunci_pencarian && (
-              <button
-                type="button"
-                onClick={() => set_kata_kunci_pencarian("")}
-                className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 p-0.5"
-                title="Hapus kata kunci"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={kata_kunci_pencarian}
+            onChange={set_kata_kunci_pencarian}
+            placeholder="Cari nama faskes, alamat, atau poli..."
+          />
 
           {/* Tombol Filter di sebelah input pencarian (Hanya di Mobile/Tablet, disembunyikan di Desktop) */}
           <button
             type="button"
             onClick={() => setBukaFilterMobile((prev) => !prev)}
-            className={`h-11 px-3 sm:px-4 rounded-xl border flex lg:hidden items-center gap-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
-              bukaFilterMobile || ada_filter_aktif
+            className={`h-11 px-3 sm:px-4 rounded-xl border flex lg:hidden items-center gap-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${bukaFilterMobile || ada_filter_aktif
                 ? "bg-[#007E7A] text-white border-[#007E7A] shadow-xs"
                 : "bg-[#F4F6F8] text-slate-700 border-slate-200 hover:bg-slate-200/80"
-            }`}
+              }`}
             title={bukaFilterMobile ? "Sembunyikan Filter" : "Buka Filter"}
           >
             <SlidersHorizontal className="w-4 h-4" />
@@ -456,9 +441,8 @@ function CariFaskesKonten() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Kolom Sidebar Filter (Dapat dibuka/tutup di mobile & scrollable) */}
         <aside
-          className={`lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4 lg:sticky lg:top-[92px] max-h-[75vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar ${
-            bukaFilterMobile ? "block" : "hidden lg:block"
-          }`}
+          className={`lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-4 lg:sticky lg:top-[92px] max-h-[75vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar ${bukaFilterMobile ? "block" : "hidden lg:block"
+            }`}
         >
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
@@ -495,11 +479,10 @@ function CariFaskesKonten() {
                 return (
                   <label
                     key={opsi.nilai}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${
-                      terpilih
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${terpilih
                         ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
                         : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -542,24 +525,24 @@ function CariFaskesKonten() {
             daftar_pilihan={
               daftarPoli.length > 0
                 ? Array.from(
-                    new Set(
-                      daftarPoli.map((item) =>
-                        labelPoli(item.nama_spesialisasi)
-                      )
+                  new Set(
+                    daftarPoli.map((item) =>
+                      labelPoli(item.nama_spesialisasi)
                     )
                   )
+                )
                 : [
-                    "Poli Umum",
-                    "Poli Gigi",
-                    "Poli Anak",
-                    "Poli Jantung",
-                    "Poli Penyakit Dalam",
-                    "Poli Kandungan",
-                    "Poli Bedah",
-                    "Poli Mata",
-                    "Poli THT",
-                    "Poli Saraf",
-                  ]
+                  "Poli Umum",
+                  "Poli Gigi",
+                  "Poli Anak",
+                  "Poli Jantung",
+                  "Poli Penyakit Dalam",
+                  "Poli Kandungan",
+                  "Poli Bedah",
+                  "Poli Mata",
+                  "Poli THT",
+                  "Poli Saraf",
+                ]
             }
             nilai_terpilih={filter_poli_aktif}
             saat_memilih={(nilai) => set_filter_poli_aktif(nilai)}
@@ -585,18 +568,17 @@ function CariFaskesKonten() {
             <div className="space-y-1">
               {[
                 { nilai: "ALL", label: "Semua Faskes" },
-                { nilai: "BPJS_YA", label: "✓ Menerima BPJS" },
+                { nilai: "BPJS_YA", label: "Menerima BPJS" },
                 { nilai: "BPJS_TIDAK", label: "Non-BPJS" },
               ].map((opsi) => {
                 const terpilih = filter_bpjs === opsi.nilai;
                 return (
                   <label
                     key={opsi.nilai}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${
-                      terpilih
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${terpilih
                         ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
                         : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -627,11 +609,10 @@ function CariFaskesKonten() {
                 return (
                   <label
                     key={opsi.nilai}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${
-                      terpilih
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${terpilih
                         ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
                         : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"

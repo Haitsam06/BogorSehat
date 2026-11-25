@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { api, messageFromError } from "@/lib/api";
 import { useFaskes } from "@/context/FaskesContext";
+import { FormInput, FormPassword, FormAlert } from "@/components/ui";
 
 type Mode = "masuk" | "daftar";
 
@@ -32,7 +33,6 @@ export default function MasukPage() {
   const [telepon, setTelepon] = useState("");
   const [sandi, setSandi] = useState("");
   const [konfirmasi, setKonfirmasi] = useState("");
-  const [tampilkanSandi, setTampilkanSandi] = useState(false);
   const [sedangMemuat, setSedangMemuat] = useState(false);
   const [pesanError, setPesanError] = useState<string | null>(null);
 
@@ -188,10 +188,11 @@ export default function MasukPage() {
               </div>
 
               {pesanError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2.5 text-xs font-semibold text-rose-700">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{pesanError}</span>
-                </div>
+                <FormAlert
+                  tipe="error"
+                  pesan={pesanError}
+                  onClose={() => setPesanError(null)}
+                />
               )}
 
               <form
@@ -199,116 +200,58 @@ export default function MasukPage() {
                 className={`${mode === "daftar" ? "space-y-2.5 max-h-[50vh] sm:max-h-[380px] overflow-y-auto pr-1.5 custom-scrollbar" : "space-y-3.5"} pt-1`}
               >
                 {mode === "daftar" && (
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Nama Lengkap
-                    </label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <input
-                        type="text"
-                        required
-                        value={nama}
-                        onChange={(e) => setNama(e.target.value)}
-                        placeholder="contoh: Budi Santoso"
-                        className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                      />
-                    </div>
-                  </div>
+                  <FormInput
+                    label="Nama Lengkap"
+                    required
+                    icon={User}
+                    value={nama}
+                    onChange={(e) => setNama(e.target.value)}
+                    placeholder="contoh: Budi Santoso"
+                  />
                 )}
 
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">
-                    Alamat Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="contoh: nama@email.com"
-                      className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                  </div>
-                </div>
+                <FormInput
+                  label="Alamat Email"
+                  required
+                  type="email"
+                  icon={Mail}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="contoh: nama@email.com"
+                />
 
                 {mode === "daftar" && (
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Nomor Telepon{" "}
-                      <span className="font-normal text-slate-400">
-                        (opsional)
-                      </span>
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <input
-                        type="tel"
-                        value={telepon}
-                        onChange={(e) => setTelepon(e.target.value)}
-                        placeholder="contoh: 0812XXXXXXXX"
-                        className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                      />
-                    </div>
-                  </div>
+                  <FormInput
+                    label="Nomor Telepon"
+                    type="tel"
+                    icon={Phone}
+                    value={telepon}
+                    onChange={(e) => setTelepon(e.target.value)}
+                    placeholder="contoh: 0812XXXXXXXX"
+                    helperText="(opsional)"
+                  />
                 )}
 
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">
-                    Kata Sandi Akun
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type={tampilkanSandi ? "text" : "password"}
-                      required
-                      value={sandi}
-                      onChange={(e) => setSandi(e.target.value)}
-                      placeholder={
-                        mode === "masuk"
-                          ? "Masukkan kata sandi Anda"
-                          : "Buat kata sandi minimal 8 karakter"
-                      }
-                      className="w-full h-10 pl-10 pr-10 rounded-xl bg-[#F3F5F8] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setTampilkanSandi((prev) => !prev)}
-                      className="absolute right-3.5 top-2.5 text-slate-500 hover:text-slate-700"
-                      aria-label={
-                        tampilkanSandi
-                          ? "Sembunyikan kata sandi"
-                          : "Tampilkan kata sandi"
-                      }
-                    >
-                      {tampilkanSandi ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <FormPassword
+                  label="Kata Sandi Akun"
+                  required
+                  value={sandi}
+                  onChange={(e) => setSandi(e.target.value)}
+                  placeholder={
+                    mode === "masuk"
+                      ? "Masukkan kata sandi Anda"
+                      : "Buat kata sandi minimal 8 karakter"
+                  }
+                />
 
                 {mode === "daftar" && (
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Konfirmasi Kata Sandi
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <input
-                        type={tampilkanSandi ? "text" : "password"}
-                        required
-                        value={konfirmasi}
-                        onChange={(e) => setKonfirmasi(e.target.value)}
-                        placeholder="Masukkan ulang kata sandi Anda"
-                        className="w-full h-10 pl-10 pr-10 rounded-xl bg-[#F3F5F8] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                      />
-                    </div>
-                  </div>
+                  <FormPassword
+                    label="Konfirmasi Kata Sandi"
+                    required
+                    value={konfirmasi}
+                    onChange={(e) => setKonfirmasi(e.target.value)}
+                    placeholder="Masukkan ulang kata sandi Anda"
+                  />
                 )}
 
                 <button

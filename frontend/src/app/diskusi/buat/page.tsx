@@ -28,6 +28,7 @@ import {
   getAuthUser,
   messageFromError,
 } from "@/lib/api";
+import { FormInput, FormSelect, FormAlert } from "@/components/ui";
 
 const KATEGORI_DISKUSI_OPTIONS = [
   { nilai: "kesehatan", label: "Tips & Informasi Kesehatan Umum" },
@@ -245,81 +246,46 @@ export default function BuatDiskusiBaruPage() {
 
       {/* Error Alert */}
       {errorMessage && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span>{errorMessage}</span>
-            {errorMessage.includes("login") && (
-              <div className="mt-1.5">
-                <Link
-                  href="/admin/login"
-                  className="font-bold text-[#007E7A] hover:underline"
-                >
-                  Buka Halaman Login &rarr;
-                </Link>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setErrorMessage(null)}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <FormAlert
+          tipe="error"
+          pesan={errorMessage}
+          link={
+            errorMessage.includes("login")
+              ? { href: "/admin/login", label: "Buka Halaman Login" }
+              : undefined
+          }
+          onClose={() => setErrorMessage(null)}
+        />
       )}
 
       {/* Main Form Card (Matching Screenshot Pixel-Perfect) */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-9 shadow-xs">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Judul Diskusi */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-900">
-              Judul Diskusi <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={judul}
-              onChange={(e) => setJudul(e.target.value)}
-              placeholder="Placeholder"
-              className="w-full h-11 px-3.5 rounded-lg border border-slate-300 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
-            />
-          </div>
+          <FormInput
+            label="Judul Diskusi"
+            required
+            value={judul}
+            onChange={(e) => setJudul(e.target.value)}
+            placeholder="Placeholder"
+            className="h-11 rounded-lg border border-slate-300 bg-white"
+          />
 
           {/* Kategori Diskusi */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-900">
-              Kategori Diskusi <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select
-                required
-                value={kategori}
-                onChange={(e) => setKategori(e.target.value)}
-                className={`w-full h-11 px-3.5 pr-10 rounded-lg border border-slate-300 text-sm appearance-none bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition ${
-                  kategori ? "text-slate-900" : "text-slate-400"
-                }`}
-              >
-                <option value="" disabled>
-                  Text
-                </option>
-                {KATEGORI_DISKUSI_OPTIONS.map((kat) => (
-                  <option
-                    key={kat.nilai}
-                    value={kat.nilai}
-                    className="text-slate-800"
-                  >
-                    {kat.label}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                <ChevronsUpDown className="w-4 h-4 text-slate-400" />
-              </div>
-            </div>
-          </div>
+          <FormSelect
+            label="Kategori Diskusi"
+            required
+            value={kategori}
+            onChange={(e) => setKategori(e.target.value)}
+            options={[
+              { value: "", label: "Text", disabled: true },
+              ...KATEGORI_DISKUSI_OPTIONS.map((kat) => ({
+                value: kat.nilai,
+                label: kat.label,
+              })),
+            ]}
+            className="h-11 rounded-lg border border-slate-300 bg-white"
+          />
 
           {/* Fasilitas Kesehatan Terkait (Opsional Searchable Dropdown) */}
           <div className="space-y-2" ref={dropdownFaskesRef}>

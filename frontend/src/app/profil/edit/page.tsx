@@ -9,11 +9,8 @@ import {
   Phone,
   Calendar,
   Lock,
-  Eye,
-  EyeOff,
   Camera,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   Save,
   ArrowLeft,
@@ -22,6 +19,7 @@ import {
 } from "lucide-react";
 import { useFaskes } from "@/context/FaskesContext";
 import { api, resolveStorageUrl, messageFromError } from "@/lib/api";
+import { FormInput, FormPassword, FormSelect, FormAlert } from "@/components/ui";
 
 function getInitials(name?: string | null): string {
   if (!name) return "U";
@@ -48,11 +46,6 @@ export default function EditProfilPage() {
   const [sandiSaatIni, setSandiSaatIni] = useState("");
   const [sandiBaru, setSandiBaru] = useState("");
   const [konfirmasiSandi, setKonfirmasiSandi] = useState("");
-
-  // Visibility Toggles
-  const [tampilkanSandiLama, setTampilkanSandiLama] = useState(false);
-  const [tampilkanSandiBaru, setTampilkanSandiBaru] = useState(false);
-  const [tampilkanKonfirmasi, setTampilkanKonfirmasi] = useState(false);
 
   // Status State
   const [sedangUnggahFoto, setSedangUnggahFoto] = useState(false);
@@ -223,29 +216,11 @@ export default function EditProfilPage() {
 
         {/* Notifikasi Alert */}
         {pesanNotif && (
-          <div
-            className={`p-4 rounded-2xl flex items-center justify-between text-xs font-semibold ${
-              pesanNotif.tipe === "sukses"
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {pesanNotif.tipe === "sukses" ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-              )}
-              <span>{pesanNotif.pesan}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPesanNotif(null)}
-              className="text-slate-400 hover:text-slate-600 font-bold ml-3"
-            >
-              ✕
-            </button>
-          </div>
+          <FormAlert
+            tipe={pesanNotif.tipe}
+            pesan={pesanNotif.pesan}
+            onClose={() => setPesanNotif(null)}
+          />
         )}
 
         <form onSubmit={tanganiSubmit} className="space-y-6">
@@ -327,106 +302,64 @@ export default function EditProfilPage() {
               </div>
             </div>
 
-            {/* Grid Input Form Identitas Dasar */}
+            {/* Grid Input Form Identitas Dasar (Modular Components) */}
             <div className="space-y-4">
-              {/* Nama Lengkap */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                  Nama Lengkap <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    required
-                    value={nama}
-                    onChange={(e) => setNama(e.target.value)}
-                    placeholder="Masukkan nama lengkap Anda"
-                    className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                </div>
-              </div>
+              <FormInput
+                label="Nama Lengkap"
+                required
+                icon={User}
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                placeholder="Masukkan nama lengkap Anda"
+              />
 
-              {/* Baris Email & No Telp */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Email */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                      Alamat Email <span className="text-rose-500">*</span>
-                    </label>
+                <FormInput
+                  label="Alamat Email"
+                  required
+                  type="email"
+                  icon={Mail}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="contoh: nama@email.com"
+                  labelExtra={
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                       <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
                       <span>Terverifikasi</span>
                     </span>
-                  </div>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="contoh: nama@email.com"
-                      className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                  </div>
-                </div>
+                  }
+                />
 
-                {/* Nomor Telepon */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                    Nomor Telepon / WhatsApp
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="tel"
-                      value={telepon}
-                      onChange={(e) => setTelepon(e.target.value)}
-                      placeholder="contoh: 081234567890"
-                      className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    Digunakan untuk notifikasi antrean &amp; darurat 119.
-                  </p>
-                </div>
+                <FormInput
+                  label="Nomor Telepon / WhatsApp"
+                  type="tel"
+                  icon={Phone}
+                  value={telepon}
+                  onChange={(e) => setTelepon(e.target.value)}
+                  placeholder="contoh: 081234567890"
+                  helperText="Digunakan untuk notifikasi antrean & darurat 119."
+                />
               </div>
 
-              {/* Baris Jenis Kelamin & Tanggal Lahir */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Jenis Kelamin */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                    Jenis Kelamin
-                  </label>
-                  <select
-                    value={jenisKelamin}
-                    onChange={(e) => setJenisKelamin(e.target.value)}
-                    className="w-full h-10 px-3.5 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  >
-                    <option value="">Pilih Jenis Kelamin</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
-                  </select>
-                </div>
+                <FormSelect
+                  label="Jenis Kelamin"
+                  value={jenisKelamin}
+                  onChange={(e) => setJenisKelamin(e.target.value)}
+                  options={[
+                    { value: "", label: "Pilih Jenis Kelamin" },
+                    { value: "Laki-laki", label: "Laki-laki" },
+                    { value: "Perempuan", label: "Perempuan" },
+                  ]}
+                />
 
-                {/* Tanggal Lahir */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
-                    Tanggal Lahir
-                  </label>
-                  <div className="relative">
-                    <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={tanggalLahir}
-                      onChange={(e) => setTanggalLahir(e.target.value)}
-                      className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                    />
-                  </div>
-                </div>
+                <FormInput
+                  label="Tanggal Lahir"
+                  type="date"
+                  icon={Calendar}
+                  value={tanggalLahir}
+                  onChange={(e) => setTanggalLahir(e.target.value)}
+                />
               </div>
             </div>
           </div>
@@ -452,74 +385,26 @@ export default function EditProfilPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Kata Sandi Saat Ini */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-700">
-                  Kata Sandi Saat Ini
-                </label>
-                <div className="relative">
-                  <input
-                    type={tampilkanSandiLama ? "text" : "password"}
-                    value={sandiSaatIni}
-                    onChange={(e) => setSandiSaatIni(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full h-10 pl-3.5 pr-10 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setTampilkanSandiLama((prev) => !prev)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                  >
-                    {tampilkanSandiLama ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+              <FormPassword
+                label="Kata Sandi Saat Ini"
+                value={sandiSaatIni}
+                onChange={(e) => setSandiSaatIni(e.target.value)}
+                placeholder="••••••••"
+              />
 
-              {/* Kata Sandi Baru */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-700">
-                  Kata Sandi Baru
-                </label>
-                <div className="relative">
-                  <input
-                    type={tampilkanSandiBaru ? "text" : "password"}
-                    value={sandiBaru}
-                    onChange={(e) => setSandiBaru(e.target.value)}
-                    placeholder="Minimal 8 karakter"
-                    className="w-full h-10 pl-3.5 pr-10 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setTampilkanSandiBaru((prev) => !prev)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                  >
-                    {tampilkanSandiBaru ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+              <FormPassword
+                label="Kata Sandi Baru"
+                value={sandiBaru}
+                onChange={(e) => setSandiBaru(e.target.value)}
+                placeholder="Minimal 8 karakter"
+              />
 
-              {/* Konfirmasi Sandi Baru */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-700">
-                  Konfirmasi Sandi Baru
-                </label>
-                <div className="relative">
-                  <input
-                    type={tampilkanKonfirmasi ? "text" : "password"}
-                    value={konfirmasiSandi}
-                    onChange={(e) => setKonfirmasiSandi(e.target.value)}
-                    placeholder="Ulangi kata sandi"
-                    className="w-full h-10 pl-3.5 pr-10 rounded-xl bg-[#F3F5F8] text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setTampilkanKonfirmasi((prev) => !prev)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                  >
-                    {tampilkanKonfirmasi ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+              <FormPassword
+                label="Konfirmasi Sandi Baru"
+                value={konfirmasiSandi}
+                onChange={(e) => setKonfirmasiSandi(e.target.value)}
+                placeholder="Ulangi kata sandi"
+              />
             </div>
 
             <p className="text-[11px] text-slate-500 flex items-center gap-1.5">

@@ -31,6 +31,7 @@ import {
   messageFromError,
 } from "@/lib/api";
 import ModalReportKonten from "@/components/forum/ModalReportKonten";
+import { FormAlert, FormTextarea } from "@/components/ui";
 
 function formatTanggal(value?: string): string {
   if (!value) return "";
@@ -415,29 +416,11 @@ export default function DetailDiskusiPage({
 
       {/* Alert Notifikasi */}
       {pesanNotif && (
-        <div
-          className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
-            pesanNotif.tipe === "sukses"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {pesanNotif.tipe === "sukses" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            )}
-            <span>{pesanNotif.pesan}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setPesanNotif(null)}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <FormAlert
+          tipe={pesanNotif.tipe}
+          pesan={pesanNotif.pesan}
+          onClose={() => setPesanNotif(null)}
+        />
       )}
 
       {/* Konten Utama Diskusi & Tanggapan */}
@@ -585,13 +568,13 @@ export default function DetailDiskusiPage({
             </h3>
 
             <form onSubmit={handleKirimTanggapan} className="space-y-3">
-              <textarea
+              <FormTextarea
                 required
                 rows={4}
                 value={teksTanggapan}
                 onChange={(e) => setTeksTanggapan(e.target.value)}
                 placeholder="Tulis tanggapan atau pengalaman Anda seputar topik ini... (Saling menghargai dan jaga kerahasiaan data medis)"
-                className="w-full p-3.5 rounded-xl border border-slate-200 text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A] focus:border-transparent transition leading-relaxed"
+                className="leading-relaxed"
               />
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">

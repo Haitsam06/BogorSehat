@@ -31,7 +31,7 @@ import {
 } from "@/lib/api";
 import ModalReportKonten from "@/components/forum/ModalReportKonten";
 import DiskusiCard from "@/components/forum/DiskusiCard";
-import EmptyState from "@/components/ui/EmptyState";
+import { EmptyState, FormAlert, SearchInput } from "@/components/ui";
 
 export default function ForumDiskusiPage() {
   const [tabAktif, setTabAktif] = useState<"semua" | "saya">("semua");
@@ -190,29 +190,11 @@ export default function ForumDiskusiPage() {
 
       {/* Alert Notifikasi */}
       {pesanNotif && (
-        <div
-          className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
-            pesanNotif.tipe === "sukses"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {pesanNotif.tipe === "sukses" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            )}
-            <span>{pesanNotif.pesan}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setPesanNotif(null)}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <FormAlert
+          tipe={pesanNotif.tipe}
+          pesan={pesanNotif.pesan}
+          onClose={() => setPesanNotif(null)}
+        />
       )}
 
       {/* Banner Forum Diskusi */}
@@ -250,23 +232,15 @@ export default function ForumDiskusiPage() {
 
         {/* Kotak Pencarian */}
         <div className="pt-1">
-          <div className="relative flex items-center">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
-            <input
-              type="text"
-              value={kataKunci}
-              onChange={(e) => setKataKunci(e.target.value)}
-              placeholder="Cari topik, pertanyaan, dokter, rujukan, atau nama faskes..."
-              className="w-full h-12 pl-11 pr-24 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#007E7A] focus:border-transparent transition"
-            />
-            <button
-              type="button"
-              className="absolute right-2 px-4 py-2 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold flex items-center gap-1.5 transition"
-            >
-              <span>Cari</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <SearchInput
+            value={kataKunci}
+            onChange={(val) => {
+              setKataKunci(val);
+              setHalaman(1);
+            }}
+            placeholder="Cari topik, pertanyaan, dokter, rujukan, atau nama faskes..."
+            className="!h-12 border border-slate-200 bg-slate-50/50 focus:bg-white"
+          />
         </div>
       </div>
 

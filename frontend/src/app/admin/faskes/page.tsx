@@ -16,6 +16,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
+import { FormAlert, SearchInput } from "@/components/ui";
 import { api, ApiFaskes, ApiPaginationMeta, messageFromError } from "@/lib/api";
 
 export default function AdminFaskesPage() {
@@ -103,29 +104,11 @@ export default function AdminFaskesPage() {
       <div className="space-y-6 max-w-[1120px]">
         {/* Notifikasi Status */}
         {pesanStatus && (
-          <div
-            className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
-              pesanStatus.tipe === "sukses"
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {pesanStatus.tipe === "sukses" ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-600" />
-              )}
-              <span>{pesanStatus.pesan}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPesanStatus(null)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <FormAlert
+            tipe={pesanStatus.tipe}
+            pesan={pesanStatus.pesan}
+            onClose={() => setPesanStatus(null)}
+          />
         )}
 
         {/* Baris Judul & Tombol Aksi */}
@@ -163,16 +146,12 @@ export default function AdminFaskesPage() {
 
         {/* Kartu Pencarian */}
         <div className="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-4 top-3.5" />
-            <input
-              type="text"
-              value={kata_kunci_admin}
-              onChange={(e) => set_kata_kunci_admin(e.target.value)}
-              placeholder="Cari nama faskes, kode kemenkes (cth: 3271xxx), atau kecamatan..."
-              className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#F3F5F8] text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#007E7A]"
-            />
-          </div>
+          <SearchInput
+            value={kata_kunci_admin}
+            onChange={(val) => set_kata_kunci_admin(val)}
+            placeholder="Cari nama faskes, kode kemenkes (cth: 3271xxx), atau kecamatan..."
+            className="!h-11"
+          />
         </div>
 
         {/* Kartu Tabel Faskes */}

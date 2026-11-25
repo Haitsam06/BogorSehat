@@ -3,8 +3,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import type LType from "leaflet";
 import { DataFaskesItem } from "@/data/data_faskes";
+import { BOGOR_DEFAULT_CENTER, BOGOR_MAX_BOUNDS, isInsideBogor } from "@/data/data_wilayah";
 import { useFaskes } from "@/context/FaskesContext";
 import { getFaskesVisual } from "@/components/ui/faskes_thumbnail";
+
+export interface GeoJsonLayerConfig {
+  /** URL geojson (dari /public) */
+  url: string;
+  /** Nama kecamatan yang disorot (opsional) */
+  sorotKecamatan?: string | null;
+  /** Callback ketika user klik polygon kecamatan */
+  onKecamatanClick?: (namaKecamatan: string) => void;
+}
 
 interface PetaLeafletProps {
   daftar_faskes: DataFaskesItem[];
@@ -16,6 +26,14 @@ interface PetaLeafletProps {
   tampilkan_radius?: boolean;
   radius_km?: number;
   saat_pilih_faskes?: (faskes_item: DataFaskesItem) => void;
+  /** Config layer GeoJSON wilayah (opsional) */
+  geojson_layers?: GeoJsonLayerConfig[];
+  /** Fit peta ke bounding box ini saat mount atau saat nilai berubah */
+  fit_bounds?: [[number, number], [number, number]] | null;
+  /** Pusat default peta */
+  pusat_awal?: [number, number];
+  /** Batasi pergerakan peta ke wilayah Bogor */
+  batasi_bogor?: boolean;
 }
 
 const MARKER_BATCH_SIZE = 60;
@@ -132,6 +150,10 @@ export default function PetaLeaflet({
   tampilkan_radius = false,
   radius_km = 5,
   saat_pilih_faskes,
+  geojson_layers = [],
+  fit_bounds = null,
+  pusat_awal,
+  batasi_bogor = false,
 }: PetaLeafletProps) {
   const { lokasiPengguna, deteksiLokasiGPS } = useFaskes();
   const kontainer_peta_ref = useRef<HTMLDivElement | null>(null);
@@ -140,6 +162,8 @@ export default function PetaLeaflet({
   const grup_marker_ref = useRef<LType.LayerGroup | null>(null);
   const marker_pengguna_ref = useRef<LType.Marker | null>(null);
   const circle_radius_ref = useRef<LType.Circle | null>(null);
+  // Refs untuk GeoJSON layers (supaya bisa diupdate tanpa reinit peta)
+  const geojson_layer_refs = useRef<Map<string, LType.GeoJSON>>(new Map());
 
   const markersByIdRef = useRef<
     Map<number, { marker: LType.Marker; item: DataFaskesItem }>
@@ -166,20 +190,35 @@ export default function PetaLeaflet({
 
       leaflet_lib_ref.current = L;
 
-      const titik_pusat_awal: [number, number] = faskes_terpilih
+      // Tentukan titik pusat awal
+      const titik_pusat_awal: [number, number] = pusat_awal
+        ? pusat_awal
+        : faskes_terpilih
         ? [faskes_terpilih.latitude, faskes_terpilih.longitude]
-        : [lokasiPengguna.latitude, lokasiPengguna.longitude];
+        : isInsideBogor(lokasiPengguna.latitude, lokasiPengguna.longitude)
+        ? [lokasiPengguna.latitude, lokasiPengguna.longitude]
+        : BOGOR_DEFAULT_CENTER;
 
-      const peta = L.map(kontainer_peta_ref.current, {
+      const mapOptions: LType.MapOptions = {
         center: titik_pusat_awal,
         zoom: zoom_awal,
         zoomControl: false,
-      });
+      };
+
+      // Batasi pergerakan ke wilayah Bogor
+      if (batasi_bogor) {
+        mapOptions.maxBounds = BOGOR_MAX_BOUNDS;
+        mapOptions.maxBoundsViscosity = 1.0;
+        mapOptions.minZoom = 11;
+      }
+
+      const peta = L.map(kontainer_peta_ref.current, mapOptions);
 
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
+        bounds: batasi_bogor ? BOGOR_MAX_BOUNDS : undefined,
       }).addTo(peta);
 
       const ikon_pengguna = L.divIcon({
@@ -235,6 +274,11 @@ export default function PetaLeaflet({
       grup_marker_ref.current = L.layerGroup().addTo(peta);
       instansi_peta_ref.current = peta;
       set_peta_siap(true);
+
+      // Fit ke fit_bounds jika disediakan
+      if (fit_bounds) {
+        peta.fitBounds(fit_bounds, { padding: [20, 20] });
+      }
     }
 
     inisialisasi_leaflet();
@@ -248,9 +292,123 @@ export default function PetaLeaflet({
       leaflet_lib_ref.current = null;
       grup_marker_ref.current = null;
       markersByIdRef.current.clear();
+      geojson_layer_refs.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // === GeoJSON Layer Wilayah ===
+  useEffect(() => {
+    if (!peta_siap || !instansi_peta_ref.current) return;
+    const peta = instansi_peta_ref.current;
+    const L = leaflet_lib_ref.current;
+    if (!L) return;
+    // Capture non-null L untuk dipakai di dalam async function
+    const LeafletLib = L;
+
+    let aktif = true;
+
+    async function muatGeojsonLayers() {
+      // Hapus layer lama yang tidak ada di config baru
+      const urlsBaru = new Set(geojson_layers.map((c) => c.url));
+      for (const [url, layer] of geojson_layer_refs.current.entries()) {
+        if (!urlsBaru.has(url)) {
+          peta.removeLayer(layer);
+          geojson_layer_refs.current.delete(url);
+        }
+      }
+
+      for (const config of geojson_layers) {
+        try {
+          const res = await fetch(config.url);
+          if (!aktif) return;
+          const geojsonData = await res.json();
+          if (!aktif) return;
+
+          // Hapus layer lama untuk URL ini jika ada
+          if (geojson_layer_refs.current.has(config.url)) {
+            peta.removeLayer(geojson_layer_refs.current.get(config.url)!);
+          }
+
+          const layer = LeafletLib.geoJSON(geojsonData, {
+            style: (feature) => {
+              const namaKec: string = feature?.properties?.NAMOBJ ?? "";
+              const disorot = config.sorotKecamatan
+                ? namaKec.toLowerCase() === config.sorotKecamatan.toLowerCase()
+                : false;
+
+              return {
+                fillColor: "#059669",
+                fillOpacity: disorot ? 0.35 : 0.08,
+                color: disorot ? "#047857" : "#059669",
+                weight: disorot ? 2.5 : 1.2,
+                opacity: 0.7,
+              };
+            },
+            onEachFeature: (feature, lyr) => {
+              const namaKec: string = feature?.properties?.NAMOBJ ?? "";
+              if (namaKec) {
+                lyr.bindTooltip(namaKec, {
+                  permanent: false,
+                  className: "tooltip_faskes_custom",
+                  direction: "center",
+                  sticky: true,
+                });
+              }
+
+              lyr.on("click", () => {
+                if (namaKec && config.onKecamatanClick) {
+                  config.onKecamatanClick(namaKec);
+                }
+              });
+
+              lyr.on("mouseover", () => {
+                (lyr as LType.Path).setStyle({
+                  fillColor: "#059669",
+                  fillOpacity: 0.25,
+                  weight: 2,
+                  color: "#047857",
+                });
+              });
+
+              lyr.on("mouseout", () => {
+                const disorot = config.sorotKecamatan
+                  ? namaKec.toLowerCase() === config.sorotKecamatan?.toLowerCase()
+                  : false;
+                (lyr as LType.Path).setStyle({
+                  fillColor: "#059669",
+                  fillOpacity: disorot ? 0.35 : 0.08,
+                  weight: disorot ? 2.5 : 1.2,
+                  color: disorot ? "#047857" : "#059669",
+                });
+              });
+            },
+          }).addTo(peta);
+
+          geojson_layer_refs.current.set(config.url, layer);
+        } catch {
+          // ignore fetch error (offline / file tidak ada)
+        }
+      }
+    }
+
+    muatGeojsonLayers();
+
+    return () => {
+      aktif = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peta_siap, geojson_layers]);
+
+  // === Fit bounds saat berubah (misal: pilih wilayah/kecamatan) ===
+  useEffect(() => {
+    if (!peta_siap || !instansi_peta_ref.current || !fit_bounds) return;
+    instansi_peta_ref.current.flyToBounds(fit_bounds, {
+      padding: [20, 20],
+      duration: 0.6,
+      maxZoom: fit_bounds[0][0] === fit_bounds[1][0] ? 14 : undefined,
+    });
+  }, [fit_bounds, peta_siap]);
 
   // Render poin-poin faskes secara bertahap per frame tanpa membangun HTML tooltip di awal.
   // Badge card tooltip baru dibuat secara lazy saat marker di-hover atau diklik.

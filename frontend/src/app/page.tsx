@@ -24,7 +24,13 @@ import {
   daftar_langkah_rujukan,
   daftar_pertanyaan_umum,
   DataFaskesItem,
+  lokasi_default_pengguna,
 } from "@/data/data_faskes";
+import {
+  BOGOR_DEFAULT_CENTER,
+  BOGOR_DEFAULT_ZOOM,
+  isInsideBogor,
+} from "@/data/data_wilayah";
 import { BadgePoli } from "@/components/ui/badge_poli";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import FaskesCard from "@/components/faskes/FaskesCard";
@@ -46,6 +52,17 @@ export default function BerandaPage() {
   const [dataHome, setDataHome] = useState<ApiHomeDashboard | null>(null);
   const [sedangMemuatNearby, setSedangMemuatNearby] = useState(false);
   const [id_faq_terbuka, set_id_faq_terbuka] = useState<number | null>(1);
+
+  // Cek apakah lokasi GPS berada di luar wilayah Bogor
+  const diluarBogor = React.useMemo(() => {
+    const lat = lokasiPengguna.latitude;
+    const lng = lokasiPengguna.longitude;
+    // Jika masih memakai lokasi default (belum ada izin GPS), jangan anggap di luar
+    if (lat === lokasi_default_pengguna.latitude && lng === lokasi_default_pengguna.longitude) {
+      return false;
+    }
+    return !isInsideBogor(lat, lng);
+  }, [lokasiPengguna.latitude, lokasiPengguna.longitude]);
 
   // 1. Muat ringkasan data /home (hanya sekali saat mount, tidak terpengaruh GPS)
   useEffect(() => {
@@ -141,12 +158,20 @@ export default function BerandaPage() {
             <button
               type="button"
               onClick={deteksiLokasiGPS}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-[#CDEAE8] shadow-xs text-[#007E7A] text-xs font-semibold mb-5 hover:border-[#007E7A] transition select-none cursor-pointer"
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-sm border shadow-xs text-xs font-semibold mb-5 transition select-none cursor-pointer ${
+                diluarBogor
+                  ? "bg-amber-50/90 border-amber-300 text-amber-800 hover:border-amber-400"
+                  : "bg-white/90 border-[#CDEAE8] text-[#007E7A] hover:border-[#007E7A]"
+              }`}
               title="Klik untuk mendeteksi koordinat GPS perangkat Anda"
             >
-              <MapPin className="w-3.5 h-3.5 text-[#007E7A]" />
+              <MapPin className={`w-3.5 h-3.5 ${diluarBogor ? "text-amber-700" : "text-[#007E7A]"}`} />
               <span>
-                {memuatGPS ? "Mendeteksi posisi GPS..." : `Anda berada di ${lokasiPengguna.nama_jalan}`}
+                {memuatGPS
+                  ? "Mendeteksi posisi GPS..."
+                  : diluarBogor
+                  ? "Anda berada di luar wilayah Bogor"
+                  : `Anda berada di ${lokasiPengguna.nama_jalan}`}
               </span>
             </button>
           </AnimasiScroll>
@@ -307,20 +332,6 @@ export default function BerandaPage() {
                       </p>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-emerald-50/40 border border-emerald-100/80">
-                    <div className="w-11 h-11 rounded-xl bg-[#86EFAC] text-[#065F46] font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                      100%
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-extrabold text-slate-900">
-                        Koordinat Terverifikasi Lapangan
-                      </h3>
-                      <p className="text-[11px] text-slate-500">
-                        Standar EPSG:4326 WGS84 Geodetik Resmi
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -336,10 +347,18 @@ export default function BerandaPage() {
             </div>
 
             {/* Pratinjau Leaflet Map */}
-            <div className="lg:col-span-6 relative h-[380px] lg:h-auto min-h-[380px] bg-slate-100">
+            <div className="lg:col-span-6 relative h-[380px] lg:h-auto min-h-[380px] bg-slate-100 overflow-hidden">
+              {diluarBogor && (
+                <div className="absolute top-3 left-3 z-[400] rounded-full border border-amber-200 bg-amber-50/95 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-amber-800 shadow-sm flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3 text-amber-700" />
+                  <span>Anda berada di luar wilayah Bogor</span>
+                </div>
+              )}
               <PetaLeaflet
                 daftar_faskes={daftarPeta}
-                zoom_awal={13}
+                zoom_awal={BOGOR_DEFAULT_ZOOM}
+                pusat_awal={BOGOR_DEFAULT_CENTER}
+                batasi_bogor={true}
                 tampilkan_legenda={true}
                 tampilkan_kontrol_kanan_atas={true}
               />

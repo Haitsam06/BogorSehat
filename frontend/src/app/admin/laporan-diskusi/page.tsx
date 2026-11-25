@@ -18,6 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
+import { FormAlert, SearchInput } from "@/components/ui";
 import { api, messageFromError } from "@/lib/api";
 
 interface AduanKomentarItem {
@@ -172,25 +173,11 @@ export default function LaporanDataDiskusiPage() {
       <div className="space-y-6 max-w-[1140px]">
         {/* Notifikasi Alert */}
         {pesanNotif && (
-          <div
-            className={`p-4 rounded-xl flex items-center justify-between text-xs font-semibold ${
-              pesanNotif.tipe === "sukses"
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>{pesanNotif.pesan}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPesanNotif(null)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <FormAlert
+            tipe={pesanNotif.tipe}
+            pesan={pesanNotif.pesan}
+            onClose={() => setPesanNotif(null)}
+          />
         )}
 
         {/* Baris Judul & Tombol Header */}
@@ -232,16 +219,13 @@ export default function LaporanDataDiskusiPage() {
           <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
             <div className="flex flex-col sm:flex-row gap-3 items-center">
               {/* Input Pencarian */}
-              <div className="flex-1 w-full relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={kataKunci}
-                  onChange={(e) => setKataKunci(e.target.value)}
-                  placeholder="Cari..."
-                  className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
-                />
-              </div>
+              <SearchInput
+                value={kataKunci}
+                onChange={setKataKunci}
+                placeholder="Cari..."
+                className="!h-10 text-xs border border-slate-200 bg-slate-50/50 focus:bg-white"
+                containerClassName="w-full"
+              />
 
               {/* Dropdown Status */}
               <div className="w-full sm:w-48">

@@ -27,6 +27,7 @@ import PetaLeaflet from "@/components/map/peta_leaflet";
 import ModalReportFaskes from "@/components/faskes/ModalReportFaskes";
 import FaskesImageCarousel from "@/components/faskes/FaskesImageCarousel";
 import StarRating from "@/components/ui/StarRating";
+import { FormTextarea } from "@/components/ui/FormTextarea";
 import {
   api,
   ApiFaskes,
@@ -580,12 +581,12 @@ export default function DetailFaskesPage({
                   </div>
                 </div>
 
-                <textarea
+                <FormTextarea
                   rows={3}
                   value={teks_ulasan_baru}
                   onChange={(e) => set_teks_ulasan_baru(e.target.value)}
                   placeholder="Bagikan ulasan detail mengenai keramahan tenaga medis, ketepatan jadwal poli, kebersihan fasilitas, dan efisiensi pelayanan farmasi obat..."
-                  className="w-full p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007E7A] transition"
+                  className="bg-white border border-slate-200"
                 />
 
                 <div className="flex items-center justify-end pt-1">
