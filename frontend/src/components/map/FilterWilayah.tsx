@@ -103,19 +103,19 @@ export function FilterWilayah({ value, onChange, className = "" }: FilterWilayah
 
       {/* Badge aktif */}
       {adaFilter && (
-        <div className="text-[10px] font-semibold text-[#047857] bg-emerald-50 border border-emerald-200/60 rounded-lg px-2 py-1 flex items-center gap-1 leading-none">
-          <Layers className="w-3 h-3 shrink-0" />
-          <span>
+          <div className="text-[10px] font-semibold text-[#047857] bg-emerald-50 border border-emerald-200/60 rounded-lg px-2 py-1 flex items-center gap-1 leading-none">
+            <Layers className="w-3 h-3 shrink-0" />
+            <span>
             {value.kecamatan === "SEMUA"
-              ? `Semua Kecamatan (${wilayahTerpilih?.nama})`
-              : value.kecamatan
-              ? `Kec. ${value.kecamatan}`
+                ? `Semua Kecamatan (${wilayahTerpilih?.nama})`
+                : value.kecamatan
+                  ? `Kec. ${value.kecamatan}`
               : `${wilayahTerpilih?.nama} (Pilih Kecamatan)`}
-          </span>
-        </div>
+            </span>
+          </div>
       )}
-    </div>
-  );
+        </div>
+      );
 }
 
-export default FilterWilayah;
+      export default FilterWilayah;

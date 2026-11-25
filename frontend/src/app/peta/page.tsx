@@ -42,9 +42,9 @@ function hitungJarakKm(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
@@ -297,11 +297,10 @@ export default function PetaInteraktifPage() {
               type="button"
               onClick={() => setTampilFilter((v) => !v)}
               title="Tampilkan panel filter"
-              className={`p-1.5 rounded-lg transition ${
-                tampilFilter || filterWilayah.wilayahId
+              className={`p-1.5 rounded-lg transition ${tampilFilter || filterWilayah.wilayahId
                   ? "bg-[#007E7A] text-white"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-              }`}
+                }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
             </button>
@@ -344,11 +343,10 @@ export default function PetaInteraktifPage() {
                       key={nilai}
                       type="button"
                       onClick={() => setRadiusKm(nilai)}
-                      className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition ${
-                        radiusKm === nilai
+                      className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition ${radiusKm === nilai
                           ? "bg-[#007E7A] text-white shadow-sm"
                           : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-                      }`}
+                        }`}
                     >
                       {nilai}km
                     </button>
@@ -384,8 +382,8 @@ export default function PetaInteraktifPage() {
                     {filterWilayah.kecamatan === "SEMUA"
                       ? `Semua Kec. (${DATA_WILAYAH.find((w) => w.id === filterWilayah.wilayahId)?.nama})`
                       : filterWilayah.kecamatan
-                      ? `Kec. ${filterWilayah.kecamatan}`
-                      : `${DATA_WILAYAH.find((w) => w.id === filterWilayah.wilayahId)?.nama} (Pilih Kec.)`}
+                        ? `Kec. ${filterWilayah.kecamatan}`
+                        : `${DATA_WILAYAH.find((w) => w.id === filterWilayah.wilayahId)?.nama} (Pilih Kec.)`}
                     <button
                       type="button"
                       onClick={() => setFilterWilayah({ wilayahId: null, kecamatan: null })}
@@ -444,11 +442,10 @@ export default function PetaInteraktifPage() {
                     <div
                       key={faskes_item.id_faskes}
                       onClick={() => tanganiPilihFaskes(faskes_item)}
-                      className={`p-2.5 rounded-xl border transition cursor-pointer space-y-1.5 select-none ${
-                        sedang_dipilih
+                      className={`p-2.5 rounded-xl border transition cursor-pointer space-y-1.5 select-none ${sedang_dipilih
                           ? "bg-teal-50/40 border-[#007E7A] shadow-sm ring-1 ring-[#007E7A]"
                           : "bg-white/80 border-slate-200/90 hover:border-slate-300 hover:bg-white"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 min-w-0">
@@ -460,9 +457,8 @@ export default function PetaInteraktifPage() {
 
                           <div className="min-w-0">
                             <h3
-                              className={`text-xs font-extrabold leading-tight line-clamp-1 ${
-                                sedang_dipilih ? "text-[#007E7A]" : "text-slate-900"
-                              }`}
+                              className={`text-xs font-extrabold leading-tight line-clamp-1 ${sedang_dipilih ? "text-[#007E7A]" : "text-slate-900"
+                                }`}
                             >
                               {faskes_item.nama_faskes}
                             </h3>
@@ -473,11 +469,10 @@ export default function PetaInteraktifPage() {
                         </div>
 
                         <ChevronRight
-                          className={`w-3.5 h-3.5 shrink-0 transition ${
-                            sedang_dipilih
+                          className={`w-3.5 h-3.5 shrink-0 transition ${sedang_dipilih
                               ? "text-[#007E7A] translate-x-0.5"
                               : "text-slate-400"
-                          }`}
+                            }`}
                         />
                       </div>
 
@@ -542,7 +537,7 @@ export default function PetaInteraktifPage() {
                   )}
                   {faskes_terpilih.status_igd_24jam && (
                     <span className="px-1 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200 leading-none">
-                      UGD 24J
+                      UGD 24 Jam
                     </span>
                   )}
                 </div>

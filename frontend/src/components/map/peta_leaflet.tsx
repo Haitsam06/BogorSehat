@@ -91,11 +91,10 @@ function createMarkerIcon(
           align-items: center;
           justify-content: center;
           border: ${sedang_dipilih ? "3px solid #0f172a" : "2.5px solid #ffffff"};
-          box-shadow: ${
-            sedang_dipilih
-              ? "0 6px 20px rgba(0,0,0,0.4)"
-              : "0 4px 14px rgba(0,0,0,0.28)"
-          };
+          box-shadow: ${sedang_dipilih
+        ? "0 6px 20px rgba(0,0,0,0.4)"
+        : "0 4px 14px rgba(0,0,0,0.28)"
+      };
           pointer-events: none;
         ">
           <svg xmlns="http://www.w3.org/2000/svg" width="${ukuran_ikon}" height="${ukuran_ikon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
@@ -112,11 +111,11 @@ function buildTooltipHtml(faskes_item: DataFaskesItem): string {
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
         <span style="font-size:9px;font-weight:800;color:#007E7A;text-transform:uppercase;">${escapeHtml(
-          faskes_item.kategori_faskes
-        )}</span>
+    faskes_item.kategori_faskes
+  )}</span>
         <span style="padding:1px 7px;border-radius:9999px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;">${escapeHtml(
-          faskes_item.jarak_km
-        )}</span>
+    faskes_item.jarak_km
+  )}</span>
       </div>
       <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:2px;">
         ${escapeHtml(faskes_item.nama_faskes)}
@@ -125,16 +124,14 @@ function buildTooltipHtml(faskes_item: DataFaskesItem): string {
         ${escapeHtml(faskes_item.alamat_lengkap)}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;">
-        ${
-          faskes_item.status_bpjs
-            ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
-            : ""
-        }
-        ${
-          faskes_item.status_igd_24jam
-            ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`
-            : ""
-        }
+        ${faskes_item.status_bpjs
+      ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
+      : ""
+    }
+        ${faskes_item.status_igd_24jam
+      ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`
+      : ""
+    }
       </div>
     </div>
   `;
@@ -194,10 +191,10 @@ export default function PetaLeaflet({
       const titik_pusat_awal: [number, number] = pusat_awal
         ? pusat_awal
         : faskes_terpilih
-        ? [faskes_terpilih.latitude, faskes_terpilih.longitude]
-        : isInsideBogor(lokasiPengguna.latitude, lokasiPengguna.longitude)
-        ? [lokasiPengguna.latitude, lokasiPengguna.longitude]
-        : BOGOR_DEFAULT_CENTER;
+          ? [faskes_terpilih.latitude, faskes_terpilih.longitude]
+          : isInsideBogor(lokasiPengguna.latitude, lokasiPengguna.longitude)
+            ? [lokasiPengguna.latitude, lokasiPengguna.longitude]
+            : BOGOR_DEFAULT_CENTER;
 
       const mapOptions: LType.MapOptions = {
         center: titik_pusat_awal,
@@ -246,8 +243,8 @@ export default function PetaLeaflet({
       marker_pengguna.bindTooltip(
         `<div style="font-size:11px;font-weight:700;color:#0f172a;">Lokasi Anda Saat Ini</div>
          <div style="font-size:10px;color:#007E7A;font-weight:600;">${escapeHtml(
-           lokasiPengguna.nama_jalan
-         )} (${koordinat_teks})</div>`,
+          lokasiPengguna.nama_jalan
+        )} (${koordinat_teks})</div>`,
         {
           direction: "top",
           offset: [0, -10],
@@ -542,8 +539,8 @@ export default function PetaLeaflet({
     marker_pengguna_ref.current.setTooltipContent(
       `<div style="font-size:11px;font-weight:700;color:#0f172a;">Lokasi Anda Saat Ini</div>
        <div style="font-size:10px;color:#007E7A;font-weight:600;">${escapeHtml(
-         lokasiPengguna.nama_jalan
-       )} (${koordinat_teks})</div>`
+        lokasiPengguna.nama_jalan
+      )} (${koordinat_teks})</div>`
     );
 
     if (!faskes_terpilih) {

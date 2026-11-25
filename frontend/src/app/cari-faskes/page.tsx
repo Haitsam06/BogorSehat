@@ -423,8 +423,8 @@ function CariFaskesKonten() {
             type="button"
             onClick={() => setBukaFilterMobile((prev) => !prev)}
             className={`h-11 px-3 sm:px-4 rounded-xl border flex lg:hidden items-center gap-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${bukaFilterMobile || ada_filter_aktif
-                ? "bg-[#007E7A] text-white border-[#007E7A] shadow-xs"
-                : "bg-[#F4F6F8] text-slate-700 border-slate-200 hover:bg-slate-200/80"
+              ? "bg-[#007E7A] text-white border-[#007E7A] shadow-xs"
+              : "bg-[#F4F6F8] text-slate-700 border-slate-200 hover:bg-slate-200/80"
               }`}
             title={bukaFilterMobile ? "Sembunyikan Filter" : "Buka Filter"}
           >
@@ -480,8 +480,8 @@ function CariFaskesKonten() {
                   <label
                     key={opsi.nilai}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${terpilih
-                        ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
-                        : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
+                      ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
+                      : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
                       }`}
                   >
                     <input
@@ -569,15 +569,14 @@ function CariFaskesKonten() {
               {[
                 { nilai: "ALL", label: "Semua Faskes" },
                 { nilai: "BPJS_YA", label: "Menerima BPJS" },
-                { nilai: "BPJS_TIDAK", label: "Non-BPJS" },
               ].map((opsi) => {
                 const terpilih = filter_bpjs === opsi.nilai;
                 return (
                   <label
                     key={opsi.nilai}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${terpilih
-                        ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
-                        : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
+                      ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
+                      : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
                       }`}
                   >
                     <input
@@ -610,8 +609,8 @@ function CariFaskesKonten() {
                   <label
                     key={opsi.nilai}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition select-none ${terpilih
-                        ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
-                        : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
+                      ? "bg-teal-50/50 border-[#007E7A] text-[#007E7A] font-bold"
+                      : "border-slate-100 hover:bg-slate-50 text-slate-600 font-medium"
                       }`}
                   >
                     <input
