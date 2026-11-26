@@ -48,12 +48,12 @@ class BogorSehatDataSeeder extends Seeder
                 'kelas_faskes' => trim($row['kelas_faskes']) ?: null,
                 'alamat_faskes' => preg_replace('/\s+/', ' ', trim($row['alamat_faskes'])),
                 'provinsi' => 'JAWA BARAT',
-                'kecamatan' => $this->resolveKecamatan($latitude, $longitude, $districtSources, $row['alamat_faskes']),
+                'kecamatan' => $this->resolveRowKecamatan($row, $latitude, $longitude, $districtSources),
                 'kota_kabupaten' => trim($row['kota_kabupaten']),
                 'longitude' => $longitude,
                 'latitude' => $latitude,
                 'telp_faskes' => trim($row['telp_faskes']) ?: null,
-                'is_support_bpjs' => trim($row['is_support_bpjs']) === '1',
+                'bpjs_status' => $this->resolveBpjsStatus($row),
                 'link_maps' => Faskes::mapsLink([
                     'nama_faskes' => trim($row['nama_faskes']),
                     'alamat_faskes' => trim($row['alamat_faskes']),
@@ -86,7 +86,7 @@ class BogorSehatDataSeeder extends Seeder
         foreach (array_chunk($faskesRows, 250) as $chunk) {
             DB::table('faskes')->upsert($chunk, ['id_faskes'], [
                 'kdppk', 'nama_faskes', 'jenis_faskes', 'kelas_faskes', 'alamat_faskes', 'provinsi', 'kecamatan',
-                'kota_kabupaten', 'longitude', 'latitude', 'telp_faskes', 'is_support_bpjs', 'link_maps', 'updated_at',
+                'kota_kabupaten', 'longitude', 'latitude', 'telp_faskes', 'bpjs_status', 'link_maps', 'updated_at',
             ]);
         }
         foreach (array_chunk($specializationLinks, 500) as $chunk) {
@@ -137,6 +137,28 @@ class BogorSehatDataSeeder extends Seeder
         return array_values(array_filter(array_map('trim', explode(',', (string) $value)), static fn (string $item): bool => $item !== ''));
     }
 
+    /**
+     * CSV baru memakai `bpjs_status` (tiga keadaan). CSV versi lama memakai
+     * `is_support_bpjs` 0/1 — tetap didukung agar berkas lama tidak langsung
+     * gagal di-seed.
+     *
+     * @param  array<string, string|null>  $row
+     */
+    private function resolveBpjsStatus(array $row): string
+    {
+        $status = strtolower(trim((string) ($row['bpjs_status'] ?? '')));
+        if (in_array($status, Faskes::BPJS_STATUSES, true)) {
+            return $status;
+        }
+
+        $legacy = trim((string) ($row['is_support_bpjs'] ?? ''));
+        if ($legacy === '1') {
+            return Faskes::BPJS_MENDUKUNG;
+        }
+
+        return Faskes::BPJS_TIDAK_MENDUKUNG;
+    }
+
     /** @return list<array{lat: float, lng: float, kecamatan: string}> */
     private function readDistrictSources(): array
     {
@@ -179,6 +201,24 @@ class BogorSehatDataSeeder extends Seeder
         return KecamatanNormalizer::normalize($best);
     }
 
+    /**
+     * Pakai kolom `kecamatan` dari CSV bila tersedia. Untuk faskes yang
+     * alamatnya tidak menyebut kecamatan sama sekali, nilainya diisi manual
+     * setelah dicek silang dengan poligon batas wilayah.
+     *
+     * @param  array<string, string|null>  $row
+     * @param  list<array{lat: float, lng: float, kecamatan: string}>  $sources
+     */
+    private function resolveRowKecamatan(array $row, float $latitude, float $longitude, array $sources): ?string
+    {
+        $explicit = KecamatanNormalizer::normalize($row['kecamatan'] ?? null);
+        if ($explicit !== null) {
+            return $explicit;
+        }
+
+        return $this->resolveKecamatan($latitude, $longitude, $sources, (string) $row['alamat_faskes']);
+    }
+
     private function extractKecamatan(string $address): ?string
     {
         $normalized = preg_replace('/\s+/', ' ', trim($address));
@@ -203,8 +243,12 @@ class BogorSehatDataSeeder extends Seeder
     }
 
     /**
-     * Gallery files live outside the database, so a fresh seed would drop the
-     * rows while the WebP files stay on disk. Rebuild the rows from filenames.
+     * File galeri hidup di luar database, jadi seed ulang akan mengosongkan
+     * tabel sementara file WebP tetap ada. Baris dibangun ulang dari nama file.
+     *
+     * Dua pola nama yang harus dikenali:
+     *   - `nama-faskes-141.webp`     -> satu gambar, banner + thumbnail
+     *   - `nama-faskes-507-0.webp`   -> galeri; sufiks terakhir = sort_order
      */
     private function restoreGalleryImages(): int
     {
@@ -213,35 +257,69 @@ class BogorSehatDataSeeder extends Seeder
             return 0;
         }
 
+        // Nama faskes bisa mengandung angka (mis. "KLINIK DENKESYAH 030401"),
+        // sehingga sufiks angka belum tentu id_faskes. Ambil kandidat dari
+        // segmen paling kanan dulu, lalu pastikan id-nya benar-benar ada.
+        $known = array_flip(DB::table('faskes')->pluck('id_faskes')->all());
+
         $rows = [];
         foreach ($files as $file) {
-            if (preg_match('/-(\d+)\.webp$/', basename($file), $matches) !== 1) {
+            $name = basename($file);
+            if (preg_match_all('/(\d+)/', $name, $all) === 0) {
                 continue;
             }
 
-            $idFaskes = (int) $matches[1];
-            $rows[$idFaskes] = [
+            $segments = $all[1];
+            // Nama faskes juga bisa mengandung angka ("APOTEK KF 110"),
+            // sehingga dua angka berurutan belum tentu `<id>-<order>`.
+            // Pola galeri dikenali dari order yang kecil (0..4, sama dengan
+            // batas galeri admin), selain itu dianggap pola satu gambar.
+            $idFaskes = null;
+            $order = 0;
+            $count = count($segments);
+
+            $last = (int) $segments[$count - 1];
+            if ($count >= 2 && $last <= 4) {
+                $candidate = (int) $segments[$count - 2];
+                if (isset($known[$candidate])) {
+                    $idFaskes = $candidate;
+                    $order = $last;
+                }
+            }
+
+            if ($idFaskes === null && isset($known[$last])) {
+                $idFaskes = $last;
+            }
+
+            if ($idFaskes === null) {
+                continue;
+            }
+
+            $rows[$idFaskes][] = [
                 'id_faskes' => $idFaskes,
-                'path' => 'uploads/faskes/'.basename($file),
-                'is_banner' => true,
-                'is_thumbnail' => true,
-                'sort_order' => 0,
+                'path' => 'uploads/faskes/'.$name,
+                'sort_order' => $order,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
 
-        if ($rows === []) {
-            return 0;
+        $flat = [];
+        foreach ($rows as $images) {
+            usort($images, static fn (array $a, array $b): int => $a['sort_order'] <=> $b['sort_order']);
+            foreach ($images as $index => $image) {
+                $flat[] = [
+                    ...$image,
+                    'is_banner' => $index === 0,
+                    'is_thumbnail' => $index === 0,
+                ];
+            }
         }
 
-        $existing = DB::table('faskes')->whereIn('id_faskes', array_keys($rows))->pluck('id_faskes')->all();
-        $rows = array_values(array_intersect_key($rows, array_flip($existing)));
-
-        if ($rows !== []) {
-            DB::table('faskes_images')->insert($rows);
+        if ($flat !== []) {
+            DB::table('faskes_images')->insert($flat);
         }
 
-        return count($rows);
+        return count($flat);
     }
 }

@@ -243,14 +243,18 @@ export default function AdminDashboardPage() {
                         <td className="py-5 px-4">
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold ${
-                              faskes.is_support_bpjs
+                              faskes.bpjs_status === "mendukung"
                                 ? "bg-[#86EFAC]/60 text-[#065F46]"
-                                : "bg-slate-100 text-slate-600"
+                                : faskes.bpjs_status === "dalam_proses"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-600"
                             }`}
                           >
-                            {faskes.is_support_bpjs
+                            {faskes.bpjs_status === "mendukung"
                               ? "• Mendukung BPJS"
-                              : "• Non-BPJS"}
+                              : faskes.bpjs_status === "dalam_proses"
+                                ? "• Dalam Proses"
+                                : "• Non-BPJS"}
                           </span>
                         </td>
 

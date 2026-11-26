@@ -80,7 +80,7 @@ Login response includes `data` and a plain `token`. Store the token securely; it
 - `kota_kabupaten`: exact city/regency match.
 - `jenis_faskes`: exact type match.
 - `kelas_faskes`: exact class match.
-- `is_support_bpjs`: boolean (`0` or `1`).
+- `bpjs_status`: one of `mendukung` (sudah bekerja sama), `dalam_proses`, `tidak_mendukung`. Accepts a single value, a comma-separated list, or repeated `bpjs_status[]` parameters; unknown values are ignored.
 - `id_spesialisasi`: specialization ID.
 - `id_fasilitas`: one or more supporting-facility IDs. Accepts a single value, a comma-separated list, or repeated `id_fasilitas[]` parameters; a faskes matches when it has any of the requested facilities.
 - `latitude`: optional user latitude, `-90` to `90`.
@@ -93,7 +93,7 @@ Results are ordered by service type: `Rumah Sakit` → `Klinik` → `Puskesmas` 
 Example:
 
 ```text
-GET /api/faskes?search=RSUD&kota_kabupaten=KAB.%20BOGOR&is_support_bpjs=1&per_page=20
+GET /api/faskes?search=RSUD&kota_kabupaten=KAB.%20BOGOR&bpjs_status=mendukung&per_page=20
 ```
 
 ### Nearby query parameters
@@ -125,7 +125,7 @@ Every faskes response carries `distance_km` in kilometers, rounded to two decima
   "longitude": "106.62800000",
   "latitude": "-6.57451000", 
   "telp_faskes": "0251-8643290",
-  "is_support_bpjs": true,
+  "bpjs_status": "mendukung",
   "link_maps": "https://www.google.com/maps/search/RSUD%20R.%20MOH.%20NOH%20NUR%2C%20JL.%20RAYA%20CIBEBER%20NO.1%2C%20KAB.%20BOGOR/@-6.57451,106.628,17z",
   "rating_avg": 4.35,
   "rating_count": 12,
@@ -353,7 +353,7 @@ Optional fields:
 - `jenis_faskes`
 - `kelas_faskes`
 - `telp_faskes`
-- `is_support_bpjs`
+- `bpjs_status` (one of `mendukung`, `dalam_proses`, `tidak_mendukung`)
 - `link_maps`
 - `id_spesialisasi`: array of valid specialization IDs
 - `id_fasilitas`: array of valid facility IDs
@@ -430,7 +430,7 @@ vendor/bin/pint --dirty --format agent
 | FR08-FR09 | Admin login/logout through `/auth/login` and `/auth/logout`; admin middleware protects admin routes |
 | FR10 | `GET /admin/dashboard` |
 | FR11-FR14 | Admin faskes list/create/update/delete endpoints |
-| FR15-FR17 | `/faskes` search and filters: `search`, `provinsi`, `kecamatan`, `kota_kabupaten`, `jenis_faskes`, `kelas_faskes`, `is_support_bpjs` |
+| FR15-FR17 | `/faskes` search and filters: `search`, `provinsi`, `kecamatan`, `kota_kabupaten`, `jenis_faskes`, `kelas_faskes`, `bpjs_status` |
 | FR18-FR20 | Register/login/logout endpoints |
 | FR21-FR24 | Faskes comments, replies, and owner/admin deletion |
 | FR25-FR30 | Forum list/detail, discussion replies, nested replies, edit/delete |

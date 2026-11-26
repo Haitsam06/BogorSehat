@@ -37,6 +37,11 @@ import {
   getAuthUser,
   messageFromError,
 } from "@/lib/api";
+import {
+  BPJS_STATUS_CLASS,
+  BPJS_STATUS_LABEL,
+  BPJS_STATUS_SHORT,
+} from "@/lib/bpjsStatus";
 import { useFaskes } from "@/context/FaskesContext";
 
 function hitungJarakKm(
@@ -423,11 +428,12 @@ export default function DetailFaskesPage({
             <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#D9F2F0] text-[#007E7A] uppercase">
               {faskesItem.kategori_faskes}
             </span>
-            {faskesItem.status_bpjs && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                ✓ Mitra BPJS
-              </span>
-            )}
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${BPJS_STATUS_CLASS[faskesItem.bpjs_status]}`}
+            >
+              {faskesItem.bpjs_status === "mendukung" ? "✓ " : ""}
+              {BPJS_STATUS_LABEL[faskesItem.bpjs_status]}
+            </span>
             {faskesItem.status_igd_24jam && (
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                 IGD 24 Jam
@@ -860,11 +866,11 @@ export default function DetailFaskesPage({
                       <span className="text-xs font-bold text-slate-800 leading-snug">
                         {namaPoli}
                       </span>
-                      {faskesItem.status_bpjs && (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold leading-none">
-                          BPJS Aktif
-                        </span>
-                      )}
+                      <span
+                        className={`px-1.5 py-0.5 rounded border text-[9px] font-extrabold leading-none ${BPJS_STATUS_CLASS[faskesItem.bpjs_status]}`}
+                      >
+                        {BPJS_STATUS_SHORT[faskesItem.bpjs_status]}
+                      </span>
                     </div>
                   </div>
                 ))}

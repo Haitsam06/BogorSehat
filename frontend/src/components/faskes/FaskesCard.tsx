@@ -11,6 +11,7 @@ import {
   InfoIcon,
   Info,
 } from "lucide-react";
+import { BPJS_STATUS_CLASS, BPJS_STATUS_SHORT } from "@/lib/bpjsStatus";
 import type { DataFaskesItem } from "@/data/data_faskes";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import StarRating from "@/components/ui/StarRating";
@@ -141,11 +142,11 @@ export default function FaskesCard({
               teksBelumDirating="Belum Dirating"
             />
             <div className="flex items-center gap-1.5">
-              {faskes.status_bpjs && (
-                <span className="px-1.5 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200">
-                  BPJS
-                </span>
-              )}
+              <span
+                className={`px-1.5 py-[1px] rounded text-[8px] font-bold border ${BPJS_STATUS_CLASS[faskes.bpjs_status]}`}
+              >
+                {BPJS_STATUS_SHORT[faskes.bpjs_status]}
+              </span>
               {faskes.status_igd_24jam && (
                 <span className="px-1.5 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200">
                   UGD 24 Jam

@@ -15,7 +15,10 @@ class ImportFaskesImages extends Command
         {--file=../dataset_crawler-google-places_2026-11-20_20-42-38-888.json : Path to the Places crawler export}
         {--dry-run : Match only, do not download or write}
         {--limit=0 : Stop after N downloads}
+        {--only-missing : Hanya faskes yang belum punya gambar}
+        {--only-non-partner : Hanya faskes yang belum/tengah kerjasama BPJS}
         {--max-distance=300 : Max metres between facility and place coordinates}
+        {--anchor-only : Hanya cocokkan lewat searchString, tanpa skor kemiripan}
         {--quality=82 : WebP quality}';
 
     protected $description = 'Match crawled Google Places photos to facilities and store them as WebP gallery images';
@@ -30,6 +33,18 @@ class ImportFaskesImages extends Command
     private const MIN_MATCH_SCORE = 25;
 
     private const MIN_LETTER_SCORE = 5;
+
+    /** Batas galeri, sama dengan validasi admin (`images` max:5). */
+    private const MAX_IMAGES_PER_FASKES = 5;
+
+    /**
+     * Host foto yang terbukti membalas 200 + image/jpeg.
+     * `streetviewpixels` ikut karena masih dipakai sebagian place.
+     */
+    private const DOWNLOADABLE_HOSTS = [
+        'googleusercontent.com',
+        'streetviewpixels-pa.googleapis.com',
+    ];
 
     private const MEDICAL_CATEGORY_HINTS = [
         'rumah sakit', 'klinik', 'puskesmas', 'pusat kesehatan', 'apotek',
@@ -49,9 +64,9 @@ class ImportFaskesImages extends Command
             return self::FAILURE;
         }
 
-        $places = json_decode((string) file_get_contents($path), true);
-        if (! is_array($places)) {
-            $this->error('Dataset is not valid JSON array.');
+        $places = $this->readDataset($path);
+        if ($places === null) {
+            $this->error('Dataset tidak bisa dibaca (JSON array atau CSV crawler).');
 
             return self::FAILURE;
         }
@@ -66,9 +81,12 @@ class ImportFaskesImages extends Command
         $matched = 0;
         $downloaded = 0;
         $skipped = 0;
+        $galleryImages = 0;
+        $quality = (int) $this->option('quality');
 
         Faskes::query()->orderBy('id_faskes')->chunk(100, function ($faskes) use (
-            $candidates, $maxDistance, $dryRun, $limit, &$matched, &$downloaded, &$skipped
+            $candidates, $maxDistance, $dryRun, $limit, $quality,
+            &$matched, &$downloaded, &$skipped, &$galleryImages
         ): bool {
             foreach ($faskes as $item) {
                 if ($limit > 0 && $downloaded >= $limit) {
@@ -84,13 +102,17 @@ class ImportFaskesImages extends Command
 
                 $matched++;
                 if ($dryRun) {
-                    $this->line(sprintf('%5d  %-42s < %4dm  %s', $item->id_faskes, Str::limit($item->nama_faskes, 40), (int) $best['distance'], Str::limit($best['title'], 44)));
+                    $this->line(sprintf('%5d  %-42s < %4dm  %d foto  %s',
+                        $item->id_faskes, Str::limit($item->nama_faskes, 40),
+                        (int) $best['distance'], count($best['images']), Str::limit($best['title'], 40)));
 
                     continue;
                 }
 
-                if ($this->storeImage($item, $best, (int) $this->option('quality'))) {
+                $saved = $this->storeImages($item, $best, $quality);
+                if ($saved > 0) {
                     $downloaded++;
+                    $galleryImages += $saved;
                 }
             }
 
@@ -103,12 +125,107 @@ class ImportFaskesImages extends Command
             return self::SUCCESS;
         }
 
-        $this->info(sprintf('Matched %d, downloaded %d images, skipped %d facilities.', $matched, $downloaded, $skipped));
+        $this->info(sprintf('Matched %d, downloaded %d facilities (%d images), skipped %d facilities.',
+            $matched, $downloaded, $galleryImages, $skipped));
 
         return self::SUCCESS;
     }
 
     /**
+     * Baca dataset crawler, JSON array maupun CSV.
+     *
+     * Ekspor terbaru berbentuk CSV dengan kolom bersarang
+     * (`imageUrls/0`, `location/lat`), jadi header perlu dipetakan balik ke
+     * bentuk bersarang agar pemroses di bawah tidak perlu dua jalur.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function readDataset(string $path): ?array
+    {
+        $raw = (string) file_get_contents($path);
+
+        if (str_ends_with(strtolower($path), '.csv')) {
+            return $this->readCsvDataset($raw);
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function readCsvDataset(string $raw): array
+    {
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, $raw);
+        rewind($handle);
+
+        $header = fgetcsv($handle);
+        if ($header === false) {
+            fclose($handle);
+
+            return [];
+        }
+        // Buang BOM pada kolom pertama.
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]);
+
+        $places = [];
+        while (($values = fgetcsv($handle)) !== false) {
+            if ($values === [null] || $values === []) {
+                continue;
+            }
+            $values = array_pad($values, count($header), null);
+            $row = [];
+            foreach ($header as $index => $column) {
+                $value = $values[$index];
+                $row[$column] = ($value === '' || $value === null) ? null : $value;
+            }
+            $places[] = $this->expandCsvRow($row);
+        }
+        fclose($handle);
+
+        return $places;
+    }
+
+    /**
+     * Ubah kolom bersarang (`imageUrls/0`) kembali jadi struktur bersarang
+     * yang dipakai `candidates()`.
+     *
+     * @param  array<string, string|null>  $row
+     * @return array<string, mixed>
+     */
+    private function expandCsvRow(array $row): array
+    {
+        $images = [];
+        foreach (['imageUrl', 'imageUrls/0', 'imageUrls/1', 'imageUrls/2'] as $key) {
+            if (filled($row[$key] ?? null)) {
+                $images[] = (string) $row[$key];
+            }
+        }
+
+        return [
+            'title' => (string) ($row['title'] ?? ''),
+            'categoryName' => (string) ($row['categoryName'] ?? ''),
+            'searchString' => (string) ($row['searchString'] ?? ''),
+            'imageUrl' => (string) ($row['imageUrl'] ?? ''),
+            'imageUrls' => $images,
+            'location' => [
+                'lat' => (float) ($row['location/lat'] ?? 0),
+                'lng' => (float) ($row['location/lng'] ?? 0),
+            ],
+        ];
+    }
+
+    /**
+     * Bangun kandidat dari place yang punya koordinat dan minimal satu foto
+     * yang benar-benar bisa diunduh.
+     *
+     * Dataset memuat foto dari beberapa host, bukan hanya `gz0`:
+     * `lh3`/`lh4`/`lh5`/`lh6.googleusercontent.com` (foto tempat) dan
+     * `streetviewpixels-pa.googleapis.com` (street view). Semuanya membalas
+     * 200 dengan `image/jpeg`, jadi tidak ada alasan membuang tiga perempat
+     * pasokan seperti versi sebelumnya.
+     *
      * @param  list<array<string, mixed>>  $places
      * @return list<array<string, mixed>>
      */
@@ -116,12 +233,13 @@ class ImportFaskesImages extends Command
     {
         $candidates = [];
         foreach ($places as $place) {
-            $image = (string) ($place['imageUrl'] ?? '');
             $location = $place['location'] ?? null;
-            if (! str_starts_with($image, 'https://gz0.googleusercontent.com') || ! is_array($location)) {
+            if (! is_array($location) || ! isset($location['lat'], $location['lng'])) {
                 continue;
             }
-            if (! isset($location['lat'], $location['lng'])) {
+
+            $images = $this->downloadableImages($place);
+            if ($images === []) {
                 continue;
             }
 
@@ -129,9 +247,13 @@ class ImportFaskesImages extends Command
                 'title' => (string) ($place['title'] ?? ''),
                 'tokens' => $this->tokens((string) ($place['title'] ?? '')),
                 'compact' => $this->compact((string) ($place['title'] ?? '')),
+                // CSV crawler menyimpan string pencarian yang dipakai saat
+                // scrape; isinya persis `nama, alamat, kota` milik faskes
+                // kita. Kunci ini deterministik, tidak perlu skor kemiripan.
+                'anchor' => (string) ($place['searchString'] ?? ''),
                 'lat' => (float) $location['lat'],
                 'lng' => (float) $location['lng'],
-                'image' => $this->upgradeResolution($image),
+                'images' => $images,
                 'category' => (string) ($place['categoryName'] ?? ''),
             ];
         }
@@ -139,9 +261,73 @@ class ImportFaskesImages extends Command
         return $candidates;
     }
 
+    /**
+     * Kumpulkan URL foto yang bisa diunduh dari satu place, tanpa duplikat.
+     *
+     * @param  array<string, mixed>  $place
+     * @return list<string>
+     */
+    private function downloadableImages(array $place): array
+    {
+        $raw = [];
+        if (filled($place['imageUrl'] ?? null)) {
+            $raw[] = (string) $place['imageUrl'];
+        }
+        foreach ((array) ($place['imageUrls'] ?? []) as $entry) {
+            if (is_string($entry)) {
+                $raw[] = $entry;
+            } elseif (is_array($entry) && is_string($entry['url'] ?? null)) {
+                $raw[] = $entry['url'];
+            }
+        }
+
+        $kept = [];
+        foreach ($raw as $url) {
+            $host = (string) parse_url($url, PHP_URL_HOST);
+            if ($host === '' || ! $this->isDownloadableHost($host)) {
+                continue;
+            }
+            $url = $this->upgradeResolution($url);
+            $kept[$url] = true;
+        }
+
+        return array_slice(array_keys($kept), 0, self::MAX_IMAGES_PER_FASKES);
+    }
+
+    private function isDownloadableHost(string $host): bool
+    {
+        foreach (self::DOWNLOADABLE_HOSTS as $suffix) {
+            if ($host === $suffix || str_ends_with($host, '.'.$suffix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Naikkan resolusi foto ke 1200x900.
+     *
+     * Dua format URL yang dipakai dataset:
+     *   - foto tempat : `...=w1920-h1080-k-no`   -> ganti sufiks
+     *   - street view : `...?w=1111&h=1920&...`  -> ganti query
+     */
     private function upgradeResolution(string $url): string
     {
-        return (string) preg_replace('/=w\d+-h\d+-[^\/]+$/', '=w1200-h900-k-no', $url);
+        if (str_contains($url, '/v1/thumbnail')) {
+            $url = (string) preg_replace('/([?&])w=\d+/', '${1}w=1200', $url);
+
+            return (string) preg_replace('/([?&])h=\d+/', '${1}h=900', $url);
+        }
+
+        // `=w1200-h900-k-no` memasang batas pada dua sisi, sehingga foto
+        // portrait tetap kecil (675x900). `=w1200` tanpa batas tinggi
+        // menghasilkan 1200x1600 untuk sumber yang sama.
+        if (preg_match('/=w\d+-h\d+-[^\/]+$/', $url) === 1) {
+            return (string) preg_replace('/=w\d+-h\d+-[^\/]+$/', '=w1200', $url);
+        }
+
+        return $url;
     }
 
     /**
@@ -156,15 +342,30 @@ class ImportFaskesImages extends Command
             return null;
         }
 
+        $anchor = $this->anchorFor($faskes);
+        $anchorOnly = (bool) $this->option('anchor-only');
         $best = null;
         $bestScore = 0;
 
         foreach ($candidates as $candidate) {
+            $distance = $this->distance((float) $faskes->latitude, (float) $faskes->longitude, $candidate['lat'], $candidate['lng']);
+
+            // Jalur deterministik: crawler menyimpan string pencarian yang
+            // dipakai saat scrape. Bila sama persis DAN koordinatnya dekat,
+            // tidak perlu skor kemiripan. Jarak tetap diperiksa: crawler
+            // kadang mengembalikan tempat lain untuk pencarian yang sama.
+            if ($anchor !== '' && hash_equals($anchor, $candidate['anchor']) && $distance <= $maxDistance) {
+                return [...$candidate, 'distance' => $distance];
+            }
+
+            if ($anchorOnly) {
+                continue;
+            }
+
             if (! $this->isMedical($candidate['category'])) {
                 continue;
             }
 
-            $distance = $this->distance((float) $faskes->latitude, (float) $faskes->longitude, $candidate['lat'], $candidate['lng']);
             if ($distance > $maxDistance) {
                 continue;
             }
@@ -183,6 +384,19 @@ class ImportFaskesImages extends Command
         }
 
         return $bestScore >= self::MIN_MATCH_SCORE ? $best : null;
+    }
+
+    /**
+     * String pencarian yang dulu dipakai untuk membuat URL Google Maps —
+     * bentuknya identik dengan `searchString` di ekspor crawler.
+     */
+    private function anchorFor(Faskes $faskes): string
+    {
+        return implode(', ', array_filter([
+            $faskes->nama_faskes,
+            $faskes->alamat_faskes,
+            $faskes->kota_kabupaten,
+        ], static fn ($value): bool => filled($value)));
     }
 
     /**
@@ -268,47 +482,89 @@ class ImportFaskesImages extends Command
         return round(6371000 * 2 * asin(sqrt(min($a, 1.0))), 2);
     }
 
-    /** @param  array<string, mixed>  $candidate */
-    private function storeImage(Faskes $faskes, array $candidate, int $quality): bool
+    /**
+     * Unduh seluruh foto kandidat lalu simpan sebagai galeri.
+     *
+     * Foto pertama jadi banner + thumbnail; sisanya pelengkap dengan
+     * `sort_order` menaik. Nama file memakai sufiks indeks supaya satu
+     * faskes bisa punya beberapa gambar tanpa saling menimpa.
+     *
+     * @param  array<string, mixed>  $candidate
+     * @return int jumlah gambar yang berhasil disimpan
+     */
+    private function storeImages(Faskes $faskes, array $candidate, int $quality): int
     {
-        try {
-            $binary = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])->timeout(20)->get($candidate['image'])->body();
-        } catch (\Throwable $exception) {
-            $this->warn(sprintf('Download failed for faskes %d: %s', $faskes->id_faskes, $exception->getMessage()));
+        $slug = Str::slug($faskes->nama_faskes);
+        $stored = [];
 
-            return false;
+        foreach ($candidate['images'] as $index => $url) {
+            try {
+                $binary = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                    ->timeout(20)
+                    ->get($url)
+                    ->body();
+            } catch (\Throwable $exception) {
+                $this->warn(sprintf('Download failed for faskes %d (%d): %s',
+                    $faskes->id_faskes, $index, $exception->getMessage()));
+
+                continue;
+            }
+
+            $source = @imagecreatefromstring($binary);
+            if ($source === false) {
+                $this->warn(sprintf('Unreadable image for faskes %d (%d).', $faskes->id_faskes, $index));
+
+                continue;
+            }
+
+            imagepalettetotruecolor($source);
+            imagealphablending($source, false);
+            imagesavealpha($source, true);
+
+            $path = sprintf('uploads/faskes/%s-%d-%d.webp', $slug, $faskes->id_faskes, $index);
+            Storage::disk('public')->makeDirectory('uploads/faskes');
+
+            ob_start();
+            imagewebp($source, null, $quality);
+            $encoded = (string) ob_get_clean();
+            imagedestroy($source);
+
+            file_put_contents(Storage::disk('public')->path($path), $encoded);
+            $stored[] = $path;
         }
 
-        $source = @imagecreatefromstring($binary);
-        if ($source === false) {
-            $this->warn(sprintf('Unreadable image for faskes %d.', $faskes->id_faskes));
-
-            return false;
+        if ($stored === []) {
+            return 0;
         }
-        imagepalettetotruecolor($source);
-        imagealphablending($source, false);
-        imagesavealpha($source, true);
 
-        $path = 'uploads/faskes/'.Str::slug($faskes->nama_faskes).'-'.$faskes->id_faskes.'.webp';
-        $absolute = Storage::disk('public')->path($path);
-        Storage::disk('public')->makeDirectory(dirname($path));
+        $this->replaceGallery($faskes, $stored);
 
-        ob_start();
-        imagewebp($source, null, $quality);
-        $encoded = (string) ob_get_clean();
-        imagedestroy($source);
+        return count($stored);
+    }
 
-        file_put_contents($absolute, $encoded);
-
+    /**
+     * Ganti galeri faskes dan hapus file lama yang tidak dipakai lagi.
+     *
+     * @param  list<string>  $paths
+     */
+    private function replaceGallery(Faskes $faskes, array $paths): void
+    {
+        $previous = $faskes->images()->pluck('path')->all();
         $faskes->images()->delete();
-        FaskesImage::query()->create([
-            'id_faskes' => $faskes->id_faskes,
-            'path' => $path,
-            'is_banner' => true,
-            'is_thumbnail' => true,
-            'sort_order' => 0,
-        ]);
 
-        return true;
+        foreach (array_values($paths) as $order => $path) {
+            FaskesImage::query()->create([
+                'id_faskes' => $faskes->id_faskes,
+                'path' => $path,
+                'is_banner' => $order === 0,
+                'is_thumbnail' => $order === 0,
+                'sort_order' => $order,
+            ]);
+        }
+
+        $orphans = array_diff($previous, $paths);
+        if ($orphans !== []) {
+            Storage::disk('public')->delete(array_values($orphans));
+        }
     }
 }

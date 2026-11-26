@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Faskes;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -40,7 +41,7 @@ class ApiDomainTest extends TestCase
 
         $faskes = $this->withHeaders($headers)->postJson('/api/admin/faskes', [
             'kdppk' => 'TEST001', 'nama_faskes' => 'Faskes Test', 'alamat_faskes' => 'Jalan Test', 'kota_kabupaten' => 'KAB. BOGOR',
-            'longitude' => 106.8, 'latitude' => -6.5, 'is_support_bpjs' => true,
+            'longitude' => 106.8, 'latitude' => -6.5, 'bpjs_status' => Faskes::BPJS_DALAM_PROSES,
         ])->assertCreated()->json('data.id_faskes');
         $this->withHeaders($headers)->putJson('/api/admin/faskes/'.$faskes, ['nama_faskes' => 'Faskes Updated'])->assertOk();
         $this->withHeaders($headers)->deleteJson('/api/admin/faskes/'.$faskes)->assertOk();

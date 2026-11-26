@@ -22,6 +22,7 @@ class FaskesResource extends JsonResource
             'kota_kabupaten' => $this->kota_kabupaten,
             'longitude' => $this->longitude,
             'latitude' => $this->latitude,
+            'bpjs_status' => $this->bpjs_status,
             'rating_avg' => $this->when($this->rating_count !== null, fn (): float => round((float) ($this->rating_avg ?? 0), 2)),
             'rating_count' => $this->when($this->rating_count !== null, fn (): int => (int) $this->rating_count),
             'link_maps' => $this->link_maps,

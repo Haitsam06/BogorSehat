@@ -86,7 +86,11 @@ export default function LaporanDataFaskesPage() {
                 faskes?.kecamatan || faskes?.kota_kabupaten || "-",
               alamat_lengkap: faskes?.alamat_faskes || "-",
               tipe_badge: `${faskes?.jenis_faskes || "Faskes"} • ${
-                faskes?.is_support_bpjs ? "BPJS" : "Non-BPJS"
+                faskes?.bpjs_status === "mendukung"
+                  ? "BPJS"
+                  : faskes?.bpjs_status === "dalam_proses"
+                    ? "Proses BPJS"
+                    : "Non-BPJS"
               }`,
               kategori_laporan: item.alasan,
               penjelasan_singkat:

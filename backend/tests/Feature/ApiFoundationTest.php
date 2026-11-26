@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ApiToken;
+use App\Models\Faskes;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -74,8 +75,40 @@ class ApiFoundationTest extends TestCase
     {
         $this->seed();
 
-        $this->getJson('/api/faskes?provinsi=JAWA%20BARAT')->assertOk()->assertJsonPath('meta.total', 506);
+        $this->getJson('/api/faskes?provinsi=JAWA%20BARAT')->assertOk()->assertJsonPath('meta.total', 519);
         $this->getJson('/api/faskes?kecamatan=CIJERUK')->assertOk()->assertJsonPath('data.0.kecamatan', 'Cijeruk');
+    }
+
+    public function test_faskes_expose_three_state_bpjs_status_and_filter_by_it(): void
+    {
+        $this->seed();
+
+        $this->getJson('/api/faskes/1')
+            ->assertOk()
+            ->assertJsonPath('data.bpjs_status', Faskes::BPJS_MENDUKUNG);
+
+        $this->getJson('/api/faskes?bpjs_status=mendukung')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 506);
+
+        $dalamProses = $this->getJson('/api/faskes?bpjs_status=dalam_proses')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 12)
+            ->json('data');
+        $this->assertSame(['dalam_proses'], array_values(array_unique(array_column($dalamProses, 'bpjs_status'))));
+
+        $this->getJson('/api/faskes?bpjs_status=tidak_mendukung')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.kdppk', 'NONREG_1509250133B001');
+
+        $this->getJson('/api/faskes?bpjs_status=dalam_proses,tidak_mendukung')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 13);
+
+        $this->getJson('/api/faskes?bpjs_status=entah')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 519);
     }
 
     public function test_maps_link_targets_place_name_at_facility_coordinates(): void

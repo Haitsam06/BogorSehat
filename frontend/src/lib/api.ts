@@ -84,6 +84,8 @@ export interface ApiUploadedFile {
   size: number;
 }
 
+export type BpjsStatus = "mendukung" | "dalam_proses" | "tidak_mendukung";
+
 export interface ApiFaskes {
   id_faskes: number;
   kdppk: string | null;
@@ -97,7 +99,7 @@ export interface ApiFaskes {
   longitude: string | number;
   latitude: string | number;
   telp_faskes: string | null;
-  is_support_bpjs: boolean;
+  bpjs_status: BpjsStatus;
   link_maps: string | null;
   distance_km?: number | string;
   rating_avg?: number;
@@ -409,7 +411,7 @@ export function mapApiFaskesToItem(
       : "Belum Dirating",
     jumlah_ulasan: ratingCount,
     sudah_dirating: sudahDirating,
-    status_bpjs: Boolean(api.is_support_bpjs),
+    bpjs_status: api.bpjs_status,
     status_igd_24jam: hasIgd,
     telepon_darurat: Boolean(api.telp_faskes),
     latitude: lat,
@@ -511,7 +513,7 @@ export const api = {
     kota_kabupaten?: string;
     jenis_faskes?: string;
     kelas_faskes?: string;
-    is_support_bpjs?: number | boolean;
+    bpjs_status?: BpjsStatus;
     id_spesialisasi?: string;
     id_fasilitas?: number;
     latitude?: number;
@@ -522,11 +524,7 @@ export const api = {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== "" && val !== "ALL") {
-        if (key === "is_support_bpjs") {
-          searchParams.append(key, val ? "1" : "0");
-        } else {
-          searchParams.append(key, String(val));
-        }
+        searchParams.append(key, String(val));
       }
     });
 
@@ -1141,7 +1139,7 @@ export const api = {
     kecamatan?: string;
     provinsi?: string;
     telp_faskes?: string;
-    is_support_bpjs?: boolean;
+    bpjs_status?: BpjsStatus;
     link_maps?: string;
     id_spesialisasi?: string[];
     id_fasilitas?: number[];
@@ -1168,7 +1166,7 @@ export const api = {
       kecamatan?: string | null;
       provinsi?: string;
       telp_faskes?: string | null;
-      is_support_bpjs?: boolean;
+      bpjs_status?: BpjsStatus;
       link_maps?: string;
       id_spesialisasi?: string[];
       id_fasilitas?: number[];

@@ -86,7 +86,7 @@ export default function AdminFaskesPage() {
     const baris = daftarFaskes
       .map(
         (f) =>
-          `"${f.id_faskes}","${f.nama_faskes.replace(/"/g, '""')}","${f.jenis_faskes || ""}","${f.kota_kabupaten}","${f.kecamatan || ""}","${f.latitude}","${f.longitude}","${f.is_support_bpjs ? "Ya" : "Tidak"}"`
+          `"${f.id_faskes}","${f.nama_faskes.replace(/"/g, '""')}","${f.jenis_faskes || ""}","${f.kota_kabupaten}","${f.kecamatan || ""}","${f.latitude}","${f.longitude}","${f.bpjs_status}"`
       )
       .join("\n");
     const blob = new Blob([header + baris], { type: "text/csv;charset=utf-8;" });

@@ -23,7 +23,8 @@ class FaskesController extends Controller
         $query->when($request->filled('kecamatan'), fn ($q) => $q->whereRaw('lower(kecamatan) = ?', [mb_strtolower(trim($request->string('kecamatan')->toString()))]));
         $query->when($request->filled('kota_kabupaten'), fn ($q) => $q->where('kota_kabupaten', $request->string('kota_kabupaten')));
         $query->when($request->filled('jenis_faskes'), fn ($q) => $q->where('jenis_faskes', 'like', '%'.$request->string('jenis_faskes').'%'));
-        $query->when($request->has('is_support_bpjs'), fn ($q) => $q->where('is_support_bpjs', $request->boolean('is_support_bpjs')));
+        $bpjsStatuses = $this->requestedBpjsStatuses($request);
+        $query->when($bpjsStatuses !== [], fn ($q) => $q->whereIn('bpjs_status', $bpjsStatuses));
         $query->when($request->filled('id_spesialisasi'), fn ($q) => $q->whereHas('spesialisasi', fn ($r) => $r->whereKey($request->string('id_spesialisasi'))));
 
         $facilityIds = $this->requestedFacilityIds($request);
@@ -159,6 +160,27 @@ class FaskesController extends Controller
             ->flatMap(static fn ($value): array => explode(',', (string) $value))
             ->map(static fn (string $value): int => (int) trim($value))
             ->filter(static fn (int $value): bool => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Terima satu nilai, daftar berkoma, atau parameter berulang.
+     *
+     * @return list<string>
+     */
+    private function requestedBpjsStatuses(Request $request): array
+    {
+        $raw = $request->input('bpjs_status');
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+
+        return collect((array) $raw)
+            ->flatMap(static fn ($value): array => explode(',', (string) $value))
+            ->map(static fn (string $value): string => strtolower(trim($value)))
+            ->filter(static fn (string $value): bool => in_array($value, Faskes::BPJS_STATUSES, true))
             ->unique()
             ->values()
             ->all();

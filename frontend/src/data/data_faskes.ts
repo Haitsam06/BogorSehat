@@ -14,7 +14,7 @@ export interface DataFaskesItem {
   rating_faskes: string;
   jumlah_ulasan: number;
   sudah_dirating?: boolean;
-  status_bpjs: boolean;
+  bpjs_status: "mendukung" | "dalam_proses" | "tidak_mendukung";
   status_igd_24jam: boolean;
   telepon_darurat: boolean;
   latitude: number;

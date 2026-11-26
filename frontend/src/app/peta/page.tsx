@@ -28,6 +28,7 @@ import FilterWilayah, {
 } from "@/components/map/FilterWilayah";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { api, mapApiFaskesToItem, messageFromError } from "@/lib/api";
+import { BPJS_STATUS_CLASS, BPJS_STATUS_SHORT } from "@/lib/bpjsStatus";
 import { useFaskes } from "@/context/FaskesContext";
 
 function hitungJarakKm(
@@ -477,11 +478,11 @@ export default function PetaInteraktifPage() {
                       </div>
 
                       <div className="flex items-center gap-1">
-                        {faskes_item.status_bpjs && (
-                          <span className="px-1 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200 leading-none">
-                            BPJS
-                          </span>
-                        )}
+                        <span
+                          className={`px-1 py-[1px] rounded text-[8px] font-bold border leading-none ${BPJS_STATUS_CLASS[faskes_item.bpjs_status]}`}
+                        >
+                          {BPJS_STATUS_SHORT[faskes_item.bpjs_status]}
+                        </span>
                         {faskes_item.status_igd_24jam && (
                           <span className="px-1 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200 leading-none">
                             UGD 24J
@@ -530,11 +531,11 @@ export default function PetaInteraktifPage() {
                   <span className="text-[9px] font-extrabold text-[#007E7A] uppercase tracking-wider">
                     {faskes_terpilih.label_singkat_kategori.replace("\n", " ")}
                   </span>
-                  {faskes_terpilih.status_bpjs && (
-                    <span className="px-1 py-[1px] rounded bg-emerald-50 text-emerald-700 text-[8px] font-bold border border-emerald-200 leading-none">
-                      BPJS
-                    </span>
-                  )}
+                  <span
+                    className={`px-1 py-[1px] rounded text-[8px] font-bold border leading-none ${BPJS_STATUS_CLASS[faskes_terpilih.bpjs_status]}`}
+                  >
+                    {BPJS_STATUS_SHORT[faskes_terpilih.bpjs_status]}
+                  </span>
                   {faskes_terpilih.status_igd_24jam && (
                     <span className="px-1 py-[1px] rounded bg-rose-50 text-rose-700 text-[8px] font-bold border border-rose-200 leading-none">
                       UGD 24 Jam

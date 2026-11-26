@@ -31,17 +31,17 @@ import {
   ApiFasilitas,
   ApiFaskesImage,
   ApiSpesialisasi,
+  BpjsStatus,
   messageFromError,
 } from "@/lib/api";
 
 const DAFTAR_KECAMATAN_SUGGESTIONS = [
+  "Babakan Madang",
   "Bogor Barat",
+  "Bogor Selatan",
   "Bogor Tengah",
   "Bogor Timur",
-  "Bogor Selatan",
   "Bogor Utara",
-  "Tanah Sareal",
-  "Babakan Madang",
   "Bojonggede",
   "Caringin",
   "Cariu",
@@ -71,13 +71,14 @@ const DAFTAR_KECAMATAN_SUGGESTIONS = [
   "Pamijahan",
   "Parung",
   "Parung Panjang",
-  "Ranca Bungur",
+  "Rancabungur",
   "Rumpin",
   "Sukajaya",
   "Sukamakmur",
   "Sukaraja",
   "Tajurhalang",
   "Tamansari",
+  "Tanah Sareal",
   "Tanjungsari",
   "Tenjo",
   "Tenjolaya",
@@ -91,7 +92,10 @@ const JENIS_FASKES_OPTIONS = [
   "DOKTER PRAKTIK PERORANGAN",
   "DOKTER GIGI",
   "APOTEK",
+  "OPTIK",
   "Laboratorium Medis",
+  "DOKTER UMUM",
+  "JEJARING",
 ];
 
 const KELAS_FASKES_OPTIONS = [
@@ -145,7 +149,7 @@ export default function AdminFaskesForm({
   const [kecamatan, setKecamatan] = useState("");
   const [alamatFaskes, setAlamatFaskes] = useState("");
   const [telpFaskes, setTelpFaskes] = useState("");
-  const [isSupportBpjs, setIsSupportBpjs] = useState(true);
+  const [bpjsStatus, setBpjsStatus] = useState<BpjsStatus>("mendukung");
   const [latitude, setLatitude] = useState("-6.595000");
   const [longitude, setLongitude] = useState("106.799000");
 
@@ -203,7 +207,7 @@ export default function AdminFaskesForm({
           setKecamatan(detail.kecamatan || "");
           setAlamatFaskes(detail.alamat_faskes || "");
           setTelpFaskes(detail.telp_faskes || "");
-          setIsSupportBpjs(Boolean(detail.is_support_bpjs));
+          setBpjsStatus(detail.bpjs_status ?? "mendukung");
           setLatitude(String(detail.latitude ?? "-6.595000"));
           setLongitude(String(detail.longitude ?? "106.799000"));
           setSelectedSpesialisasi(
@@ -497,7 +501,7 @@ export default function AdminFaskesForm({
       telp_faskes: telpFaskes.trim() || null,
       latitude: latNum,
       longitude: lngNum,
-      is_support_bpjs: isSupportBpjs,
+      bpjs_status: bpjsStatus,
       id_spesialisasi: selectedSpesialisasi,
       id_fasilitas: selectedFasilitas,
       images: normalizedImages,
@@ -679,18 +683,19 @@ export default function AdminFaskesForm({
                 </div>
               </div>
 
-              <div className="pt-1">
-                <label className="inline-flex items-center gap-2.5 cursor-pointer select-none px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-[#007E7A]/40 transition">
-                  <input
-                    type="checkbox"
-                    checked={isSupportBpjs}
-                    onChange={(e) => setIsSupportBpjs(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#007E7A] focus:ring-[#007E7A] accent-[#007E7A]"
-                  />
-                  <span className="text-xs font-bold text-slate-800">
-                    Mendukung Pelayanan BPJS Kesehatan
-                  </span>
+              <div className="flex flex-col gap-1.5 pt-1">
+                <label className="text-xs font-bold text-slate-700">
+                  Status Kerja Sama BPJS
                 </label>
+                <select
+                  value={bpjsStatus}
+                  onChange={(e) => setBpjsStatus(e.target.value as BpjsStatus)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-xs sm:text-[13px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
+                >
+                  <option value="mendukung">Bekerja Sama BPJS</option>
+                  <option value="dalam_proses">Dalam Proses Kerja Sama</option>
+                  <option value="tidak_mendukung">Belum Bekerja Sama</option>
+                </select>
               </div>
             </div>
 

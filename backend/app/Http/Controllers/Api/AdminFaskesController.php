@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AdminFaskesController extends Controller
 {
@@ -137,7 +138,7 @@ class AdminFaskesController extends Controller
     {
         $id = $faskes?->getKey();
         $data = $request->validate([
-            'kdppk' => ['sometimes', 'nullable', 'string', 'max:20', 'unique:faskes,kdppk,'.$id.',id_faskes'],
+            'kdppk' => ['sometimes', 'nullable', 'string', 'max:32', 'unique:faskes,kdppk,'.$id.',id_faskes'],
             'nama_faskes' => [$faskes === null ? 'required' : 'sometimes', 'string', 'max:255'],
             'jenis_faskes' => ['sometimes', 'nullable', 'string', 'max:100'],
             'kelas_faskes' => ['sometimes', 'nullable', 'string', 'max:20'],
@@ -148,7 +149,7 @@ class AdminFaskesController extends Controller
             'longitude' => [$faskes === null ? 'required' : 'sometimes', 'numeric', 'between:-180,180'],
             'latitude' => [$faskes === null ? 'required' : 'sometimes', 'numeric', 'between:-90,90'],
             'telp_faskes' => ['sometimes', 'nullable', 'string', 'max:50'],
-            'is_support_bpjs' => ['sometimes', 'nullable', 'boolean'],
+            'bpjs_status' => ['sometimes', 'string', Rule::in(Faskes::BPJS_STATUSES)],
             'link_maps' => ['sometimes', 'nullable', 'url', 'max:2048'],
             'id_spesialisasi' => ['sometimes', 'array'],
             'id_spesialisasi.*' => ['string', 'exists:spesialisasi,id_spesialisasi'],

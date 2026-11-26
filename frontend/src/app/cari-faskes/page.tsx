@@ -104,23 +104,56 @@ function cocokPoli(namaSpesialisasi: string, filter: string): boolean {
   return false;
 }
 
+// Seluruh kecamatan yang benar-benar ada di dataset (46), bukan 16 sampel
+// seperti sebelumnya — tanpa ini faskes di Cileungsi/Jonggol/Cisarua tidak
+// bisa ditemukan lewat filter.
 const daftar_pilihan_kecamatan = [
+  "Babakan Madang",
   "Bogor Barat",
+  "Bogor Selatan",
   "Bogor Tengah",
   "Bogor Timur",
-  "Bogor Selatan",
   "Bogor Utara",
-  "Tanah Sareal",
-  "Cibinong",
-  "Ciawi",
-  "Sukaraja",
-  "Babakan Madang",
-  "Gunung Putri",
   "Bojonggede",
-  "Cijeruk",
+  "Caringin",
+  "Cariu",
   "Ciampea",
+  "Ciawi",
+  "Cibinong",
+  "Cibungbulang",
+  "Cigombong",
+  "Cigudeg",
+  "Cijeruk",
+  "Cileungsi",
+  "Ciomas",
+  "Cisarua",
+  "Ciseeng",
   "Citeureup",
+  "Dramaga",
+  "Gunung Putri",
+  "Gunung Sindur",
+  "Jasinga",
+  "Jonggol",
+  "Kemang",
+  "Klapanunggal",
+  "Leuwiliang",
+  "Leuwisadeng",
+  "Megamendung",
+  "Nanggung",
+  "Pamijahan",
   "Parung",
+  "Parung Panjang",
+  "Rancabungur",
+  "Rumpin",
+  "Sukajaya",
+  "Sukamakmur",
+  "Sukaraja",
+  "Tajurhalang",
+  "Tamansari",
+  "Tanah Sareal",
+  "Tanjungsari",
+  "Tenjo",
+  "Tenjolaya",
 ];
 
 const daftar_pilihan_kategori = [
@@ -270,7 +303,13 @@ function CariFaskesKonten() {
     setPesanKesalahan(null);
 
     const bpjsParam =
-      filter_bpjs === "BPJS_YA" ? 1 : filter_bpjs === "BPJS_TIDAK" ? 0 : undefined;
+      filter_bpjs === "BPJS_MENDUKUNG"
+        ? "mendukung"
+        : filter_bpjs === "BPJS_PROSES"
+          ? "dalam_proses"
+          : filter_bpjs === "BPJS_TIDAK"
+            ? "tidak_mendukung"
+            : undefined;
 
     const kotaParam =
       filter_wilayah === "KOTA_BOGOR"
@@ -297,7 +336,7 @@ function CariFaskesKonten() {
         jenis_faskes: jenisParam,
         id_spesialisasi: idSpesialisasi,
         id_fasilitas: !Number.isNaN(idFasilitasNum) ? idFasilitasNum : undefined,
-        is_support_bpjs: bpjsParam,
+        bpjs_status: bpjsParam,
         latitude: lokasiPengguna?.latitude,
         longitude: lokasiPengguna?.longitude,
         page: halamanAktif,
@@ -568,7 +607,9 @@ function CariFaskesKonten() {
             <div className="space-y-1">
               {[
                 { nilai: "ALL", label: "Semua Faskes" },
-                { nilai: "BPJS_YA", label: "Menerima BPJS" },
+                { nilai: "BPJS_MENDUKUNG", label: "Bekerja Sama BPJS" },
+                { nilai: "BPJS_PROSES", label: "Dalam Proses Kerja Sama" },
+                { nilai: "BPJS_TIDAK", label: "Belum Bekerja Sama" },
               ].map((opsi) => {
                 const terpilih = filter_bpjs === opsi.nilai;
                 return (

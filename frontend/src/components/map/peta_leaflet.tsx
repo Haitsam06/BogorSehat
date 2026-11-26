@@ -124,9 +124,11 @@ function buildTooltipHtml(faskes_item: DataFaskesItem): string {
         ${escapeHtml(faskes_item.alamat_lengkap)}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;">
-        ${faskes_item.status_bpjs
+        ${faskes_item.bpjs_status === "mendukung"
       ? `<span style="padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-size:9px;font-weight:800;">✓ BPJS Aktif</span>`
-      : ""
+      : faskes_item.bpjs_status === "dalam_proses"
+        ? `<span style="padding:2px 6px;border-radius:4px;background:#FEF3C7;color:#92400E;font-size:9px;font-weight:800;">Proses BPJS</span>`
+        : `<span style="padding:2px 6px;border-radius:4px;background:#E2E8F0;color:#475569;font-size:9px;font-weight:800;">Non-BPJS</span>`
     }
         ${faskes_item.status_igd_24jam
       ? `<span style="padding:2px 6px;border-radius:4px;background:#FEE2E2;color:#991B1B;font-size:9px;font-weight:800;">✳ UGD 24 Jam</span>`

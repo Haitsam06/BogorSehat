@@ -16,10 +16,24 @@ class Faskes extends Model
 
     protected $primaryKey = 'id_faskes';
 
+    /** Keadaan kerjasama BPJS, mengikuti tiga status di Aplicares. */
+    public const BPJS_MENDUKUNG = 'mendukung';
+
+    public const BPJS_DALAM_PROSES = 'dalam_proses';
+
+    public const BPJS_TIDAK_MENDUKUNG = 'tidak_mendukung';
+
+    /** @var list<string> */
+    public const BPJS_STATUSES = [
+        self::BPJS_MENDUKUNG,
+        self::BPJS_DALAM_PROSES,
+        self::BPJS_TIDAK_MENDUKUNG,
+    ];
+
     protected $fillable = [
         'kdppk', 'nama_faskes', 'jenis_faskes', 'kelas_faskes', 'alamat_faskes',
         'provinsi', 'kecamatan', 'kota_kabupaten', 'longitude', 'latitude', 'telp_faskes',
-        'is_support_bpjs', 'link_maps',
+        'bpjs_status', 'link_maps',
     ];
 
     protected function casts(): array
@@ -27,7 +41,6 @@ class Faskes extends Model
         return [
             'longitude' => 'decimal:8',
             'latitude' => 'decimal:8',
-            'is_support_bpjs' => 'boolean',
         ];
     }
 
