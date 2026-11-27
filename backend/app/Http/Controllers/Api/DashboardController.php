@@ -13,14 +13,15 @@ use App\Models\LaporanTanggapan;
 use App\Models\Spesialisasi;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
     public function home(): JsonResponse
     {
-        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_home_stats', 3600, fn () => [
+        $data = Cache::remember('dashboard_home_stats', 3600, fn () => [
             'faskes_count' => Faskes::query()->count(),
-            'kota_kabupaten' => Faskes::query()->select('kota_kabupaten')->distinct()->orderBy('kota_kabupaten')->pluck('kota_kabupaten'),
+            'kota_kabupaten' => Faskes::query()->select('kota_kabupaten')->distinct()->orderBy('kota_kabupaten')->pluck('kota_kabupaten')->all(),
             'spesialisasi_count' => Spesialisasi::query()->count(),
             'fasilitas_count' => Fasilitas::query()->count(),
         ]);

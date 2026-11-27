@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   Building2,
   FlaskConical,
@@ -158,12 +159,14 @@ export function FaskesThumbnail({
 
   if (punyaGambar) {
     return (
-      <img
+      <Image
         src={gambar_faskes!}
         alt={nama_faskes}
-        loading={prioritas ? "eager" : "lazy"}
-        decoding="async"
-        fetchPriority={prioritas ? "high" : "auto"}
+        fill
+        // Kartu menampilkan 160px, jadi cukup minta lebar ~400px untuk layar
+        // retina. Tanpa ini optimizer mengirim foto 1200px utuh.
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+        priority={prioritas}
         onError={() => setGagalMuat(true)}
         className={`${className} object-cover group-hover:scale-105 transition-transform duration-500`}
       />

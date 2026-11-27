@@ -22,10 +22,14 @@ class FaskesResource extends JsonResource
             'kota_kabupaten' => $this->kota_kabupaten,
             'longitude' => $this->longitude,
             'latitude' => $this->latitude,
+            'telp_faskes' => $this->telp_faskes,
             'bpjs_status' => $this->bpjs_status,
             'rating_avg' => $this->when($this->rating_count !== null, fn (): float => round((float) ($this->rating_avg ?? 0), 2)),
             'rating_count' => $this->when($this->rating_count !== null, fn (): int => (int) $this->rating_count),
-            'link_maps' => $this->link_maps,
+            // `link_maps` adalah field terbesar (~19% payload nearby) dan
+            // tidak dipakai beranda maupun peta. Endpoint yang tidak
+            // merendernya menandai model dengan `tanpa_link_maps`.
+            'link_maps' => $this->when(! $this->hasAttribute('tanpa_link_maps'), fn (): ?string => $this->link_maps),
             'has_igd' => $this->when($this->has_igd !== null, fn (): bool => (bool) $this->has_igd),
             'distance_km' => $this->when(isset($this->distance_km), $this->distance_km),
             'images' => $this->whenLoaded('images', fn () => $this->images->map(fn ($image): array => [

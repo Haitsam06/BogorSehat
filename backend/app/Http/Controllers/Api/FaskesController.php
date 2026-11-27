@@ -44,7 +44,7 @@ class FaskesController extends Controller
         }
 
         $faskes = $query->paginate(min($request->integer('per_page', 15), 100));
-        $this->attachDistance($faskes->getCollection(), $coordinates);
+        $this->attachDistance($faskes->getCollection(), $coordinates, dropLinkMaps: true);
 
         return FaskesResource::collection($faskes);
     }
@@ -57,16 +57,50 @@ class FaskesController extends Controller
         return new FaskesResource($faskes);
     }
 
+    /**
+     * Data dropdown peta/pemilih faskes.
+     *
+     * Satu-satunya konsumen (`/diskusi/buat`) hanya membaca id, nama, jenis,
+     * kecamatan, kota, dan rating. `link_maps` (36,7% payload) dan
+     * `alamat_faskes` (7,7%) tidak pernah dipakai, jadi tidak dikirim.
+     * `kecamatan` dan `kota_kabupaten` justru sebelumnya tidak ikut padahal
+     * dipakai untuk pencarian di dropdown.
+     */
     public function map(Request $request): JsonResponse
     {
         $faskes = Faskes::query()
-            ->select(['id_faskes', 'nama_faskes', 'jenis_faskes', 'alamat_faskes', 'latitude', 'longitude', 'link_maps'])
+            ->select(['id_faskes', 'nama_faskes', 'jenis_faskes', 'kecamatan', 'kota_kabupaten', 'latitude', 'longitude'])
             ->withRating()
             ->orderBy('nama_faskes')
             ->get();
         $this->attachDistance($faskes, $this->requestCoordinates($request));
 
-        return response()->json(['data' => $faskes]);
+        return response()->json(['data' => $this->mapPayload($faskes)]);
+    }
+
+    /**
+     * @param  iterable<int, Faskes>  $faskes
+     * @return list<array<string, mixed>>
+     */
+    private function mapPayload(iterable $faskes): array
+    {
+        $rows = [];
+        foreach ($faskes as $item) {
+            $rows[] = [
+                'id_faskes' => $item->id_faskes,
+                'nama_faskes' => $item->nama_faskes,
+                'jenis_faskes' => $item->jenis_faskes,
+                'kecamatan' => $item->kecamatan,
+                'kota_kabupaten' => $item->kota_kabupaten,
+                'latitude' => $item->latitude,
+                'longitude' => $item->longitude,
+                'rating_avg' => $item->rating_count === null ? null : round((float) ($item->rating_avg ?? 0), 2),
+                'rating_count' => $item->rating_count === null ? null : (int) $item->rating_count,
+                'distance_km' => $item->distance_km ?? null,
+            ];
+        }
+
+        return $rows;
     }
 
     public function nearby(Request $request): JsonResponse
@@ -90,7 +124,11 @@ class FaskesController extends Controller
             ->whereBetween('longitude', [$longitude - $longitudeDelta, $longitude + $longitudeDelta]);
 
         if ($compact) {
-            $query->with('spesialisasi')
+            // Beranda memakai `compact` dan merender kartu berating, jadi
+            // rating harus ikut. Biayanya nol: `withAvg`/`withCount` menjadi
+            // subquery di query utama, bukan query tambahan.
+            $query->withRating()
+                ->with('spesialisasi')
                 ->withExists(['fasilitas as has_igd' => fn ($sub) => $sub->whereRaw('lower(nama_fasilitas) like ?', ['%igd%'])]);
         } else {
             $query->withRating()->with(['spesialisasi', 'fasilitas', 'images']);
@@ -98,7 +136,10 @@ class FaskesController extends Controller
 
         $faskes = $query
             ->get()
-            ->each(fn (Faskes $item) => $item->distance_km = $item->distanceKmTo($latitude, $longitude))
+            ->each(function (Faskes $item) use ($latitude, $longitude): void {
+                $item->distance_km = $item->distanceKmTo($latitude, $longitude);
+                $item->setAttribute('tanpa_link_maps', true);
+            })
             ->filter(fn (Faskes $item): bool => $item->distance_km <= $radius)
             ->sortBy('distance_km')
             ->values();
@@ -124,11 +165,20 @@ class FaskesController extends Controller
         ];
     }
 
-    /** @param  iterable<int, Faskes>  $faskes */
-    private function attachDistance(iterable $faskes, array $coordinates): void
+    /**
+     * Hitung jarak dan — untuk endpoint daftar/peta — tandai agar
+     * `link_maps` tidak ikut diserialisasi. Field itu ~19% payload dan
+     * hanya dipakai tombol rute di halaman detail.
+     *
+     * @param  iterable<int, Faskes>  $faskes
+     */
+    private function attachDistance(iterable $faskes, array $coordinates, bool $dropLinkMaps = false): void
     {
         foreach ($faskes as $item) {
             $item->distance_km = $item->distanceKmTo($coordinates[0], $coordinates[1]);
+            if ($dropLinkMaps) {
+                $item->setAttribute('tanpa_link_maps', true);
+            }
         }
     }
 

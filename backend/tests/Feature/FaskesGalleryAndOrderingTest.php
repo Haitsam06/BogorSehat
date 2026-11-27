@@ -228,9 +228,14 @@ class FaskesGalleryAndOrderingTest extends TestCase
         $this->assertNotNull($compact);
         $this->assertTrue($compact['has_igd']);
         $this->assertArrayNotHasKey('images', $compact);
-        $this->assertArrayNotHasKey('rating_avg', $compact);
         $this->assertArrayNotHasKey('fasilitas', $compact);
         $this->assertArrayHasKey('spesialisasi', $compact);
+        // Beranda merender kartu berating dari jalur compact, jadi rating
+        // harus tersedia di sini.
+        $this->assertArrayHasKey('rating_avg', $compact);
+        $this->assertArrayHasKey('rating_count', $compact);
+        // `link_maps` hanya dipakai tombol rute di halaman detail.
+        $this->assertArrayNotHasKey('link_maps', $compact);
 
         $full = collect($this->getJson('/api/faskes/nearby?latitude=-6.57451&longitude=106.628&radius=1')->assertOk()->json('data'))
             ->firstWhere('id_faskes', $target->id_faskes);

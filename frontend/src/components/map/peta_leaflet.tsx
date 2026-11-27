@@ -6,6 +6,9 @@ import { DataFaskesItem } from "@/data/data_faskes";
 import { BOGOR_DEFAULT_CENTER, BOGOR_MAX_BOUNDS, isInsideBogor } from "@/data/data_wilayah";
 import { useFaskes } from "@/context/FaskesContext";
 import { getFaskesVisual } from "@/components/ui/faskes_thumbnail";
+// CSS Leaflet hanya dibutuhkan rute yang merender peta; memasangnya di
+// globals.css membuat 14,5 KB render-blocking ikut ke halaman login/diskusi.
+import "leaflet/dist/leaflet.css";
 
 export interface GeoJsonLayerConfig {
   /** URL geojson (dari /public) */
