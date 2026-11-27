@@ -133,6 +133,12 @@ interface FaskesThumbnailProps {
   nama_faskes: string;
   kategori_faskes?: string | null;
   className?: string;
+  /**
+   * `true` untuk gambar above-the-fold yang harus segera tampil (kartu
+   * pertama). Sisanya lazy: halaman daftar memuat 12 kartu sekaligus
+   * padahal layar hanya menampilkan sebagian.
+   */
+  prioritas?: boolean;
 }
 
 export function FaskesThumbnail({
@@ -140,6 +146,7 @@ export function FaskesThumbnail({
   nama_faskes,
   kategori_faskes,
   className = "w-full h-full",
+  prioritas = false,
 }: FaskesThumbnailProps) {
   const [gagalMuat, setGagalMuat] = useState(false);
 
@@ -154,6 +161,9 @@ export function FaskesThumbnail({
       <img
         src={gambar_faskes!}
         alt={nama_faskes}
+        loading={prioritas ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={prioritas ? "high" : "auto"}
         onError={() => setGagalMuat(true)}
         className={`${className} object-cover group-hover:scale-105 transition-transform duration-500`}
       />

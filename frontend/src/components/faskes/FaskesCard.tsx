@@ -20,12 +20,15 @@ interface FaskesCardProps {
   faskes: DataFaskesItem;
   variant?: "grid" | "home";
   className?: string;
+  /** Kartu pertama di atas lipatan: muat gambarnya segera. */
+  prioritas?: boolean;
 }
 
 export default function FaskesCard({
   faskes,
   variant = "grid",
   className = "",
+  prioritas = false,
 }: FaskesCardProps) {
   const detailHref = `/faskes/${faskes.slug_faskes}`;
 
@@ -45,6 +48,7 @@ export default function FaskesCard({
               nama_faskes={faskes.nama_faskes}
               kategori_faskes={faskes.kategori_faskes}
               className="w-full h-full"
+              prioritas={prioritas}
             />
             <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[10px] font-extrabold shadow-xs">
               {faskes.jarak_km}
@@ -112,6 +116,7 @@ export default function FaskesCard({
             nama_faskes={faskes.nama_faskes}
             kategori_faskes={faskes.kategori_faskes}
             className="w-full h-full"
+            prioritas={prioritas}
           />
           <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-sm text-[#007E7A] text-[10px] font-extrabold shadow-xs">
             {faskes.jarak_km}

@@ -735,11 +735,12 @@ function CariFaskesKonten() {
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {daftarFaskes.map((faskes_item) => (
+              {daftarFaskes.map((faskes_item, indeks) => (
                 <FaskesCard
                   key={faskes_item.id_faskes}
                   faskes={faskes_item}
                   variant="grid"
+                  prioritas={indeks === 0}
                 />
               ))}
             </div>

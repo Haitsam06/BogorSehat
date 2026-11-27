@@ -34,7 +34,20 @@ import {
 import { BadgePoli } from "@/components/ui/badge_poli";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import FaskesCard from "@/components/faskes/FaskesCard";
-import PetaLeaflet from "@/components/map/peta_leaflet";
+import dynamic from "next/dynamic";
+
+// Peta beranda berada di section ketiga, jauh di bawah lipatan. Memuat
+// komponennya (774 baris) + chunk Leaflet di render pertama membuat peta
+// berebut bandwidth dengan hero. Tinggi kontainer dikunci 380px supaya
+// penundaan ini tidak menimbulkan layout shift.
+const PetaLeaflet = dynamic(() => import("@/components/map/peta_leaflet"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[380px] bg-slate-100 animate-pulse flex items-center justify-center">
+      <span className="text-xs font-semibold text-slate-400">Memuat peta...</span>
+    </div>
+  ),
+});
 import AnimasiScroll from "@/components/ui/animasi_scroll";
 import {
   api,
@@ -290,6 +303,7 @@ export default function BerandaPage() {
                       faskes={faskes_item}
                       variant="home"
                       className="h-full hover:-translate-y-1.5 transition-all duration-300"
+                      prioritas={indeks === 0}
                     />
                   </AnimasiScroll>
                 ))}

@@ -17,7 +17,12 @@ class FaskesController extends Controller
     public function index(Request $request)
     {
         $coordinates = $this->requestCoordinates($request);
-        $query = Faskes::query()->withRating()->with(['spesialisasi', 'fasilitas', 'images']);
+        // `fasilitas` menyumbang ~70% payload daftar padahal klien hanya
+        // memakainya untuk menyimpulkan boolean IGD. Kirim boolean itu saja.
+        $query = Faskes::query()
+            ->withRating()
+            ->with(['spesialisasi', 'images'])
+            ->withExists(['fasilitas as has_igd' => fn ($sub) => $sub->whereRaw('lower(nama_fasilitas) like ?', ['%igd%'])]);
         $query->when($request->filled('search'), fn ($q) => $q->where('nama_faskes', 'like', '%'.$request->string('search').'%'));
         $query->when($request->filled('provinsi'), fn ($q) => $q->where('provinsi', $request->string('provinsi')));
         $query->when($request->filled('kecamatan'), fn ($q) => $q->whereRaw('lower(kecamatan) = ?', [mb_strtolower(trim($request->string('kecamatan')->toString()))]));

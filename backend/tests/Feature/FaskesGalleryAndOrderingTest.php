@@ -270,6 +270,24 @@ class FaskesGalleryAndOrderingTest extends TestCase
         ])->assertCreated()->json('data.id_faskes');
     }
 
+    public function test_index_returns_igd_flag_without_shipping_facility_rows(): void
+    {
+        $this->seed();
+        $igd = Fasilitas::query()->create(['id_fasilitas' => 9002, 'nama_fasilitas' => 'Instalasi Gawat Darurat (IGD)']);
+
+        $target = Faskes::query()->where('kdppk', '0117R007')->firstOrFail();
+        $target->fasilitas()->attach($igd->id_fasilitas);
+
+        $rows = collect($this->getJson('/api/faskes?per_page=100')->assertOk()->json('data'));
+        $row = $rows->firstWhere('id_faskes', $target->id_faskes);
+
+        $this->assertNotNull($row);
+        // Boolean IGD tetap tersedia untuk kartu...
+        $this->assertTrue($row['has_igd']);
+        // ...tanpa mengirim ribuan baris fasilitas yang tidak dirender.
+        $this->assertArrayNotHasKey('fasilitas', $row);
+    }
+
     /** @return array<string, string> */
     private function adminHeaders(): array
     {

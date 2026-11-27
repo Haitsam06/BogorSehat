@@ -92,6 +92,9 @@ export default function FaskesImageCarousel({
           <img
             src={currentSlide.url}
             alt={`${namaFaskes} — Foto ${activeIndex + 1}`}
+            // Slide utama above-the-fold: jangan lazy, beri prioritas unduh.
+            fetchPriority="high"
+            decoding="async"
             onError={() =>
               setFailedUrls((prev) => ({ ...prev, [currentSlide.url]: true }))
             }
@@ -165,6 +168,12 @@ export default function FaskesImageCarousel({
                   <img
                     src={slide.url}
                     alt={`${namaFaskes} thumbnail ${idx + 1}`}
+                    // Strip ini memuat sampai 5 foto resolusi penuh, padahal
+                    // hanya satu slide yang tampil besar. Tunda sisanya.
+                    loading={aktif ? "eager" : "lazy"}
+                    decoding="async"
+                    width={80}
+                    height={56}
                     onError={() =>
                       setFailedUrls((prev) => ({ ...prev, [slide.url]: true }))
                     }
