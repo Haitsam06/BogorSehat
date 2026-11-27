@@ -18,7 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
-import { FormAlert, SearchInput } from "@/components/ui";
+import { CustomSelect, FormAlert, SearchInput } from "@/components/ui";
 import { api, messageFromError } from "@/lib/api";
 
 interface AduanKomentarItem {
@@ -228,17 +228,19 @@ export default function LaporanDataDiskusiPage() {
               />
 
               {/* Dropdown Status */}
-              <div className="w-full sm:w-48">
-                <select
+              <div className="w-full sm:w-48 shrink-0">
+                <CustomSelect
                   value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A]"
-                >
-                  <option value="Semua Status">Semua Status</option>
-                  <option value="Menunggu">Menunggu</option>
-                  <option value="Selesai">Selesai</option>
-                  <option value="Ditolak">Ditolak</option>
-                </select>
+                  onChange={setFilterStatus}
+                  highlightSelected={filterStatus !== "Semua Status"}
+                  className="!h-10 !text-xs bg-slate-50/50"
+                  options={[
+                    { value: "Semua Status", label: "Semua Status" },
+                    { value: "Menunggu", label: "Menunggu" },
+                    { value: "Selesai", label: "Selesai" },
+                    { value: "Ditolak", label: "Ditolak" },
+                  ]}
+                />
               </div>
             </div>
           </div>

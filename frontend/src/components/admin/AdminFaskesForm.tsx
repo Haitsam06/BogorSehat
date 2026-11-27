@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type LType from "leaflet";
 import AdminSidebarLayout from "@/components/layout/AdminSidebarLayout";
+import { CustomSelect } from "@/components/ui";
 import { FaskesThumbnail } from "@/components/ui/faskes_thumbnail";
 import {
   api,
@@ -637,35 +638,37 @@ export default function AdminFaskesForm({
                   <label className="block text-xs font-bold text-slate-800">
                     Jenis Faskes
                   </label>
-                  <select
+                  <CustomSelect
                     value={jenisFaskes}
-                    onChange={(e) => setJenisFaskes(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-xs sm:text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
-                  >
-                    <option value="">-- Pilih Jenis Faskes --</option>
-                    {jenisOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setJenisFaskes}
+                    placeholder="-- Pilih Jenis Faskes --"
+                    searchable
+                    searchPlaceholder="Cari jenis faskes..."
+                    className="!h-11 !rounded-lg"
+                    options={[
+                      { value: "", label: "-- Pilih Jenis Faskes --" },
+                      ...jenisOptions.map((item) => ({
+                        value: item,
+                        label: item,
+                      })),
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-800">
                     Kelas Pelayanan
                   </label>
-                  <select
+                  <CustomSelect
                     value={kelasFaskes}
-                    onChange={(e) => setKelasFaskes(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-xs sm:text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
-                  >
-                    {kelasOptions.map((item) => (
-                      <option key={item.value || "none"} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setKelasFaskes}
+                    placeholder="Pilih kelas pelayanan..."
+                    className="!h-11 !rounded-lg"
+                    options={kelasOptions.map((item) => ({
+                      value: item.value,
+                      label: item.label,
+                    }))}
+                  />
                 </div>
 
                 <div className="space-y-1.5">
@@ -687,15 +690,16 @@ export default function AdminFaskesForm({
                 <label className="text-xs font-bold text-slate-700">
                   Status Kerja Sama BPJS
                 </label>
-                <select
+                <CustomSelect
                   value={bpjsStatus}
-                  onChange={(e) => setBpjsStatus(e.target.value as BpjsStatus)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-xs sm:text-[13px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
-                >
-                  <option value="mendukung">Bekerja Sama BPJS</option>
-                  <option value="dalam_proses">Dalam Proses Kerja Sama</option>
-                  <option value="tidak_mendukung">Belum Bekerja Sama</option>
-                </select>
+                  onChange={(val) => setBpjsStatus(val as BpjsStatus)}
+                  className="!h-11 !rounded-lg"
+                  options={[
+                    { value: "mendukung", label: "Bekerja Sama BPJS" },
+                    { value: "dalam_proses", label: "Dalam Proses Kerja Sama" },
+                    { value: "tidak_mendukung", label: "Belum Bekerja Sama" },
+                  ]}
+                />
               </div>
             </div>
 
@@ -715,33 +719,42 @@ export default function AdminFaskesForm({
                   <label className="block text-xs font-bold text-slate-800">
                     Kota / Kabupaten <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <CustomSelect
                     value={kotaKabupaten}
-                    onChange={(e) => setKotaKabupaten(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-xs sm:text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
-                  >
-                    <option value="KOTA BOGOR">KOTA BOGOR</option>
-                    <option value="KAB. BOGOR">KAB. BOGOR</option>
-                  </select>
+                    onChange={setKotaKabupaten}
+                    className="!h-11 !rounded-lg"
+                    options={[
+                      { value: "KOTA BOGOR", label: "KOTA BOGOR" },
+                      { value: "KAB. BOGOR", label: "KAB. BOGOR" },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-800">
                     Kecamatan
                   </label>
-                  <input
-                    type="text"
-                    list="daftar-kecamatan-bogor"
+                  <CustomSelect
                     value={kecamatan}
-                    onChange={(e) => setKecamatan(e.target.value)}
-                    placeholder="Contoh: Bogor Barat"
-                    className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-xs sm:text-[13px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#007E7A] focus:border-[#007E7A] transition"
+                    onChange={setKecamatan}
+                    placeholder="Pilih kecamatan..."
+                    searchable
+                    searchPlaceholder="Cari kecamatan..."
+                    className="!h-11 !rounded-lg"
+                    options={[
+                      { value: "", label: "-- Pilih Kecamatan --" },
+                      ...Array.from(
+                        new Set(
+                          kecamatan
+                            ? [kecamatan, ...DAFTAR_KECAMATAN_SUGGESTIONS]
+                            : DAFTAR_KECAMATAN_SUGGESTIONS
+                        )
+                      ).map((kec) => ({
+                        value: kec,
+                        label: kec,
+                      })),
+                    ]}
                   />
-                  <datalist id="daftar-kecamatan-bogor">
-                    {DAFTAR_KECAMATAN_SUGGESTIONS.map((kec) => (
-                      <option key={kec} value={kec} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
 

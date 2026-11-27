@@ -1,5 +1,6 @@
 export * from "./FormInput";
 export * from "./FormSelect";
+export * from "./CustomSelect";
 export * from "./FormTextarea";
 export * from "./SearchInput";
 export * from "./FormAlert";

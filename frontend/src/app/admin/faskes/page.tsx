@@ -29,6 +29,7 @@ export default function AdminFaskesPage() {
 
   const [idHapus, setIdHapus] = useState<number | null>(null);
   const [sedangHapus, setSedangHapus] = useState(false);
+  const [sedangUnduhCsv, setSedangUnduhCsv] = useState(false);
 
   const muatData = useCallback(async () => {
     setSedangMemuat(true);
@@ -80,23 +81,102 @@ export default function AdminFaskesPage() {
     }
   };
 
-  const unduhCsv = () => {
-    if (daftarFaskes.length === 0) return;
-    const header = "id,nama_faskes,jenis,kota_kabupaten,kecamatan,latitude,longitude,bpjs\n";
-    const baris = daftarFaskes
-      .map(
-        (f) =>
-          `"${f.id_faskes}","${f.nama_faskes.replace(/"/g, '""')}","${f.jenis_faskes || ""}","${f.kota_kabupaten}","${f.kecamatan || ""}","${f.latitude}","${f.longitude}","${f.bpjs_status}"`
-      )
-      .join("\n");
-    const blob = new Blob([header + baris], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `data_faskes_bogor_halaman_${halamanAktif}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const unduhCsv = async () => {
+    if (sedangUnduhCsv) return;
+    setSedangUnduhCsv(true);
+    setPesanStatus(null);
+
+    try {
+      const semuaFaskes: ApiFaskes[] = [];
+      let page = 1;
+      let lastPage = 1;
+
+      do {
+        const res = await api.getAdminFaskes({
+          search: kata_kunci_admin.trim() || undefined,
+          page,
+          per_page: 100,
+        });
+        if (res.data?.length) {
+          semuaFaskes.push(...res.data);
+        }
+        lastPage = res.meta?.last_page ?? 1;
+        page += 1;
+      } while (page <= lastPage);
+
+      if (semuaFaskes.length === 0) {
+        setPesanStatus({
+          tipe: "error",
+          pesan: "Tidak ada data faskes untuk diunduh.",
+        });
+        return;
+      }
+
+      const escapeCsv = (val: unknown) =>
+        `"${String(val ?? "").replace(/"/g, '""')}"`;
+
+      const header = [
+        "id_faskes",
+        "kdppk",
+        "nama_faskes",
+        "jenis_faskes",
+        "kelas_faskes",
+        "alamat_faskes",
+        "kecamatan",
+        "kota_kabupaten",
+        "provinsi",
+        "telp_faskes",
+        "latitude",
+        "longitude",
+        "bpjs_status",
+      ].join(",");
+
+      const baris = semuaFaskes
+        .map((f) =>
+          [
+            f.id_faskes,
+            f.kdppk || "",
+            f.nama_faskes,
+            f.jenis_faskes || "",
+            f.kelas_faskes || "",
+            f.alamat_faskes || "",
+            f.kecamatan || "",
+            f.kota_kabupaten || "",
+            f.provinsi || "",
+            f.telp_faskes || "",
+            f.latitude,
+            f.longitude,
+            f.bpjs_status || "",
+          ]
+            .map(escapeCsv)
+            .join(",")
+        )
+        .join("\n");
+
+      const blob = new Blob(["\uFEFF" + header + "\n" + baris], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "data_faskes_bogor_semua.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setPesanStatus({
+        tipe: "sukses",
+        pesan: `Berhasil mengunduh ${semuaFaskes.length} data fasilitas kesehatan dalam format CSV.`,
+      });
+    } catch (err) {
+      setPesanStatus({
+        tipe: "error",
+        pesan: messageFromError(err, "Gagal mengunduh seluruh data faskes."),
+      });
+    } finally {
+      setSedangUnduhCsv(false);
+    }
   };
 
   return (
@@ -128,10 +208,15 @@ export default function AdminFaskesPage() {
             <button
               type="button"
               onClick={unduhCsv}
-              className="h-11 px-5 rounded-xl bg-[#E9ECEF] hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center gap-2 transition"
+              disabled={sedangUnduhCsv}
+              className="h-11 px-5 rounded-xl bg-[#E9ECEF] hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center gap-2 transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
-              <Download className="w-4 h-4" />
-              <span>Unduh CSV</span>
+              {sedangUnduhCsv ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#007E7A]" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>{sedangUnduhCsv ? "Mengunduh..." : "Unduh CSV"}</span>
             </button>
 
             <Link
