@@ -20,7 +20,9 @@ import {
   X,
   Loader2,
   AlertCircle,
+  LogIn,
 } from "lucide-react";
+import { useFaskes } from "@/context/FaskesContext";
 import {
   api,
   ApiDiskusi,
@@ -57,6 +59,7 @@ export default function ForumDiskusiPage() {
     pesan: string;
   } | null>(null);
 
+  const { sudahLogin } = useFaskes();
   const currentUser = getAuthUser();
   const token = getAuthToken();
 
@@ -221,13 +224,29 @@ export default function ForumDiskusiPage() {
             </p>
           </div>
 
-          <Link
-            href="/diskusi/buat"
-            className="self-start px-4 py-2.5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Buat Diskusi Baru</span>
-          </Link>
+          {sudahLogin ? (
+            <Link
+              href="/diskusi/buat"
+              className="self-start px-4 py-2.5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Buat Diskusi Baru</span>
+            </Link>
+          ) : (
+            <div className="self-start px-4 py-2.5 rounded-xl bg-[#E6F4F3] border border-[#007E7A]/25 text-[#005F5C] text-xs flex items-center gap-2 shrink-0">
+              <LogIn className="w-4 h-4 text-[#007E7A] shrink-0" />
+              <span>
+                Harus{" "}
+                <Link
+                  href="/masuk"
+                  className="font-bold text-[#007E7A] underline underline-offset-2 hover:text-[#006965]"
+                >
+                  login
+                </Link>{" "}
+                terlebih dahulu untuk membuat diskusi.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Kotak Pencarian */}

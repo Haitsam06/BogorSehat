@@ -21,7 +21,9 @@ import {
   X,
   Loader2,
   ExternalLink,
+  LogIn,
 } from "lucide-react";
+import { useFaskes } from "@/context/FaskesContext";
 import {
   api,
   ApiDiskusi,
@@ -96,6 +98,7 @@ export default function DetailDiskusiPage({
     pesan: string;
   } | null>(null);
 
+  const { sudahLogin } = useFaskes();
   const currentUser = getAuthUser();
   const token = getAuthToken();
 
@@ -567,42 +570,66 @@ export default function DetailDiskusiPage({
               <span>Tulis Tanggapan Warga</span>
             </h3>
 
-            <form onSubmit={handleKirimTanggapan} className="space-y-3">
-              <FormTextarea
-                required
-                rows={4}
-                value={teksTanggapan}
-                onChange={(e) => setTeksTanggapan(e.target.value)}
-                placeholder="Tulis tanggapan atau pengalaman Anda seputar topik ini... (Saling menghargai dan jaga kerahasiaan data medis)"
-                className="leading-relaxed"
-              />
+            {sudahLogin ? (
+              <form onSubmit={handleKirimTanggapan} className="space-y-3">
+                <FormTextarea
+                  required
+                  rows={4}
+                  value={teksTanggapan}
+                  onChange={(e) => setTeksTanggapan(e.target.value)}
+                  placeholder="Tulis tanggapan atau pengalaman Anda seputar topik ini... (Saling menghargai dan jaga kerahasiaan data medis)"
+                  className="leading-relaxed"
+                />
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Lampirkan Bukti / Foto</span>
+                    </button>
+                    <span className="hidden sm:inline">Format JPG/PNG maks 2MB</span>
+                  </div>
+
                   <button
-                    type="button"
-                    className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition"
+                    type="submit"
+                    disabled={sedangKirimTanggapan || !teksTanggapan.trim()}
+                    className="px-5 py-2 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white font-bold text-xs flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
                   >
-                    <Camera className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Lampirkan Bukti / Foto</span>
+                    {sedangKirimTanggapan ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                    <span>Kirim</span>
                   </button>
-                  <span className="hidden sm:inline">Format JPG/PNG maks 2MB</span>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={sedangKirimTanggapan || !teksTanggapan.trim()}
-                  className="px-5 py-2 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white font-bold text-xs flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
+              </form>
+            ) : (
+              <div className="px-4 py-3.5 rounded-xl bg-[#E6F4F3] border border-[#007E7A]/25 text-[#005F5C] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <LogIn className="w-4 h-4 text-[#007E7A] shrink-0" />
+                  <span>
+                    Anda harus{" "}
+                    <Link
+                      href="/masuk"
+                      className="font-bold text-[#007E7A] underline underline-offset-2 hover:text-[#006965]"
+                    >
+                      login
+                    </Link>{" "}
+                    terlebih dahulu untuk menulis tanggapan.
+                  </span>
+                </div>
+                <Link
+                  href="/masuk"
+                  className="self-start sm:self-center px-4 py-2 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white font-bold text-xs transition shrink-0"
                 >
-                  {sedangKirimTanggapan ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Send className="w-3.5 h-3.5" />
-                  )}
-                  <span>Kirim</span>
-                </button>
+                  Masuk Sekarang
+                </Link>
               </div>
-            </form>
+            )}
           </div>
 
           {/* Section Diskusi & Tanggapan */}

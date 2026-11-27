@@ -104,16 +104,17 @@ function cocokPoli(namaSpesialisasi: string, filter: string): boolean {
   return false;
 }
 
-// Seluruh kecamatan yang benar-benar ada di dataset (46), bukan 16 sampel
-// seperti sebelumnya — tanpa ini faskes di Cileungsi/Jonggol/Cisarua tidak
-// bisa ditemukan lewat filter.
-const daftar_pilihan_kecamatan = [
-  "Babakan Madang",
+const KECAMATAN_KOTA_BOGOR = [
   "Bogor Barat",
   "Bogor Selatan",
   "Bogor Tengah",
   "Bogor Timur",
   "Bogor Utara",
+  "Tanah Sareal",
+];
+
+const KECAMATAN_KABUPATEN_BOGOR = [
+  "Babakan Madang",
   "Bojonggede",
   "Caringin",
   "Cariu",
@@ -150,11 +151,16 @@ const daftar_pilihan_kecamatan = [
   "Sukaraja",
   "Tajurhalang",
   "Tamansari",
-  "Tanah Sareal",
   "Tanjungsari",
   "Tenjo",
   "Tenjolaya",
 ];
+
+// Seluruh kecamatan (Kota + Kabupaten Bogor) terurut alfabetis
+const daftar_pilihan_kecamatan = [
+  ...KECAMATAN_KOTA_BOGOR,
+  ...KECAMATAN_KABUPATEN_BOGOR,
+].sort((a, b) => a.localeCompare(b, "id"));
 
 const daftar_pilihan_kategori = [
   "Rumah Sakit",
@@ -261,6 +267,22 @@ function CariFaskesKonten() {
     filter_fasilitas_aktif !== "ALL" ||
     filter_bpjs !== "ALL" ||
     filter_igd !== "ALL";
+
+  const pilihanKecamatanTersedia = useMemo(() => {
+    if (filter_wilayah === "KOTA_BOGOR") return KECAMATAN_KOTA_BOGOR;
+    if (filter_wilayah === "KABUPATEN_BOGOR") return KECAMATAN_KABUPATEN_BOGOR;
+    return daftar_pilihan_kecamatan;
+  }, [filter_wilayah]);
+
+  // Reset kecamatan jika tidak termasuk dalam wilayah yang baru dipilih
+  useEffect(() => {
+    if (
+      filter_kecamatan !== "ALL" &&
+      !pilihanKecamatanTersedia.includes(filter_kecamatan)
+    ) {
+      set_filter_kecamatan("ALL");
+    }
+  }, [pilihanKecamatanTersedia, filter_kecamatan]);
 
   const opsiFasilitas = useMemo(() => {
     const nameCounts = new Map<string, number>();
@@ -541,7 +563,7 @@ function CariFaskesKonten() {
           {/* Filter Kecamatan */}
           <DropdownPencarian
             label="Kecamatan"
-            daftar_pilihan={daftar_pilihan_kecamatan}
+            daftar_pilihan={pilihanKecamatanTersedia}
             nilai_terpilih={filter_kecamatan}
             saat_memilih={(nilai) => set_filter_kecamatan(nilai)}
             placeholder_pencarian="Cari kecamatan..."
