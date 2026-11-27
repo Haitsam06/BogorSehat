@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ChevronRight,
   MessageSquare,
@@ -23,6 +24,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { useFaskes } from "@/context/FaskesContext";
+import { lokasi_default_pengguna } from "@/data/data_faskes";
 import {
   api,
   ApiDiskusi,
@@ -35,8 +37,14 @@ import ModalReportKonten from "@/components/forum/ModalReportKonten";
 import DiskusiCard from "@/components/forum/DiskusiCard";
 import { EmptyState, FormAlert, SearchInput } from "@/components/ui";
 
+/** Radius filter "Diskusi Faskes Terdekat", dalam kilometer. */
+const RADIUS_TERDEKAT_KM = 3;
+
 export default function ForumDiskusiPage() {
-  const [tabAktif, setTabAktif] = useState<"semua" | "saya">("semua");
+  const router = useRouter();
+  const [tabAktif, setTabAktif] = useState<"semua" | "terdekat" | "saya">(
+    "semua"
+  );
   const [kataKunci, setKataKunci] = useState("");
   const [daftarDiskusi, setDaftarDiskusi] = useState<ApiDiskusi[]>([]);
   const [metaPaginasi, setMetaPaginasi] = useState<ApiPaginationMeta | null>(null);
@@ -44,6 +52,10 @@ export default function ForumDiskusiPage() {
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [totalSemua, setTotalSemua] = useState(0);
   const [totalSaya, setTotalSaya] = useState(0);
+  const [daftarTerdekat, setDaftarTerdekat] = useState<ApiDiskusi[]>([]);
+  const [sedangMemuatTerdekat, setSedangMemuatTerdekat] = useState(true);
+  const [galatTerdekat, setGalatTerdekat] = useState<string | null>(null);
+  const [terdekatSudahDimuat, setTerdekatSudahDimuat] = useState(false);
 
   // Modal states
   const [modalReportBuka, setModalReportBuka] = useState(false);
@@ -59,11 +71,25 @@ export default function ForumDiskusiPage() {
     pesan: string;
   } | null>(null);
 
-  const { sudahLogin } = useFaskes();
+  const { sudahLogin, lokasiPengguna, deteksiLokasiGPS, memuatGPS } = useFaskes();
   const currentUser = getAuthUser();
   const token = getAuthToken();
 
+  // Pelaporan konten butuh akun warga; tamu langsung diarahkan ke login.
+  const bukaLaporan = (id: number, judul: string) => {
+    if (!sudahLogin) {
+      router.push("/masuk?next=/diskusi");
+      return;
+    }
+    setTargetReportId(id);
+    setTargetReportTitle(judul);
+    setModalReportBuka(true);
+  };
+
   useEffect(() => {
+    // Tab "terdekat" punya loader sendiri: endpoint-nya tidak dipaginasi.
+    if (tabAktif === "terdekat") return;
+
     let aktif = true;
     async function muatData() {
       if (tabAktif === "saya" && !token) {
@@ -133,8 +159,47 @@ export default function ForumDiskusiPage() {
     };
   }, [token]);
 
-  // Filter berdasarkan pencarian & tab
-  const diskusiTerfilter = daftarDiskusi.filter((item) => {
+  useEffect(() => {
+    if (tabAktif !== "terdekat") return;
+
+    let aktif = true;
+    async function muatTerdekat() {
+      try {
+        setSedangMemuatTerdekat(true);
+        const data = await api.getNearbyDiscussions(
+          lokasiPengguna.latitude,
+          lokasiPengguna.longitude,
+          RADIUS_TERDEKAT_KM
+        );
+        if (aktif) {
+          setDaftarTerdekat(data);
+          setGalatTerdekat(null);
+        }
+      } catch (err) {
+        if (aktif) {
+          setDaftarTerdekat([]);
+          setGalatTerdekat(
+            messageFromError(err, "Gagal memuat diskusi faskes terdekat.")
+          );
+        }
+      } finally {
+        if (aktif) {
+          setSedangMemuatTerdekat(false);
+          setTerdekatSudahDimuat(true);
+        }
+      }
+    }
+    muatTerdekat();
+    return () => {
+      aktif = false;
+    };
+  }, [tabAktif, lokasiPengguna.latitude, lokasiPengguna.longitude]);
+
+  const sumberDiskusi = tabAktif === "terdekat" ? daftarTerdekat : daftarDiskusi;
+
+  // Filter kata kunci berlaku untuk kedua sumber; tab "terdekat" tetap
+  // memakai urutan jarak dari backend.
+  const diskusiTerfilter = sumberDiskusi.filter((item) => {
     if (!kataKunci.trim()) return true;
     const q = kataKunci.toLowerCase();
     const matchJudul = item.judul_diskusi.toLowerCase().includes(q);
@@ -149,12 +214,21 @@ export default function ForumDiskusiPage() {
 
   const jumlahSemua = totalSemua || (metaPaginasi?.total ?? daftarDiskusi.length);
   const jumlahSaya = totalSaya;
+  const sedangMemuatAktif =
+    tabAktif === "terdekat" ? sedangMemuatTerdekat : sedangMemuat;
+
+  // Context memakai pusat Kota Bogor selama izin GPS belum diberikan.
+  const memakaiLokasiDefault =
+    lokasiPengguna.latitude === lokasi_default_pengguna.latitude &&
+    lokasiPengguna.longitude === lokasi_default_pengguna.longitude;
 
   const handleHapusDiskusi = async (id: number) => {
     if (!confirm("Apakah Anda yakin ingin menghapus diskusi ini?")) return;
     try {
       await api.deleteDiscussion(id);
+      // Hapus di kedua sumber: kartu yang sama bisa tampil di tab mana pun.
       setDaftarDiskusi((prev) => prev.filter((d) => d.id_diskusi !== id));
+      setDaftarTerdekat((prev) => prev.filter((d) => d.id_diskusi !== id));
       setTotalSemua((prev) => Math.max(0, prev - 1));
       setTotalSaya((prev) => Math.max(0, prev - 1));
       setPesanNotif({
@@ -224,29 +298,17 @@ export default function ForumDiskusiPage() {
             </p>
           </div>
 
-          {sudahLogin ? (
-            <Link
-              href="/diskusi/buat"
-              className="self-start px-4 py-2.5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs shrink-0"
-            >
+          <Link
+            href={sudahLogin ? "/diskusi/buat" : "/masuk?next=/diskusi/buat"}
+            className="self-start px-4 py-2.5 rounded-xl bg-[#007E7A] hover:bg-[#006965] text-white text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs shrink-0"
+          >
+            {sudahLogin ? (
               <Plus className="w-4 h-4" />
-              <span>Buat Diskusi Baru</span>
-            </Link>
-          ) : (
-            <div className="self-start px-4 py-2.5 rounded-xl bg-[#E6F4F3] border border-[#007E7A]/25 text-[#005F5C] text-xs flex items-center gap-2 shrink-0">
-              <LogIn className="w-4 h-4 text-[#007E7A] shrink-0" />
-              <span>
-                Harus{" "}
-                <Link
-                  href="/masuk"
-                  className="font-bold text-[#007E7A] underline underline-offset-2 hover:text-[#006965]"
-                >
-                  login
-                </Link>{" "}
-                terlebih dahulu untuk membuat diskusi.
-              </span>
-            </div>
-          )}
+            ) : (
+              <LogIn className="w-4 h-4" />
+            )}
+            <span>{sudahLogin ? "Buat Diskusi Baru" : "Masuk untuk Buat Diskusi"}</span>
+          </Link>
         </div>
 
         {/* Kotak Pencarian */}
@@ -264,7 +326,7 @@ export default function ForumDiskusiPage() {
       </div>
 
       {/* Tabs Filter Diskusi */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <button
           type="button"
           onClick={() => {
@@ -287,6 +349,31 @@ export default function ForumDiskusiPage() {
             }`}
           >
             {jumlahSemua}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setTabAktif("terdekat");
+            setHalaman(1);
+          }}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-[13px] font-bold flex items-center gap-2 transition shadow-xs ${
+            tabAktif === "terdekat"
+              ? "bg-[#007E7A] text-white"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+          }`}
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          <span>Faskes Terdekat</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10.5px] ${
+              tabAktif === "terdekat"
+                ? "bg-white/25 text-white"
+                : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            {terdekatSudahDimuat ? daftarTerdekat.length : `${RADIUS_TERDEKAT_KM} km`}
           </span>
         </button>
 
@@ -318,19 +405,59 @@ export default function ForumDiskusiPage() {
 
       {/* Daftar Item Diskusi */}
       <div className="space-y-4">
-        {sedangMemuat ? (
+        {tabAktif === "terdekat" && (
+          <div className="bg-[#E6F4F3] border border-[#007E7A]/25 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[11.5px] text-[#005F5C] flex items-center gap-2 leading-snug">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                {memakaiLokasiDefault
+                  ? `Menampilkan faskes dalam ${RADIUS_TERDEKAT_KM} km dari pusat Kota Bogor. Aktifkan GPS untuk memakai lokasi Anda.`
+                  : `Menampilkan diskusi faskes dalam ${RADIUS_TERDEKAT_KM} km dari ${lokasiPengguna.nama_jalan}.`}
+              </span>
+            </p>
+            {memakaiLokasiDefault && (
+              <button
+                type="button"
+                onClick={deteksiLokasiGPS}
+                disabled={memuatGPS}
+                className="px-3 py-1.5 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-[11px] font-bold transition disabled:opacity-60 shrink-0"
+              >
+                {memuatGPS ? "Mendeteksi..." : "Gunakan Lokasi Saya"}
+              </button>
+            )}
+          </div>
+        )}
+        {galatTerdekat && tabAktif === "terdekat" && (
+          <FormAlert
+            tipe="error"
+            pesan={galatTerdekat}
+            onClose={() => setGalatTerdekat(null)}
+          />
+        )}
+
+        {sedangMemuatAktif ? (
           <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center space-y-3">
             <Loader2 className="w-6 h-6 animate-spin text-[#007E7A] mx-auto" />
             <p className="text-xs text-slate-500 font-medium">
-              Memuat diskusi warga...
+              {tabAktif === "terdekat"
+                ? `Mencari diskusi faskes dalam radius ${RADIUS_TERDEKAT_KM} km...`
+                : "Memuat diskusi warga..."}
             </p>
           </div>
         ) : diskusiTerfilter.length === 0 ? (
           <EmptyState
-            icon={MessageSquare}
-            judul="Belum Ada Diskusi Ditemukan"
+            icon={tabAktif === "terdekat" ? MapPin : MessageSquare}
+            judul={
+              tabAktif === "terdekat"
+                ? "Belum Ada Diskusi di Sekitar Anda"
+                : "Belum Ada Diskusi Ditemukan"
+            }
             deskripsi={
-              tabAktif === "saya" && !token
+              tabAktif === "terdekat"
+                ? kataKunci.trim()
+                  ? "Tidak ada diskusi faskes terdekat yang cocok dengan pencarian Anda."
+                  : `Belum ada diskusi yang membahas faskes dalam radius ${RADIUS_TERDEKAT_KM} km dari ${memakaiLokasiDefault ? "pusat Kota Bogor" : "lokasi Anda"}.`
+                : tabAktif === "saya" && !token
                 ? "Masuk sebagai warga untuk melihat diskusi yang Anda buat."
                 : "Tidak ada diskusi yang sesuai dengan kriteria filter atau pencarian Anda."
             }
@@ -342,28 +469,26 @@ export default function ForumDiskusiPage() {
               item={item}
               currentUser={currentUser}
               onHapus={handleHapusDiskusi}
-              onLapor={(id, judul) => {
-                setTargetReportId(id);
-                setTargetReportTitle(judul);
-                setModalReportBuka(true);
-              }}
+              onLapor={bukaLaporan}
               onBagikan={handleBagikan}
             />
           ))
         )}
 
-        {metaPaginasi && metaPaginasi.current_page < metaPaginasi.last_page && (
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setHalaman((prev) => prev + 1)}
-              disabled={sedangMemuat}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition disabled:opacity-50"
-            >
-              {sedangMemuat ? "Memuat..." : "Muat Diskusi Lainnya"}
-            </button>
-          </div>
-        )}
+        {tabAktif !== "terdekat" &&
+          metaPaginasi &&
+          metaPaginasi.current_page < metaPaginasi.last_page && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setHalaman((prev) => prev + 1)}
+                disabled={sedangMemuat}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition disabled:opacity-50"
+              >
+                {sedangMemuat ? "Memuat..." : "Muat Diskusi Lainnya"}
+              </button>
+            </div>
+          )}
       </div>
 
       {/* Modal Report Konten */}

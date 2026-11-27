@@ -33,6 +33,7 @@ Route::get('faskes/{faskes}', [FaskesController::class, 'show']);
 Route::get('spesialisasi', [MasterDataController::class, 'spesialisasi']);
 Route::get('fasilitas', [MasterDataController::class, 'fasilitas']);
 Route::get('diskusi', [ForumController::class, 'index']);
+Route::get('diskusi/nearby', [ForumController::class, 'nearby']);
 Route::get('diskusi/{diskusi}', [ForumController::class, 'show'])->middleware(ApiTokenAuthOptional::class);
 Route::middleware(ApiTokenAuth::class)->group(function (): void {
     Route::get('user', [ProfileController::class, 'current']);

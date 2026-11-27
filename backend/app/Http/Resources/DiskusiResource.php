@@ -31,6 +31,7 @@ class DiskusiResource extends JsonResource
             'sublokasi_penulis' => $this->relationLoaded('faskes') && $this->faskes !== null
                 ? ($this->faskes->kecamatan ?? $this->faskes->kota_kabupaten)
                 : null,
+            'jarak_faskes_km' => $this->when(isset($this->jarak_faskes_km), $this->jarak_faskes_km),
             'tanggapan' => TanggapanDiskusiResource::collection($this->whenLoaded('tanggapan')),
             'jumlah_tanggapan' => (int) ($this->tanggapan_count ?? 0),
             'jumlah_suka' => (int) ($this->suka_count ?? 0),

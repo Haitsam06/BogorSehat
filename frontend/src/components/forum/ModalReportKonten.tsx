@@ -156,7 +156,7 @@ export default function ModalReportKonten({
                 {errorMessage.includes("login") && (
                   <div className="mt-1.5">
                     <Link
-                      href="/admin/login"
+                      href="/masuk"
                       className="inline-flex items-center font-bold text-[#007E7A] hover:underline"
                     >
                       Buka Halaman Login &rarr;

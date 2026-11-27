@@ -498,6 +498,10 @@ export default function DetailDiskusiPage({
                   <button
                     type="button"
                     onClick={() => {
+                      if (!sudahLogin) {
+                        router.push(`/masuk?next=/diskusi/${idDiskusiNum}`);
+                        return;
+                      }
                       setTargetReport({
                         tipe: "diskusi",
                         id: diskusi.id_diskusi,
@@ -614,7 +618,7 @@ export default function DetailDiskusiPage({
                   <span>
                     Anda harus{" "}
                     <Link
-                      href="/masuk"
+                      href={`/masuk?next=/diskusi/${idDiskusiNum}`}
                       className="font-bold text-[#007E7A] underline underline-offset-2 hover:text-[#006965]"
                     >
                       login
@@ -623,7 +627,7 @@ export default function DetailDiskusiPage({
                   </span>
                 </div>
                 <Link
-                  href="/masuk"
+                  href={`/masuk?next=/diskusi/${idDiskusiNum}`}
                   className="self-start sm:self-center px-4 py-2 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white font-bold text-xs transition shrink-0"
                 >
                   Masuk Sekarang
@@ -709,6 +713,10 @@ export default function DetailDiskusiPage({
                           <button
                             type="button"
                             onClick={() => {
+                              if (!sudahLogin) {
+                                router.push(`/masuk?next=/diskusi/${idDiskusiNum}`);
+                                return;
+                              }
                               setTargetReport({
                                 tipe: "tanggapan",
                                 id: tanggapan.id_tanggapan_diskusi,

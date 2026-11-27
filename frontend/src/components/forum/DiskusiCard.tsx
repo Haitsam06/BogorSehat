@@ -51,6 +51,11 @@ export default function DiskusiCard({
   const likesCount = item.jumlah_suka ?? 0;
   const viewsCount = item.jumlah_dilihat ?? 0;
   const faskesName = item.faskes_terkait?.nama_faskes;
+  // `jarak_faskes_km` hanya dikirim endpoint `/diskusi/nearby`.
+  const jarakFaskes =
+    typeof item.jarak_faskes_km === "number"
+      ? `${item.jarak_faskes_km.toFixed(1)} km`
+      : null;
 
   return (
     <div
@@ -73,6 +78,9 @@ export default function DiskusiCard({
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#E6F4F3] text-[#007E7A] flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               <span>{faskesName}</span>
+              {jarakFaskes && (
+                <span className="text-[#005F5C]/70 font-bold">· {jarakFaskes}</span>
+              )}
             </span>
           )}
         </div>

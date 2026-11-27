@@ -175,6 +175,7 @@ Comment body:
 | Method | Endpoint | Auth | Purpose |
 |---|---|---|---|
 | GET | `/diskusi` | Public | Paginated discussion list |
+| GET | `/diskusi/nearby` | Public | Discussions about facilities within radius, nearest first |
 | GET | `/diskusi/{id_diskusi}` | Public | Discussion detail with replies |
 | POST | `/diskusi` | Token | Create discussion |
 | DELETE | `/diskusi/{id_diskusi}` | Token | Delete own discussion; admin may moderate |
@@ -190,6 +191,25 @@ Comment body:
 | PUT | `/tanggapan-diskusi/{id_tanggapan}` | Token | Edit own reply; admin may moderate |
 | DELETE | `/tanggapan-diskusi/{id_tanggapan}` | Token | Delete own reply; admin may moderate |
 | GET | `/me/diskusi` | Token | Current user's discussions |
+
+### Nearby discussions query parameters
+
+`GET /diskusi/nearby` returns every discussion linked to a facility inside the radius, ordered by facility distance (nearest first), then newest discussion. It is not paginated: the result set is the narrow intersection of discussions and nearby facilities.
+
+Required:
+
+- `latitude`: `-90` to `90`.
+- `longitude`: `-180` to `180`.
+
+Optional:
+
+- `radius`: kilometers; default `3`, maximum `50`.
+
+Discussions without a linked facility are excluded. Each item additionally carries `jarak_faskes_km`: the haversine distance between the user and the linked facility, in kilometers rounded to two decimals.
+
+```text
+GET /api/diskusi/nearby?latitude=-6.5950&longitude=106.7990
+```
 
 ### Discussion body
 
@@ -225,7 +245,7 @@ Every discussion response carries these counters, including `GET /diskusi`, `GET
 }
 ```
 
-`faskes_terkait` and `sublokasi_penulis` are `null` when the discussion has no linked facility. Every discussion reply carries `jumlah_suka`.
+`faskes_terkait` and `sublokasi_penulis` are `null` when the discussion has no linked facility. Every discussion reply carries `jumlah_suka`. `/diskusi/nearby` items add `jarak_faskes_km` at the top level of the discussion object (sibling of `faskes_terkait`), not inside it.
 
 Like and view responses:
 

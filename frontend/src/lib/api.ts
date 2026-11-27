@@ -224,6 +224,8 @@ export interface ApiDiskusi {
   jumlah_dilihat?: number;
   sublokasi_penulis?: string;
   jumlah_tanggapan?: number;
+  /** Hanya diisi oleh `GET /diskusi/nearby`: jarak user ke faskes terkait (km). */
+  jarak_faskes_km?: number;
 }
 
 export interface ApiTanggapan {
@@ -640,6 +642,21 @@ export const api = {
 
   async getMyDiscussions(page = 1): Promise<ApiCollectionResponse<ApiDiskusi>> {
     return request<ApiCollectionResponse<ApiDiskusi>>(`/me/diskusi?page=${page}`);
+  },
+
+  /**
+   * Diskusi yang membahas faskes dalam radius tertentu dari titik pengguna.
+   * Tidak dipaginasi — backend mengembalikan seluruh irisan, terdekat dulu.
+   */
+  async getNearbyDiscussions(
+    latitude: number,
+    longitude: number,
+    radius = 3
+  ): Promise<ApiDiskusi[]> {
+    const res = await request<ApiCollectionResponse<ApiDiskusi>>(
+      `/diskusi/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`
+    );
+    return res.data ?? [];
   },
 
   async getDiscussionDetail(idDiskusi: number): Promise<ApiDiskusi> {

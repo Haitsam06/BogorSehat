@@ -25,7 +25,6 @@ import {
   api,
   ApiFaskes,
   getAuthToken,
-  getAuthUser,
   messageFromError,
 } from "@/lib/api";
 import { FormInput, FormSelect, FormAlert } from "@/components/ui";
@@ -63,6 +62,19 @@ export default function BuatDiskusiBaruPage() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pembuatan diskusi butuh akun warga; yang belum masuk langsung dialihkan
+  // ke halaman login sehingga form tidak sempat tampil.
+  const [siapMembuat, setSiapMembuat] = useState(false);
+
+  useEffect(() => {
+    if (getAuthToken()) {
+      setSiapMembuat(true);
+      return;
+    }
+    // `next` mengembalikan pengguna ke form ini setelah berhasil masuk.
+    router.replace("/masuk?next=/diskusi/buat");
+  }, [router]);
 
   useEffect(() => {
     let aktif = true;
@@ -217,6 +229,17 @@ export default function BuatDiskusiBaruPage() {
     })
     .slice(0, 20);
 
+  if (!siapMembuat) {
+    return (
+      <div className="max-w-[1040px] mx-auto px-4 sm:px-6 py-24 w-full text-center space-y-3">
+        <Loader2 className="w-6 h-6 animate-spin text-[#007E7A] mx-auto" />
+        <p className="text-xs text-slate-500 font-medium">
+          Mengalihkan ke halaman masuk...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1040px] mx-auto px-4 sm:px-6 py-7 w-full space-y-6">
       {/* Breadcrumb */}
@@ -251,7 +274,7 @@ export default function BuatDiskusiBaruPage() {
           pesan={errorMessage}
           link={
             errorMessage.includes("login")
-              ? { href: "/admin/login", label: "Buka Halaman Login" }
+              ? { href: "/masuk", label: "Masuk untuk Publikasi Diskusi" }
               : undefined
           }
           onClose={() => setErrorMessage(null)}

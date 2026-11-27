@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
@@ -24,10 +24,12 @@ import { FormInput, FormPassword, FormAlert } from "@/components/ui";
 
 type Mode = "masuk" | "daftar";
 
-export default function MasukPage() {
+function MasukKonten() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { masuk } = useFaskes();
   const [mode, setMode] = useState<Mode>("masuk");
+
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [telepon, setTelepon] = useState("");
@@ -35,6 +37,14 @@ export default function MasukPage() {
   const [konfirmasi, setKonfirmasi] = useState("");
   const [sedangMemuat, setSedangMemuat] = useState(false);
   const [pesanError, setPesanError] = useState<string | null>(null);
+
+  /** Tujuan setelah masuk, mis. `/diskusi/buat` saat diarahkan dari sana. */
+  const tujuanSetelahMasuk = (): string => {
+    const next = searchParams.get("next");
+    // Hanya izinkan path internal agar `?next=` tidak bisa jadi open redirect.
+    if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+    return "/";
+  };
 
   const tanganiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +82,11 @@ export default function MasukPage() {
       }
 
       const pengguna = await masuk(email.trim(), sandi);
-      router.push(pengguna.role_user === "admin" ? "/admin/dashboard" : "/");
+      if (pengguna.role_user === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push(tujuanSetelahMasuk());
+      }
     } catch (err) {
       setPesanError(
         messageFromError(err, "Gagal memproses permintaan Anda.")
@@ -317,5 +331,19 @@ export default function MasukPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MasukPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-xs text-slate-500">
+          Memuat halaman masuk...
+        </div>
+      }
+    >
+      <MasukKonten />
+    </Suspense>
   );
 }

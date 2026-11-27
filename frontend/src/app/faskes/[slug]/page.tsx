@@ -2,6 +2,7 @@
 
 import React, { use, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ChevronRight,
   MapPin,
@@ -68,7 +69,8 @@ export default function DetailFaskesPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const { lokasiPengguna } = useFaskes();
+  const { lokasiPengguna, sudahLogin } = useFaskes();
+  const router = useRouter();
 
   const [faskesItem, setFaskesItem] = useState<DataFaskesItem | null>(null);
   const [rawApiFaskes, setRawApiFaskes] = useState<ApiFaskes | null>(null);
@@ -477,7 +479,13 @@ export default function DetailFaskesPage({
           </Link>
           <button
             type="button"
-            onClick={() => setModalFeedbackBuka(true)}
+            onClick={() => {
+              if (!sudahLogin) {
+                router.push(`/masuk?next=/faskes/${slug}`);
+                return;
+              }
+              setModalFeedbackBuka(true);
+            }}
             className="px-4 py-2.5 rounded-lg bg-[#EBEEF2] hover:bg-rose-50 hover:text-rose-700 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition"
             title="Laporkan ketidaksesuaian data faskes"
           >
@@ -617,7 +625,7 @@ export default function DetailFaskesPage({
                   <span>Silakan masuk ke akun untuk meninggalkan ulasan atau komentar pengalaman Anda.</span>
                 </div>
                 <Link
-                  href="/masuk"
+                  href={`/masuk?next=/faskes/${slug}`}
                   className="px-4 py-2 rounded-lg bg-[#007E7A] hover:bg-[#006965] text-white text-xs font-bold transition text-center shrink-0 shadow-2xs"
                 >
                   Masuk untuk Mengulas
@@ -703,6 +711,10 @@ export default function DetailFaskesPage({
                         <button
                           type="button"
                           onClick={() => {
+                            if (!sudahLogin) {
+                              router.push(`/masuk?next=/faskes/${slug}`);
+                              return;
+                            }
                             setTargetLaporKomentar({
                               id: item.id_komentar,
                               ringkasan: item.body,

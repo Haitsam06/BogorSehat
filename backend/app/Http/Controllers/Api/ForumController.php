@@ -17,6 +17,9 @@ class ForumController extends Controller
 {
     private const LIST_RELATIONS = ['user', 'faskes'];
 
+    /** Radius bawaan filter "diskusi faskes terdekat". */
+    private const NEARBY_RADIUS_KM = 3;
+
     public function index(): mixed
     {
         return DiskusiResource::collection(
@@ -26,6 +29,47 @@ class ForumController extends Controller
                 ->latest()
                 ->paginate(15),
         );
+    }
+
+    /**
+     * Diskusi yang membahas faskes dalam radius tertentu dari titik pengguna.
+     *
+     * Hasil tidak dipaginasi: daftar ini adalah irisan sempit (faskes dalam
+     * radius) sehingga seluruh isinya berguna sekaligus, diurutkan dari
+     * faskes terdekat.
+     */
+    public function nearby(Request $request): mixed
+    {
+        $data = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'radius' => ['sometimes', 'numeric', 'min:0.1', 'max:50'],
+        ]);
+        $latitude = (float) $data['latitude'];
+        $longitude = (float) $data['longitude'];
+        $radius = (float) ($data['radius'] ?? self::NEARBY_RADIUS_KM);
+        $latitudeDelta = $radius / 111;
+        $longitudeDelta = $radius / max(cos(deg2rad($latitude)) * 111, 0.01);
+
+        $diskusi = Diskusi::query()
+            ->with(self::LIST_RELATIONS)
+            ->withCount(['suka', 'dilihat', 'tanggapan'])
+            ->whereNotNull('id_faskes')
+            ->whereHas('faskes', fn ($query) => $query
+                ->whereBetween('latitude', [$latitude - $latitudeDelta, $latitude + $latitudeDelta])
+                ->whereBetween('longitude', [$longitude - $longitudeDelta, $longitude + $longitudeDelta]))
+            ->get()
+            ->each(function (Diskusi $item) use ($latitude, $longitude): void {
+                $item->jarak_faskes_km = $item->faskes->distanceKmTo($latitude, $longitude);
+            })
+            ->filter(fn (Diskusi $item): bool => $item->jarak_faskes_km <= $radius)
+            ->sortBy([
+                ['jarak_faskes_km', 'asc'],
+                ['created_at', 'desc'],
+            ])
+            ->values();
+
+        return DiskusiResource::collection($diskusi);
     }
 
     public function show(Request $request, Diskusi $diskusi): DiskusiResource
